@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 
 from app.db import get_engine, session_scope
 from app.ingestion import jobs
@@ -11,6 +12,8 @@ from app.ingestion.integrity import integrity_report, recent_runs
 from app.ingestion.transforms import current_season_start_year
 from app.logging import configure_logging
 from app.models import SeasonType
+from app.sync import worker
+from app.sync.freshness import dataset_freshness
 
 
 def _run(job: str, params: dict, body) -> bool:
@@ -51,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     backfill.add_argument("--from", dest="start", type=int, required=True)
     backfill.add_argument("--to", dest="end", type=int, default=current)
 
+    sub.add_parser("sync-worker", help="Run scheduled synchronization until stopped")
+    sub.add_parser("sync-once", help="Run every currently due sync job once")
+    sub.add_parser("data-status", help="Show per-dataset freshness")
     sub.add_parser("integrity", help="Run integrity and coverage checks")
     runs = sub.add_parser("runs", help="Show recent ingestion runs")
     runs.add_argument("--limit", type=int, default=20)
@@ -77,8 +83,19 @@ def main(argv: list[str] | None = None) -> int:
                 ok &= ingest_season(client, season, all_types)
         return 0 if ok else 1
 
+    if args.command == "sync-worker":
+        worker.run_forever(get_engine(), client)
+        return 0
+    if args.command == "sync-once":
+        print(json.dumps(worker.run_due(get_engine(), client), indent=2))
+        return 0
+
     with session_scope() as session:
-        if args.command == "integrity":
+        if args.command == "data-status":
+            now = datetime.now(UTC)
+            rows = [d.as_dict() for d in dataset_freshness(session, now)]
+            print(json.dumps(rows, indent=2, default=str))
+        elif args.command == "integrity":
             print(json.dumps(integrity_report(session), indent=2, default=str))
         else:
             print(json.dumps(recent_runs(session, args.limit), indent=2, default=str))

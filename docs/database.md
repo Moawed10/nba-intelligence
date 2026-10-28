@@ -92,7 +92,7 @@ Types are PostgreSQL types. `PK` = primary key, `FK` = foreign key, `UQ` = uniqu
 | home_team_id, away_team_id | integer FK → teams | `CHECK (home_team_id <> away_team_id)` |
 | status | enum `scheduled \| delayed \| in_progress \| final \| postponed \| cancelled` | Lifecycle rules in [data-synchronization.md](data-synchronization.md#game-lifecycle) |
 | provider_status | jsonb | Raw `gameStatus` / `gameStatusText` last observed |
-| status_observed_at | timestamptz | Last sync that observed the status |
+| status_observed_at | timestamptz | When the current status was first observed (unchanged re-syncs don't touch the row) |
 | stats_finalized_at | timestamptz null | Box score stable across two fetches |
 | home_score, away_score | smallint null | Null until final |
 | arena | varchar null | |

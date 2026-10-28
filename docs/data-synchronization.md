@@ -2,7 +2,12 @@
 
 How NBA Intelligence keeps schedules, results, box scores and predictions current without manual refreshes, and without breaking prediction immutability ([ADR 0003](decisions/0003-immutable-predictions.md)).
 
-**Implementation status:** designed, not implemented. It is built as part of Phase 3 (scheduler, jobs, lifecycle, freshness, corrections) and Phase 7 (prediction freshness and refresh). See [implementation-status.md](implementation-status.md). Nothing here is claimed to work until those phases record test evidence.
+**Implementation status:**
+- Implemented and tested in Phase 3: scheduler, jobs, lifecycle, outbox, finalization, freshness service and corrections (`backend/app/sync/`, `backend/app/ingestion/`).
+- Phase 4 adds the `/data-status` endpoint.
+- Phase 7 adds prediction freshness, refresh and the evaluation handlers.
+
+Evidence is in [test-report.md](test-report.md), and status in [implementation-status.md](implementation-status.md).
 
 ## Components
 
@@ -30,16 +35,18 @@ flowchart LR
 
 Times are UTC internally. The NBA "game day" is computed in `America/New_York`, which covers DST transitions.
 
-| Job key | Default | Active window | Source |
-|---|---|---|---|
-| `schedule` | 30 min | Always during season | `ScheduleLeagueV2` |
-| `live_scores` | 60 s | Only while some game has `tipoff_at − 15 min ≤ now` and is not final, plus a 4-hour cap per game | `nba_api.live` scoreboard (cdn.nba.com) **if reachable and permitted**; otherwise disabled and live status comes from the schedule job |
-| `final_results` | 10 min | From tip-off + 2 h until every game of that game day is `final` | Schedule + `LeagueGameLog` for the date |
-| `player_box_scores` | 15 min | After a game turns `final`, until two consecutive identical fetches mark it `stats_finalized` (max 24 h) | `LeagueGameLog` |
-| `metadata` | 24 h | Always | Static teams, `PlayerIndex` / `CommonPlayerInfo` |
-| `corrections` | 7 days | Always | Re-fetch the last 30 days of final games |
-| `prediction_freshness` | 15 min | Games with tip-off in the next 48 h | Internal |
-| `retrain_eligibility` | 7 days | Always | Internal (records eligibility only; training stays a manual CLI step per [ADR 0002](decisions/0002-no-http-admin-operations.md)) |
+Implemented jobs (`app/sync/worker.py` `JOBS`):
+
+| Job key | Idle interval | Active interval | Active when | Source |
+|---|---|---|---|---|
+| `schedule` | 30 min | 60 s | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed) |
+| `game_logs` | 6 h | 10 min | A game is live, or a game from the last 36 h is final but its box score isn't confirmed stable | `LeagueGameLog` (team + player) for the current season's types |
+| `metadata` | 24 h | — | Always | `LeagueStandingsV3`, `CommonAllPlayers`, `PlayerIndex` |
+| `corrections` | 7 days | — | Always | Re-fetches the current season's game logs and logs any changed values |
+
+Planned for Phase 7: `prediction_freshness` (15 min, games tipping off in the next 48 h) and `retrain_eligibility` (7 days; records eligibility only, since training stays a manual CLI step per [ADR 0002](decisions/0002-no-http-admin-operations.md)).
+
+Live in-game scores are **not** ingested. The live `cdn.nba.com` scoreboard is a separate service and isn't used; scores enter the database from the final box score. A box score counts as stable once a `game_logs` run leaves all of a game's player lines unchanged, which sets `stats_finalized_at` and emits `GAME_STATS_FINALIZED`. Games older than 36 hours are marked stable silently, so a historical backfill emits no events.
 
 The worker sleeps when nothing is due. Outside the season, only `metadata` and `corrections` run. These cadences are polling intervals, not provider freshness guarantees. The UI never says "real time."
 
@@ -50,9 +57,9 @@ The worker sleeps when nothing is due. Outside the season, only `metadata` and `
 | From | Allowed to | Note |
 |---|---|---|
 | scheduled | delayed, in_progress, postponed, cancelled, final | `final` directly when a game was missed between polls |
-| delayed | in_progress, postponed, cancelled, scheduled | |
+| delayed | in_progress, postponed, cancelled, scheduled, final | |
 | in_progress | final, postponed | Suspended games are treated as postponed |
-| postponed | scheduled (new `tipoff_at`), cancelled | Same `game_id` when the provider reuses it |
+| postponed | scheduled (new `tipoff_at`), cancelled, in_progress, final | Same `game_id` when the provider reuses it |
 | final | final | Never downgraded. A stale non-final response is ignored and logged |
 | cancelled | none | Terminal |
 

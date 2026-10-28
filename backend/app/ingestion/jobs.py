@@ -204,12 +204,15 @@ def ingest_players(client: StatsSource, season: int) -> Callable[[RunContext], N
 
 
 def _stored_player_lines(session: Session, season: int, season_type: SeasonType) -> int:
-    return session.scalar(
-        select(func.count())
-        .select_from(PlayerGameStats)
-        .join(Game, Game.id == PlayerGameStats.game_id)
-        .where(Game.season_id == season, Game.season_type == season_type)
-    ) or 0
+    return (
+        session.scalar(
+            select(func.count())
+            .select_from(PlayerGameStats)
+            .join(Game, Game.id == PlayerGameStats.game_id)
+            .where(Game.season_id == season, Game.season_type == season_type)
+        )
+        or 0
+    )
 
 
 def ingest_game_logs(
@@ -266,13 +269,24 @@ def ingest_game_logs(
         for game in game_rows:
             status, ok = resolve_status(existing.get(game["id"]), GameStatus.final)
             if not ok:
-                ctx.reject([Rejection({"game_id": game["id"]},
-                                      f"illegal transition {existing[game['id']]} -> final")])
+                ctx.reject(
+                    [
+                        Rejection(
+                            {"game_id": game["id"]},
+                            f"illegal transition {existing[game['id']]} -> final",
+                        )
+                    ]
+                )
                 continue
             accepted_games.append({**game, "status": status})
             if existing.get(game["id"]) not in (None, GameStatus.final):
-                emit_event(session, SyncEventType.GAME_COMPLETED,
-                           f"GAME_COMPLETED:{game['id']}", {"game_id": game["id"]}, ctx.run_id)
+                emit_event(
+                    session,
+                    SyncEventType.GAME_COMPLETED,
+                    f"GAME_COMPLETED:{game['id']}",
+                    {"game_id": game["id"]},
+                    ctx.run_id,
+                )
 
         accepted_ids = {g["id"] for g in accepted_games}
         team_rows = [r for r in team_rows if r["game_id"] in accepted_ids]
@@ -283,13 +297,23 @@ def ingest_game_logs(
                            ctx.run_id)  # fmt: skip
         detect_corrections(session, TeamGameStats, team_rows, ["game_id", "team_id"], box,
                            ctx.run_id)  # fmt: skip
-        corrected = detect_corrections(session, PlayerGameStats, player_rows,
-                                       ["game_id", "player_id"], (*box, "team_id"), ctx.run_id)
+        corrected = detect_corrections(
+            session,
+            PlayerGameStats,
+            player_rows,
+            ["game_id", "player_id"],
+            (*box, "team_id"),
+            ctx.run_id,
+        )
         for c in corrected:
-            emit_event(session, SyncEventType.HISTORICAL_DATA_CORRECTED,
-                       f"CORRECTION:{ctx.run_id}:{c.record_key['game_id']}:"
-                       f"{c.record_key['player_id']}:{c.column_name}",
-                       {"record_key": c.record_key, "column": c.column_name}, ctx.run_id)
+            emit_event(
+                session,
+                SyncEventType.HISTORICAL_DATA_CORRECTED,
+                f"CORRECTION:{ctx.run_id}:{c.record_key['game_id']}:"
+                f"{c.record_key['player_id']}:{c.column_name}",
+                {"record_key": c.record_key, "column": c.column_name},
+                ctx.run_id,
+            )
 
         prov = provenance(ctx.run_id, "LeagueGameLog")
         ctx.counted(upsert(session, Game, accepted_games, ["id"], provenance=prov))
@@ -320,8 +344,9 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
         existing = {
             gid: (status, tipoff)
             for gid, status, tipoff in session.execute(
-                select(Game.id, Game.status, Game.tipoff_at)
-                .where(Game.id.in_([r["id"] for r in result.rows]))
+                select(Game.id, Game.status, Game.tipoff_at).where(
+                    Game.id.in_([r["id"] for r in result.rows])
+                )
             )
         }
         rows = []
@@ -329,24 +354,44 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
             current, current_tipoff = existing.get(row["id"], (None, None))
             status, ok = resolve_status(current, row["status"])
             if not ok:
-                ctx.reject([Rejection({"game_id": row["id"]},
-                                      f"illegal transition {current} -> {row['status']}")])
+                ctx.reject(
+                    [
+                        Rejection(
+                            {"game_id": row["id"]},
+                            f"illegal transition {current} -> {row['status']}",
+                        )
+                    ]
+                )
                 continue
             rows.append(row)
             if current is None:
                 continue
             gid = row["id"]
             if status != current and status == GameStatus.in_progress:
-                emit_event(session, SyncEventType.GAME_STARTED, f"GAME_STARTED:{gid}",
-                           {"game_id": gid}, ctx.run_id)
+                emit_event(
+                    session,
+                    SyncEventType.GAME_STARTED,
+                    f"GAME_STARTED:{gid}",
+                    {"game_id": gid},
+                    ctx.run_id,
+                )
             elif status != current and status == GameStatus.final:
-                emit_event(session, SyncEventType.GAME_COMPLETED, f"GAME_COMPLETED:{gid}",
-                           {"game_id": gid}, ctx.run_id)
+                emit_event(
+                    session,
+                    SyncEventType.GAME_COMPLETED,
+                    f"GAME_COMPLETED:{gid}",
+                    {"game_id": gid},
+                    ctx.run_id,
+                )
             elif status != current or row["tipoff_at"] != current_tipoff:
                 stamp = row["tipoff_at"].isoformat() if row["tipoff_at"] else "none"
-                emit_event(session, SyncEventType.GAME_SCHEDULE_UPDATED,
-                           f"GAME_SCHEDULE_UPDATED:{gid}:{status}:{stamp}",
-                           {"game_id": gid, "status": status, "tipoff_at": stamp}, ctx.run_id)
+                emit_event(
+                    session,
+                    SyncEventType.GAME_SCHEDULE_UPDATED,
+                    f"GAME_SCHEDULE_UPDATED:{gid}:{status}:{stamp}",
+                    {"game_id": gid, "status": status, "tipoff_at": stamp},
+                    ctx.run_id,
+                )
         ctx.valid += len(rows)
         ctx.counted(upsert(session, Game, rows, ["id"],
                            provenance=provenance(ctx.run_id, "ScheduleLeagueV2"),

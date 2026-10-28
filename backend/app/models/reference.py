@@ -80,9 +80,7 @@ class Player(Provenance, Base):
     weight_lbs: Mapped[int | None] = mapped_column(SmallInteger)
     birthdate: Mapped[date | None] = mapped_column(Date)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
-    current_team_id: Mapped[int | None] = mapped_column(
-        ForeignKey("teams.id", ondelete="RESTRICT")
-    )
+    current_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
     from_year: Mapped[int | None] = mapped_column(SmallInteger)
     to_year: Mapped[int | None] = mapped_column(SmallInteger)
 

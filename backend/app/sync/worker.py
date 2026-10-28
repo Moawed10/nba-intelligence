@@ -1,0 +1,234 @@
+"""Scheduled synchronization (docs/data-synchronization.md).
+
+One worker process runs due jobs from the persisted `sync_schedules` table. Each job execution goes
+through `run_job`, whose per-job advisory lock keeps concurrent workers from duplicating work.
+"""
+
+import logging
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from sqlalchemy import Engine, exists, func, select, update
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import Session
+
+from app.ingestion import jobs
+from app.ingestion.client import StatsSource
+from app.ingestion.transforms import current_season_start_year
+from app.models import (
+    Game,
+    GameStatus,
+    IngestionRun,
+    PlayerGameStats,
+    RunStatus,
+    SeasonType,
+    SyncEvent,
+    SyncEventType,
+    SyncSchedule,
+)
+
+log = logging.getLogger(__name__)
+
+LEASE = timedelta(minutes=15)
+RECENT_GAME_WINDOW = timedelta(hours=36)
+NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
+
+
+@dataclass(frozen=True)
+class JobSpec:
+    interval: timedelta
+    active_interval: timedelta | None = None
+
+
+JOBS: dict[str, JobSpec] = {
+    # Faster while any game is near or past tip-off and not yet final.
+    "schedule": JobSpec(interval=timedelta(minutes=30), active_interval=timedelta(seconds=60)),
+    "game_logs": JobSpec(interval=timedelta(hours=6), active_interval=timedelta(minutes=10)),
+    "metadata": JobSpec(interval=timedelta(hours=24)),
+    "corrections": JobSpec(interval=timedelta(days=7)),
+}
+
+
+def games_active(session: Session, now: datetime) -> bool:
+    """True while some game is between 15 minutes before tip-off and final (capped at 30 hours)."""
+    return bool(session.scalar(select(exists().where(
+        Game.tipoff_at <= now + timedelta(minutes=15),
+        Game.tipoff_at >= now - timedelta(hours=30),
+        Game.status.in_(NOT_FINAL),
+    ))))  # fmt: skip
+
+
+def stats_pending(session: Session, now: datetime) -> bool:
+    """True while a recent final game's box score is not yet confirmed stable."""
+    return bool(session.scalar(select(exists().where(
+        Game.status == GameStatus.final,
+        Game.stats_finalized_at.is_(None),
+        Game.tipoff_at >= now - RECENT_GAME_WINDOW,
+    ))))  # fmt: skip
+
+
+def next_interval(job: str, session: Session, now: datetime) -> timedelta:
+    spec = JOBS[job]
+    if spec.active_interval is None:
+        return spec.interval
+    active = games_active(session, now) or (job == "game_logs" and stats_pending(session, now))
+    return spec.active_interval if active else spec.interval
+
+
+def ensure_schedules(engine: Engine, now: datetime) -> None:
+    with Session(engine) as s, s.begin():
+        s.execute(
+            insert(SyncSchedule)
+            .values([{"job": job, "interval_seconds": int(spec.interval.total_seconds()),
+                      "next_run_at": now} for job, spec in JOBS.items()])
+            .on_conflict_do_nothing(index_elements=["job"])
+        )  # fmt: skip
+
+
+def recover_abandoned(engine: Engine, now: datetime) -> int:
+    """Runs still marked running past the lease belonged to a worker that died; mark them."""
+    with Session(engine) as s, s.begin():
+        result = s.execute(
+            update(IngestionRun)
+            .where(IngestionRun.status == RunStatus.running,
+                   func.coalesce(IngestionRun.heartbeat_at, IngestionRun.started_at) < now - LEASE)
+            .values(status=RunStatus.abandoned, finished_at=now,
+                    error="Worker stopped before the run finished")
+        )  # fmt: skip
+        return result.rowcount or 0
+
+
+def due_jobs(engine: Engine, now: datetime) -> list[str]:
+    with Session(engine) as s:
+        return list(s.scalars(
+            select(SyncSchedule.job)
+            .where(SyncSchedule.enabled, SyncSchedule.next_run_at <= now)
+            .order_by(SyncSchedule.next_run_at)
+        ))  # fmt: skip
+
+
+Execution = tuple[str, dict[str, Any], Callable[[jobs.RunContext], None]]
+
+
+def _season_types(engine: Engine, season: int) -> list[SeasonType]:
+    with Session(engine) as s:
+        stmt = select(Game.season_type).where(Game.season_id == season).distinct()
+        present = set(s.scalars(stmt))
+    return [t for t in SeasonType if t in present] or [SeasonType.regular]
+
+
+def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -> list[Execution]:
+    if job == "schedule":
+        return [("schedule", {"season": season}, jobs.ingest_schedule(client, season))]
+    if job in ("game_logs", "corrections"):
+        return [
+            ("game_logs", {"season": season, "season_type": st.value},
+             jobs.ingest_game_logs(client, season, st))
+            for st in _season_types(engine, season)
+        ]  # fmt: skip
+    if job == "metadata":
+        return [
+            ("teams", {"season": season}, jobs.ingest_teams(client, season)),
+            ("players", {"season": season}, jobs.ingest_players(client, season)),
+        ]
+    raise KeyError(job)
+
+
+def finalize_stable_box_scores(engine: Engine, run_started: datetime, now: datetime) -> int:
+    """A final game whose player lines predate this run and were left unchanged by it is stable.
+
+    Only recently played games emit GAME_STATS_FINALIZED; older games (e.g. a historical backfill)
+    are marked stable silently, so evaluation is not triggered for seasons-old results.
+    """
+    with Session(engine) as s, s.begin():
+        latest_line = (
+            select(func.max(PlayerGameStats.updated_at))
+            .where(PlayerGameStats.game_id == Game.id)
+            .scalar_subquery()
+        )
+        rows = s.execute(
+            select(Game.id, Game.tipoff_at).where(
+                Game.status == GameStatus.final,
+                Game.stats_finalized_at.is_(None),
+                latest_line < run_started,
+            )
+        ).all()  # fmt: skip
+        if not rows:
+            return 0
+        s.execute(
+            update(Game).where(Game.id.in_([r.id for r in rows])).values(stats_finalized_at=now)
+        )
+        recent = [r.id for r in rows if r.tipoff_at and r.tipoff_at >= now - RECENT_GAME_WINDOW]
+        for gid in recent:
+            jobs.emit_event(s, SyncEventType.GAME_STATS_FINALIZED, f"GAME_STATS_FINALIZED:{gid}",
+                            {"game_id": gid}, None)  # fmt: skip
+        return len(rows)
+
+
+EventHandler = Callable[[Session, SyncEvent], None]
+# Prediction refresh and evaluation handlers register here in Phase 7. Caches need no handler:
+# every committed run advances data_version, which is part of every cache key.
+HANDLERS: dict[SyncEventType, EventHandler] = {}
+
+
+def drain_events(engine: Engine, now: datetime, batch: int = 500) -> int:
+    total = 0
+    while (handled := _drain_batch(engine, now, batch)) > 0:
+        total += handled
+    return total
+
+
+def _drain_batch(engine: Engine, now: datetime, limit: int) -> int:
+    with Session(engine) as s, s.begin():
+        events = s.scalars(
+            select(SyncEvent).where(SyncEvent.processed_at.is_(None)).order_by(SyncEvent.id)
+            .limit(limit).with_for_update(skip_locked=True)
+        ).all()  # fmt: skip
+        for event in events:
+            handler = HANDLERS.get(event.type)
+            if handler:
+                handler(s, event)
+            event.processed_at = now
+        return len(events)
+
+
+def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) -> dict[str, str]:
+    """Runs every due job once and reschedules it. Returns job -> outcome."""
+    now = now or datetime.now(UTC)
+    ensure_schedules(engine, now)
+    recover_abandoned(engine, now)
+    season = current_season_start_year(now)
+    outcomes: dict[str, str] = {}
+    for job in due_jobs(engine, now):
+        started = datetime.now(UTC)
+        outcome = "succeeded"
+        for name, params, body in job_executions(job, client, engine, season):
+            try:
+                if jobs.run_job(engine, name, params, body) is None:
+                    outcome = "skipped: running elsewhere"
+            except Exception:
+                outcome = "failed"
+        if job in ("game_logs", "corrections") and outcome == "succeeded":
+            finalize_stable_box_scores(engine, started, now)
+        with Session(engine) as s, s.begin():
+            interval = next_interval(job, s, now)
+            s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
+                      .values(next_run_at=now + interval))  # fmt: skip
+        outcomes[job] = outcome
+    drain_events(engine, datetime.now(UTC))
+    return outcomes
+
+
+def run_forever(engine: Engine, client: StatsSource, max_sleep: float = 30.0) -> None:
+    log.info("sync worker started", extra={"jobs": list(JOBS)})
+    while True:
+        outcomes = run_due(engine, client)
+        if outcomes:
+            log.info("sync jobs ran", extra={"outcomes": outcomes})
+        with Session(engine) as s:
+            nxt = s.scalar(select(func.min(SyncSchedule.next_run_at)).where(SyncSchedule.enabled))
+        wait = max_sleep if nxt is None else (nxt - datetime.now(UTC)).total_seconds()
+        time.sleep(min(max_sleep, max(1.0, wait)))

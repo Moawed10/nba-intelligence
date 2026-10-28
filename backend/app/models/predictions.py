@@ -81,9 +81,7 @@ class Prediction(Base):
         ForeignKey("model_releases.id", ondelete="RESTRICT")
     )
     kind: Mapped[PredictionKind] = mapped_column(pg_enum(PredictionKind, "prediction_kind"))
-    status: Mapped[PredictionStatus] = mapped_column(
-        pg_enum(PredictionStatus, "prediction_status")
-    )
+    status: Mapped[PredictionStatus] = mapped_column(pg_enum(PredictionStatus, "prediction_status"))
     feature_schema_version: Mapped[str] = mapped_column(String(64))
     feature_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB)
     feature_snapshot_sha256: Mapped[str] = mapped_column(String(64))

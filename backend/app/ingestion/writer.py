@@ -116,4 +116,3 @@ def detect_corrections(
 
 def provenance(run_id: int, endpoint: str) -> dict[str, Any]:
     return {"ingestion_run_id": run_id, "source_endpoint": endpoint}
-

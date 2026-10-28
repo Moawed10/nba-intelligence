@@ -9,8 +9,8 @@ The authoritative ledger of development progress. A status here is only as good 
 | Phase | Name | Status | Progress | Blockers |
 |---|---|---|---|---|
 | 1 | Repository Audit & Architecture | Complete | 100% (8/8) | None |
-| 2 | Design System & Foundation | Not Started | 0% (0/12) | None |
-| 3 | Database, Ingestion & Sync | In Progress | 0% (0/19) | None |
+| 2 | Design System & Foundation | In Progress | 83% (10/12) | PlayerSearch + generated types need Phase 4 |
+| 3 | Database, Ingestion & Sync | In Progress | 89% (17/19) | `/data-status` endpoint (Phase 4), prediction handlers (Phase 7) |
 | 4 | Core Backend APIs | Not Started | 0% (0/11) | Phase 3 |
 | 5 | Player Explorer & Profile | Not Started | 0% (0/11) | Phases 2, 4 |
 | 6 | Machine Learning Pipeline | Not Started | 0% (0/13) | Phase 3 |
@@ -24,7 +24,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 8 / 174 verified deliverables = **5%**.
+**Overall:** 35 / 174 verified deliverables = **20%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -33,8 +33,8 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | Milestone | Required phases | Status |
 |---|---|---|
 | Architecture Ready | 1 | Pass |
-| Application Foundation | 2 | Not Verified |
-| Real NBA Data Available | 3–4 | Not Verified |
+| Application Foundation | 2 | Not Verified (10/12) |
+| Real NBA Data Available | 3–4 | Not Verified (data stored and verified; API pending) |
 | Player Analytics Functional | 5 | Not Verified |
 | ML Models Validated | 6 | Not Verified |
 | Prediction Backend Functional | 7 | Not Verified |
@@ -126,92 +126,134 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 ### Phase 2 — Design System & Application Foundation
 
-**Status:** Not Started · **Progress:** 0% (0/12) · **Dependencies:** Phase 1
+**Status:** In Progress · **Progress:** 83% (10/12) · **Last Updated:** 2026-10-28
+**Dependencies:** Phase 1; two deliverables need the Phase 4 API
 **Objective:** A themed, accessible, responsive application shell and the shared components every screen uses.
 
 #### Deliverables
 
-- [ ] Next.js + TypeScript (strict) app in `frontend/`
-- [ ] Tailwind + shadcn/ui configured with tokens from [frontend.md](frontend.md#tokens)
-- [ ] Light and dark themes (`prefers-color-scheme` + override)
-- [ ] Typography scale with tabular numerals
-- [ ] `AppShell`, `TopNav`, `TabBar`, skip link, landmarks
-- [ ] All primary and secondary routes resolving (initial screens show honest "not yet available" states, no fake data)
-- [ ] `PlayerSearch` combobox, `SegmentedControl`, `Dialog`/`Sheet`/`Popover`/`Tooltip`, `InfoHint`
-- [ ] `StatTile`, `ChartFrame` (with table alternative), `DataTable`, `IntervalBar`
-- [ ] `StateView` (loading, empty, error, stale, unavailable) and `FreshnessBadge`
-- [ ] Centralized API client: `src/lib/api/server.ts`, `client.ts`, types generated from OpenAPI
-- [ ] `MotionConfig reducedMotion="user"` and motion presets
-- [ ] Vitest, ESLint (`jsx-a11y`), Playwright + axe-core configured
+- [x] Next.js 16 + TypeScript (strict) app in `frontend/`
+- [x] Tailwind 4 + shadcn/ui (Radix) configured with tokens (`src/app/globals.css`)
+- [x] Light and dark themes with a persisted choice and no flash (`components/shell/theme-toggle.tsx`)
+- [x] Typography scale with tabular numerals
+- [x] `TopNav`, `TabBar`, `MoreMenu`, skip link, landmarks, `RouteFocus` (`components/shell/`)
+- [x] All 7 routes resolve; data screens show the honest `NotConnected` state; `/about` has real content
+- [ ] `PlayerSearch` combobox. Blocked: needs `GET /players/search` (Phase 4). `SegmentedControl`, Dialog/Sheet/Popover/Tooltip and `InfoHint` are done.
+- [x] `StatTile`, `ChartFrame` (with table view), `DataTable`, `IntervalBar` (`components/data/`)
+- [x] `StateView` (loading, empty, error, stale, unavailable) and `FreshnessBadge`
+- [ ] Centralized API client. `lib/api/server.ts`, `client.ts` and `errors.ts` are done; generating types from OpenAPI is blocked until the Phase 4 FastAPI app exists.
+- [x] `MotionConfig reducedMotion="user"` and a global reduced-motion rule
+- [x] Vitest, ESLint (full jsx-a11y), Playwright + axe-core, contrast checker
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Primary nav links resolve | 100% | Not measured | Not Verified |
-| Shared interactive components keyboard-operable | 100% | Not measured | Not Verified |
-| Form controls with accessible names | 100% | Not measured | Not Verified |
-| Critical axe violations in shared components | 0 | Not measured | Not Verified |
-| Layouts work at 375 / 768 / 1024 / 1440 px | All | Not measured | Not Verified |
-| Essential targets meet WCAG 2.2 AA sizing | 100% or documented exceptions | Not measured | Not Verified |
-| Nonessential animations respect reduced motion | 100% | Not measured | Not Verified |
-| Statement coverage, shared UI utilities | ≥ 80% | Not measured | Not Verified |
+| Primary nav links resolve | 100% | 5/5 primary and 2/2 secondary return 200 and render their `h1` (E2E, 4 viewports) | Pass |
+| Shared interactive components keyboard-operable | 100% | 100% of built components (SegmentedControl, DataTable sort, ChartFrame toggle, More menu, theme toggle, skip link); PlayerSearch not built | Pass (built components) |
+| Form controls with accessible names | 100% | 0 axe `label`/`button-name`/`link-name` violations on 7 routes × 2 themes × 4 viewports | Pass |
+| Critical axe violations in shared components | 0 | 0 critical or serious | Pass |
+| Layouts work at 375 / 768 / 1024 / 1440 px | All | No horizontal overflow at all 4, plus 320 px | Pass |
+| Essential targets meet WCAG 2.2 AA sizing | 100% or documented exceptions | Mobile tab links ≥ 44×44 px (measured); buttons 40 px, 44 px on coarse pointers | Pass |
+| Nonessential animations respect reduced motion | 100% | Computed transition duration < 1 ms under `prefers-reduced-motion` (E2E); Motion `reducedMotion="user"` | Pass |
+| Statement coverage, shared UI utilities | ≥ 80% | 82.78% | Pass |
 
-**Evidence:** none yet · **Issues:** none identified · **Next:** scaffold `frontend/`, tokens, `AppShell` · **Decision:** Not Verified (not started)
+#### Implementation evidence
+
+**Files created:** `frontend/` (scaffold), `src/app/globals.css`, `src/app/layout.tsx`, `src/app/{page,players,predict,compare,models,games,about}/page.tsx`, `src/components/shell/*`, `src/components/data/*`, `src/components/providers.tsx`, `src/lib/{format.ts,api/*}`, `scripts/check-contrast.mjs`, `vitest.config.mts`, `playwright.config.ts`, `tests/unit/*`, `tests/e2e/shell.spec.ts`, `.github/workflows/ci.yml`
+**Tests added:** 20 Vitest unit tests; 52 Playwright checks (50 run, 2 skipped by design). See [test-report.md](test-report.md#frontend).
+**Commands executed:** `npm run lint`, `npm run typecheck`, `npm run check:contrast`, `npx vitest run --coverage`, `npx playwright test`, all passing.
+
+#### Issues and blockers
+
+| Issue | Severity | Impact | Resolution |
+|---|---|---|---|
+| PlayerSearch and generated API types need the API | Medium | 2 deliverables open | Build in Phase 4/5 |
+| `npm audit` reports advisories in dev dependencies | Unknown | Not triaged | Triage in Phase 13 |
+| VoiceOver not tested manually | Medium | Screen-reader behavior verified only via axe and semantics | Manual pass in Phase 12 |
+
+#### Completion decision
+
+**Result:** Not Verified. **Reason:** all 8 measured criteria pass, but 2 of 12 deliverables are blocked on Phase 4.
 
 ---
 
 ### Phase 3 — Database, NBA Data Ingestion & Synchronization
 
-**Status:** Not Started · **Progress:** 0% (0/19) · **Dependencies:** Phase 1
-**Objective:** Real NBA data for 2018-19 onward, stored without duplicates, with provenance and freshness.
+**Status:** In Progress · **Progress:** 89% (17/19) · **Last Updated:** 2026-10-28
+**Dependencies:** Phase 1 (done); two deliverables complete with Phases 4 and 7
+**Objective:** Real NBA data for 2018-19 onward, stored without duplicates, with provenance, freshness and automatic synchronization.
 
 #### Deliverables
 
-- [ ] `backend/pyproject.toml`, `app/config.py`, `app/db.py`, `app/logging.py`
-- [ ] SQLAlchemy models for all 16 tables in [database.md](database.md)
-- [ ] Alembic setup and initial migration (including `pg_trgm`)
-- [ ] `app/ingestion/client.py`: throttling, timeouts, backoff ≤ 5 attempts, on-disk cache for completed seasons
-- [ ] Teams and players sync
-- [ ] Season backfill: games, team and player box scores via `LeagueGameLog`
-- [ ] Schedule sync via `ScheduleLeagueV2`
-- [ ] Row validation and rejection counting
-- [ ] Idempotent upserts with `IS DISTINCT FROM` guards
-- [ ] `ingestion_runs` freshness tracking and `source_corrections` logging
-- [ ] `app/cli.py ingest …` commands
-- [ ] Ingestion and idempotency tests (`tests/integration/test_ingestion.py`)
-- [ ] Reconciliation report: source rows vs stored rows per season
-- [ ] Sync worker `app.cli sync-worker` with persisted `sync_schedules` and advisory-lock job exclusion ([data-synchronization.md](data-synchronization.md))
-- [ ] Game lifecycle state machine with no-downgrade rule
-- [ ] `sync_events` outbox and handlers (finalization sequence)
-- [ ] Freshness service: per-dataset fresh/aging/stale/unavailable in `/data-status`
-- [ ] Retry classification, full-jitter backoff, `Retry-After`, lease recovery
-- [ ] Weekly corrections job; sync test suite including DST boundaries
+- [x] `backend/pyproject.toml`, `app/config.py`, `app/db.py` (UTC sessions, pooling), `app/logging.py` (JSON logs)
+- [x] SQLAlchemy models for all 16 tables (`app/models/`)
+- [x] Alembic setup and initial migration, including `pg_trgm` and enum cleanup on downgrade
+- [x] `app/ingestion/client.py`: throttling, timeouts, full-jitter backoff ≤ 5 attempts, `Retry-After`, on-disk cache for completed seasons
+- [x] Teams and players sync (`ingest teams`, `ingest players`)
+- [x] Season backfill via `LeagueGameLog`, with neutral-site home resolution from the schedule
+- [x] Schedule sync via `ScheduleLeagueV2`
+- [x] Row validation and rejection counting (`app/ingestion/transforms.py`)
+- [x] Idempotent upserts with `IS DISTINCT FROM` guards (`app/ingestion/writer.py`)
+- [x] `ingestion_runs` freshness tracking and `source_corrections` logging
+- [x] `app/cli.py` (`ingest`, `sync-worker`, `sync-once`, `data-status`, `integrity`, `runs`)
+- [x] Ingestion and idempotency tests (`tests/integration/test_ingestion.py`)
+- [x] Reconciliation report (`python -m app.cli integrity`)
+- [x] Sync worker with persisted `sync_schedules`, game-aware polling and advisory-lock exclusion (`app/sync/worker.py`)
+- [x] Game lifecycle state machine with no-downgrade rule (`app/ingestion/lifecycle.py`)
+- [ ] `sync_events` outbox and handlers. Emission, dedupe and drain are done; prediction-evaluation handlers come in Phase 7.
+- [ ] Freshness exposed in `/data-status`. The service is done (`app/sync/freshness.py`, 6 datasets); the endpoint is Phase 4, and the prediction datasets are Phase 7.
+- [x] Retry classification, full-jitter backoff, `Retry-After`, lease recovery
+- [x] Weekly corrections job; sync tests including the New York season boundary
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Migrations succeed on clean PostgreSQL | 100% | Not measured | Not Verified |
-| Complete historical regular seasons ingested | ≥ 3 | Not measured | Not Verified |
-| Valid source records persisted | ≥ 99.5% | Not measured | Not Verified |
-| Duplicates after 3 identical runs | 0 | Not measured | Not Verified |
-| FK relationships validated | 100% | Not measured | Not Verified |
-| Player stats reference valid players and games | 100% | Not measured | Not Verified |
-| Expected completed-game player records present | ≥ 95% | Not measured | Not Verified |
-| Retries use exponential backoff | ≤ 5 attempts | Not measured | Not Verified |
-| Failed jobs preserve committed data | Yes | Not measured | Not Verified |
-| Concurrent executions of the same job | 0 | Not measured | Not Verified |
-| Executions with persisted job status | 100% | Not measured | Not Verified |
-| Retry behavior bounded and tested | Yes | Not measured | Not Verified |
-| Failed/interrupted job recovery | Verified by integration test | Not measured | Not Verified |
-| Finalized-game reconciliation fixtures passing | 100% | Not measured | Not Verified |
-| Cache invalidation on tested dependencies | 100% | Not measured | Not Verified |
-| Freshness metadata for synchronized datasets | All 8 | Not measured | Not Verified |
-| Scheduler restart recovery | Verified | Not measured | Not Verified |
-| Critical sync tests passing | 100% | Not measured | Not Verified |
+| Migrations succeed on clean PostgreSQL | 100% | Upgrade, downgrade and re-upgrade on a clean DB; `alembic check` shows no drift | Pass |
+| Complete historical regular seasons ingested | ≥ 3 | 8 (2018-19 to 2025-26) | Pass |
+| Valid source records persisted | ≥ 99.5% | 100% of valid rows stored; 364,110 / 364,238 fetched rows valid (99.96%) | Pass |
+| Duplicates after 3 identical runs | 0 | 0 (2025-26 run 3×; counts identical; integration test) | Pass |
+| FK relationships validated | 100% | 24 FKs enforced; orphan checks 0 | Pass |
+| Player stats reference valid players and games | 100% | 0 orphan player lines of 219,230 | Pass |
+| Expected completed-game player records present | ≥ 95% | 100% of final games in every completed season have lines for both teams | Pass |
+| Retries use exponential backoff | ≤ 5 attempts | Capped at 5, jittered (unit tests) | Pass |
+| Failed jobs preserve committed data | Yes | Source failure, partial response and mid-transaction crash leave counts unchanged (integration tests) | Pass |
+| Concurrent executions of the same job | 0 | Second runner skipped while the lock is held (integration test) | Pass |
+| Executions with persisted job status | 100% | 61 / 61 dev runs finished with a status; test asserts no unfinished runs | Pass |
+| Retry behavior bounded and tested | Yes | Unit tests for statuses, timeouts, cap, `Retry-After` | Pass |
+| Failed/interrupted job recovery | Integration test | Abandoned-lease recovery and next-cycle retry tests | Pass |
+| Finalized-game reconciliation fixtures passing | 100% | Data side passes (finalization, events); prediction evaluation pending Phase 7 | Not Verified |
+| Cache invalidation on tested dependencies | 100% | API cache not built (Phase 4) | Not Verified |
+| Freshness metadata for synchronized datasets | All 8 | 6 / 8 (prediction features and predictions pending Phase 7) | Not Verified |
+| Scheduler restart recovery | Verified | Persisted `next_run_at`; restart at the same instant runs nothing (test and live) | Pass |
+| Critical sync tests passing | 100% | 88 / 88 backend tests | Pass |
 
-**Evidence:** none yet · **Issues:** none identified · **Next:** backend scaffold, models, first migration · **Decision:** Not Verified (not started)
+#### Implementation evidence
+
+**Files created:** `backend/` (`app/config.py`, `db.py`, `logging.py`, `cli.py`, `models/*`, `ingestion/*`, `sync/*`), `alembic/` + initial migration, `tests/{unit,integration}/*`
+**Tests added:** 88 (see [test-report.md](test-report.md#backend))
+**Commands executed:** `pytest` (88 passed); `ingest backfill --from 2018 --to 2026` (exit 0, 191 s); `integrity` (all checks 0); `ingest season --season 2025` ×3 (0 inserts/updates on reruns); `sync-once` ×2; `data-status` (6 datasets fresh)
+
+#### Issues and blockers
+
+| Issue | Severity | Impact | Resolution |
+|---|---|---|---|
+| Neutral-site games list both teams as away | High (fixed) | 5 games per season were rejected | Resolve home team from the schedule; regression test |
+| Filling an empty score was logged as a correction | Medium (fixed) | 2,640 false corrections in dev | Ignore stored nulls; dev rows removed; regression test |
+| First sync pass emitted events for 10,284 historical games | Medium (fixed) | Would trigger evaluation of old games | Events only for games ≤ 36 h old; drain loops to empty; regression tests |
+| Live in-game scores are not ingested | Low | Live status comes from the schedule; scores land when the game is final | Documented in data-synchronization.md |
+| Cloud-IP blocking of stats.nba.com is untested | Medium | Hosted ingestion may fail | Verify in Phase 15 |
+
+#### Next actions
+
+1. Phase 4: FastAPI app, error envelope, read endpoints, `/data-status` (closes the freshness deliverable).
+2. Phase 2: generate API types and build `PlayerSearch` against `/players/search`.
+3. Phase 6: feature pipeline on the 219,230 stored player lines.
+
+#### Completion decision
+
+**Result:** Not Verified. **Reason:** 15 of 18 criteria pass; the other 3 depend on the Phase 4 cache and Phase 7 predictions.
 
 ---
 
@@ -692,3 +734,26 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 **Problems encountered:** The request assumed existing ingestion foundations; none exist. Implementation is blocked on Phase 3.
 
 **Next step:** Phase 3 backend scaffold and models, including the sync tables.
+
+### Session — 2026-10-28 (Phases 2 and 3)
+
+**Phase:** 3, then 2
+
+**Completed:**
+- Backend scaffold, 16 models, migration, NBA client, ingestion, CLI, sync worker and freshness service.
+- Backfilled 2018-19 through 2026-27 from stats.nba.com: 11,428 games and 219,230 player lines, with all integrity checks at 0.
+- Frontend foundation: tokens, shell, shared accessible components, API client, 7 routes, unit and E2E tests.
+- CI workflow (not yet run: no GitHub remote).
+
+**Files changed:** `backend/**`, `frontend/**`, `.github/workflows/ci.yml`, `docs/test-report.md`, this file.
+
+**Tests run:** backend 88 passed; frontend unit 20 passed; Playwright 50 passed, 2 skipped. Details in [test-report.md](test-report.md).
+
+**Problems encountered:**
+- Neutral-site games, false corrections and the historical finalization event flood (all fixed with regression tests).
+- npm peer conflicts (`@types/node` 20 vs Vitest 5).
+- Radix menu focus return after navigation, and a hydration mismatch from runtime `tabindex` (both fixed).
+- Creating the GitHub repository was blocked by the session's permission rules, so commits are local only.
+
+**Next step:** Phase 4 read-only API.
+

@@ -60,7 +60,8 @@ def integrity_report(session: Session) -> dict[str, Any]:
     for row in coverage:
         row["completeness"] = (
             round(row["final_games_with_both_teams"] / row["final_games"], 4)
-            if row["final_games"] else None
+            if row["final_games"]
+            else None
         )
     return {"checks": checks, "coverage": coverage}
 

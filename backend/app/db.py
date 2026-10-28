@@ -16,6 +16,7 @@ def get_engine(url: str | None = None) -> Engine:
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
         pool_pre_ping=True,
+        connect_args={"options": "-c timezone=UTC"},
     )
 
 

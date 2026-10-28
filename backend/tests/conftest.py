@@ -42,7 +42,7 @@ def migrated_url() -> str:
 
 @pytest.fixture(scope="session")
 def session_engine(migrated_url: str) -> Iterator[Engine]:
-    engine = create_engine(migrated_url)
+    engine = create_engine(migrated_url, connect_args={"options": "-c timezone=UTC"})
     yield engine
     engine.dispose()
 
