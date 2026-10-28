@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Data and models
+backend/artifacts/
+backend/.cache/
+*.joblib
+*.parquet
+
+# Node
+node_modules/
+.next/
+out/
+frontend/playwright-report/
+frontend/test-results/
+coverage/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.egg-info/
