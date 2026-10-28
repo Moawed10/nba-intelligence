@@ -32,3 +32,5 @@ coverage/
 .idea/
 .vscode/
 *.egg-info/
+frontend/.next/
+frontend/next-env.d.ts
