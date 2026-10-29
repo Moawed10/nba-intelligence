@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { NotConnected } from "@/components/data/not-connected";
 import { PageHeader } from "@/components/data/page-header";
+import { LoadingBlock } from "@/components/data/state-view";
+
+import { PredictView } from "./predict";
 
 export const metadata: Metadata = { title: "Predictions" };
 
-export default function PredictPage() {
+export default function PredictPage({ searchParams }: PageProps<"/predict">) {
   return (
     <>
       <PageHeader
+        kicker="Next game"
         title="Predictions"
-        description="Pick a player and an upcoming game to see a forecast with its likely range."
+        description="Pick a player and an upcoming game to see the forecast and what it draws on."
       />
-      <NotConnected shows="next-game predictions for points, rebounds, assists and more, each with an 80% range and the factors behind it" />
+      <Suspense fallback={<LoadingBlock label="Loading predictions" className="panel p-5" />}>
+        <PredictView searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }

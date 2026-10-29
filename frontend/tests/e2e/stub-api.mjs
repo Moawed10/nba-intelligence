@@ -187,6 +187,7 @@ const game = (id, date, away, home, status, scores) => ({
 const GAMES = [
   game("0099000101", "2099-11-09", 0, 1, "final", [101, 112]),
   game("0099000102", TODAY, 1, 0, "scheduled"),
+  game("0099000103", "2099-11-12", 0, 1, "scheduled"),
 ];
 
 function teamStats(id) {
@@ -285,6 +286,11 @@ createServer((req, res) => {
   }
   if (path === "/leaders") return send(res, 200, leaders(q.get("stat") ?? "pts", Number(q.get("limit") ?? 10)));
   if (path === "/standouts") return send(res, 200, STANDOUTS);
+  if (path === "/games/upcoming") {
+    const player = PLAYERS.find((p) => String(p.id) === q.get("player_id"));
+    const plays = (g) => !q.get("player_id") || [g.home.team.id, g.away.team.id].includes(player?.team?.id);
+    return send(res, 200, GAMES.filter((g) => g.status === "scheduled" && plays(g)));
+  }
   if (path === "/games") {
     const from = q.get("date_from") ?? "0000", to = q.get("date_to") ?? "9999";
     return send(res, 200, page(GAMES.filter((g) => g.game_date >= from && g.game_date <= to)));
