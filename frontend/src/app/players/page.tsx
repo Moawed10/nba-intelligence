@@ -13,12 +13,13 @@ export default function PlayersPage({ searchParams }: PageProps<"/players">) {
   return (
     <>
       <PageHeader
+        kicker="Scouting"
         title="Players"
-        description="Search every player and explore season averages, trends and game logs."
+        description="Search any player, sort the league by what matters, and open a full scouting report."
       />
-      <div className="space-y-10">
+      <div className="space-y-6">
         <PlayerFinder />
-        <Suspense fallback={<LoadingBlock label="Loading players" />}>
+        <Suspense fallback={<LoadingBlock label="Loading players" className="panel p-5" />}>
           <Directory searchParams={searchParams} />
         </Suspense>
       </div>

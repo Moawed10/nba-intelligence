@@ -1,23 +1,30 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useId, useOptimistic, useTransition } from "react";
 
-import { type Column, DataTable } from "@/components/data/data-table";
-import type { PlayerSummary, Team } from "@/lib/api/types";
+import { SegmentedControl } from "@/components/data/segmented-control";
+import type { Team } from "@/lib/api/types";
 import { hrefWith } from "@/lib/url";
+import { cn } from "@/lib/utils";
 
 import { type DirectoryFilters, POSITIONS } from "./filters";
 
 const SELECT =
-  "h-11 w-full rounded-xl border border-input bg-card px-3 text-body outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-10 w-full rounded-lg border border-input bg-card px-3 text-subhead outline-none transition-colors hover:border-foreground/20 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40";
 
-export function DirectoryFilterBar({ teams, filters }: { teams: Team[]; filters: DirectoryFilters }) {
+export function DirectoryFilterBar({
+  teams,
+  seasons,
+  filters,
+}: {
+  teams: Team[];
+  seasons: string[];
+  filters: DirectoryFilters;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
-  // Controls reflect the choice immediately while the server renders the new results.
   const [shown, setShown] = useOptimistic(filters);
   const id = useId();
 
@@ -33,10 +40,32 @@ export function DirectoryFilterBar({ teams, filters }: { teams: Team[]; filters:
       aria-label="Filter players"
       aria-busy={pending}
       onSubmit={(event) => event.preventDefault()}
-      className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+      className={cn(
+        "grid gap-3 transition-opacity sm:grid-cols-2 lg:grid-cols-[9rem_minmax(0,14rem)_auto_1fr] lg:items-end",
+        pending && "opacity-70",
+      )}
     >
       <div>
-        <label htmlFor={`${id}-team`} className="mb-1.5 block text-subhead font-medium">
+        <label htmlFor={`${id}-season`} className="kicker mb-1.5 block">
+          Season
+        </label>
+        <select
+          id={`${id}-season`}
+          value={shown.season ?? seasons[0]}
+          onChange={(event) =>
+            update({ season: event.target.value === seasons[0] ? undefined : event.target.value })
+          }
+          className={SELECT}
+        >
+          {seasons.map((season) => (
+            <option key={season} value={season}>
+              {season}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor={`${id}-team`} className="kicker mb-1.5 block">
           Team
         </label>
         <select
@@ -54,24 +83,20 @@ export function DirectoryFilterBar({ teams, filters }: { teams: Team[]; filters:
         </select>
       </div>
       <div>
-        <label htmlFor={`${id}-position`} className="mb-1.5 block text-subhead font-medium">
+        <span className="kicker mb-1.5 block" aria-hidden>
           Position
-        </label>
-        <select
-          id={`${id}-position`}
-          value={shown.position ?? ""}
-          onChange={(event) => update({ position: event.target.value || undefined })}
-          className={SELECT}
-        >
-          <option value="">All positions</option>
-          {POSITIONS.map((position) => (
-            <option key={position.value} value={position.value}>
-              {position.label}
-            </option>
-          ))}
-        </select>
+        </span>
+        <SegmentedControl
+          label="Position"
+          value={shown.position ?? "all"}
+          onChange={(value) => update({ position: value === "all" ? undefined : value })}
+          segments={[
+            { value: "all", label: "All" },
+            ...POSITIONS.map((p) => ({ value: p.value, label: p.label })),
+          ]}
+        />
       </div>
-      <label className="flex min-h-11 items-center gap-2 text-subhead">
+      <label className="flex min-h-10 items-center gap-2 text-subhead lg:justify-self-end">
         <input
           type="checkbox"
           checked={shown.status === "all"}
@@ -85,37 +110,4 @@ export function DirectoryFilterBar({ teams, filters }: { teams: Team[]; filters:
       </p>
     </form>
   );
-}
-
-function seasons(player: PlayerSummary): string {
-  if (player.from_year == null) return "—";
-  return player.to_year == null || player.to_year === player.from_year
-    ? String(player.from_year)
-    : `${player.from_year}–${player.to_year}`;
-}
-
-const COLUMNS: Column<PlayerSummary>[] = [
-  {
-    key: "name",
-    header: "Player",
-    cell: (p) => (
-      <Link
-        href={`/players/${p.id}`}
-        className="inline-flex min-h-8 items-center font-medium text-foreground hover:text-primary hover:underline"
-      >
-        {p.full_name}
-      </Link>
-    ),
-  },
-  {
-    key: "team",
-    header: "Team",
-    cell: (p) => (p.team ? <abbr title={`${p.team.city} ${p.team.name}`}>{p.team.abbreviation}</abbr> : "—"),
-  },
-  { key: "position", header: "Pos", description: "Position", cell: (p) => p.position ?? "—" },
-  { key: "years", header: "Years", description: "First and last NBA season", cell: seasons, numeric: true },
-];
-
-export function DirectoryTable({ players, caption }: { players: PlayerSummary[]; caption: string }) {
-  return <DataTable caption={caption} columns={COLUMNS} rows={players} rowKey={(p) => String(p.id)} />;
 }

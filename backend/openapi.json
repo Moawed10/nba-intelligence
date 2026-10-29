@@ -1864,6 +1864,17 @@
               }
             ],
             "title": "Team Abbreviation"
+          },
+          "team_primary_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Primary Color"
           }
         },
         "required": [

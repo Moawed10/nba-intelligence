@@ -11,7 +11,11 @@ export function PlayerFinder() {
       <h2 id="find-player" className="sr-only">
         Find a player
       </h2>
-      <PlayerSearch label="Search players" onSelect={(player) => router.push(`/players/${player.id}`)} />
+      <PlayerSearch
+        label="Search players"
+        className="max-w-xl"
+        onSelect={(player) => router.push(`/players/${player.id}`)}
+      />
     </section>
   );
 }

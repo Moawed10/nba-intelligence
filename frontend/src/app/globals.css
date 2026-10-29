@@ -166,6 +166,39 @@
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
+/* Entrance motion in CSS: identical server and client markup, and the reduced-motion rule below
+   turns it off without JavaScript. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility page-in {
+  animation: rise-in 320ms var(--ease-out-quint) both;
+}
+
+@utility reveal {
+  animation: rise-in 280ms var(--ease-out-quint) both;
+}
+
+@utility stagger {
+  & > * {
+    animation: rise-in 280ms var(--ease-out-quint) both;
+  }
+  & > *:nth-child(2) { animation-delay: 40ms; }
+  & > *:nth-child(3) { animation-delay: 80ms; }
+  & > *:nth-child(4) { animation-delay: 120ms; }
+  & > *:nth-child(5) { animation-delay: 160ms; }
+  & > *:nth-child(6) { animation-delay: 200ms; }
+  & > *:nth-child(n + 7) { animation-delay: 240ms; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

@@ -1,9 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
-import { type KeyboardEvent, useEffect, useId, useState } from "react";
+import { LoaderCircle, Search, X } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
+import { TeamMark } from "@/components/brand/team-mark";
 import { clientGet } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
 import type { PlayerSearchResult } from "@/lib/api/types";
@@ -27,18 +28,58 @@ export function playerDetails(player: PlayerSearchResult): string {
     .join(" · ");
 }
 
+const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+/** Bolds the part of a name that matches the query, ignoring case and accents. */
+export function highlight(name: string, query: string): ReactNode {
+  const needle = fold(query.trim());
+  if (!needle) return name;
+  const chars = Array.from(name);
+  const folded = chars.map(fold);
+  for (let start = 0; start < folded.length; start++) {
+    let end = start;
+    let matched = "";
+    while (end < folded.length && matched.length < needle.length) matched += folded[end++];
+    if (matched === needle) {
+      return (
+        <>
+          {chars.slice(0, start).join("")}
+          <mark className="bg-transparent font-semibold text-primary">
+            {chars.slice(start, end).join("")}
+          </mark>
+          {chars.slice(end).join("")}
+        </>
+      );
+    }
+  }
+  return name;
+}
+
 interface PlayerSearchProps {
   label?: string;
   onSelect: (player: PlayerSearchResult) => void;
   className?: string;
+  /** Show results as soon as they arrive, for a search the user has just opened. */
+  startOpen?: boolean;
+  /** "inline" keeps the results in the document flow, e.g. inside a dialog. */
+  listMode?: "popover" | "inline";
+  hideLabel?: boolean;
 }
 
 /** WAI-ARIA combobox (list autocomplete) over GET /players/search. */
-export function PlayerSearch({ label = "Search players", onSelect, className }: PlayerSearchProps) {
+export function PlayerSearch({
+  label = "Search players",
+  onSelect,
+  className,
+  startOpen,
+  listMode = "popover",
+  hideLabel,
+}: PlayerSearchProps) {
   const id = useId();
   const listId = `${id}-list`;
+  const inputRef = useRef<HTMLInputElement>(null);
   const [input, setInput] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(startOpen));
   const [active, setActive] = useState(-1);
   const term = useDebounced(input.trim(), SEARCH_DEBOUNCE_MS);
   const enabled = term.length >= MIN_QUERY_LENGTH;
@@ -52,6 +93,8 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
   });
 
   const results = enabled ? (data ?? []) : [];
+  const typing = input.trim().length >= MIN_QUERY_LENGTH && input.trim() !== term;
+  const loading = typing || (enabled && isFetching);
   const settled = enabled && input.trim() === term && !isFetching;
   const expanded = open && enabled && results.length > 0;
 
@@ -60,6 +103,12 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
     setInput(player.full_name);
     setOpen(false);
     setActive(-1);
+  }
+
+  function clear() {
+    setInput("");
+    setActive(-1);
+    inputRef.current?.focus();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -72,8 +121,9 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
     } else if (event.key === "Enter" && expanded && active >= 0) {
       event.preventDefault();
       choose(results[active]);
-    } else if (event.key === "Escape") {
+    } else if (event.key === "Escape" && (expanded || input)) {
       event.preventDefault();
+      event.stopPropagation();
       if (expanded) setOpen(false);
       else setInput("");
       setActive(-1);
@@ -92,19 +142,24 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
       : "No players match that name.";
   }
 
+  const Icon = loading ? LoaderCircle : Search;
   return (
-    <div className={cn("relative w-full max-w-xl", className)}>
-      <label htmlFor={id} className="mb-2 block text-subhead font-medium">
+    <div className={cn("relative w-full", className)}>
+      <label htmlFor={id} className={cn("mb-2 block text-subhead font-medium", hideLabel && "sr-only")}>
         {label}
       </label>
       <div className="relative">
-        <Search
+        <Icon
           aria-hidden
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          className={cn(
+            "pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground",
+            loading && "animate-spin",
+          )}
         />
         <input
+          ref={inputRef}
           id={id}
-          type="search"
+          type="text"
           role="combobox"
           autoComplete="off"
           spellCheck={false}
@@ -113,6 +168,7 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
           aria-controls={listId}
           aria-activedescendant={expanded && active >= 0 ? `${listId}-${active}` : undefined}
           aria-describedby={`${id}-status`}
+          aria-busy={loading}
           value={input}
           placeholder="Player name"
           onChange={(event) => {
@@ -121,25 +177,37 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
             setActive(-1);
           }}
           onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
+          onBlur={() => listMode === "popover" && setOpen(false)}
           onKeyDown={onKeyDown}
-          className="h-11 w-full rounded-xl border border-input bg-card pr-3 pl-9 text-body outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="h-11 w-full rounded-xl border border-input bg-card pr-10 pl-9 text-body transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
         />
+        {input && (
+          <button
+            type="button"
+            onClick={clear}
+            aria-label="Clear search"
+            className="absolute top-1/2 right-1.5 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <X aria-hidden className="size-4" />
+          </button>
+        )}
       </div>
       <p id={`${id}-status`} role="status" aria-live="polite" className="sr-only">
         {status}
       </p>
       {settled && open && (error != null || results.length === 0) && (
-        <p className={cn("mt-2 text-subhead", error ? "text-negative" : "text-muted-foreground")}>
-          {status}
-        </p>
+        <p className={cn("mt-2 text-subhead", error ? "text-negative" : "text-muted-foreground")}>{status}</p>
       )}
       <ul
         id={listId}
         role="listbox"
         aria-label="Matching players"
         hidden={!expanded}
-        className="absolute z-20 mt-2 max-h-80 w-full overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-lg"
+        className={cn(
+          "mt-2 max-h-80 w-full overflow-y-auto p-1",
+          listMode === "popover" &&
+            "absolute z-20 rounded-xl border border-border bg-popover shadow-xl shadow-black/30",
+        )}
       >
         {results.map((player, index) => (
           // Keyboard selection happens on the combobox input via aria-activedescendant.
@@ -153,11 +221,22 @@ export function PlayerSearch({ label = "Search players", onSelect, className }: 
             onClick={() => choose(player)}
             onMouseMove={() => setActive(index)}
             className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2",
+              "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors",
               index === active && "bg-accent text-accent-foreground",
             )}
           >
-            <span className="font-medium">{player.full_name}</span>
+            <TeamMark
+              size="xs"
+              team={
+                player.team_abbreviation
+                  ? {
+                      abbreviation: player.team_abbreviation,
+                      primary_color: player.team_primary_color ?? null,
+                    }
+                  : null
+              }
+            />
+            <span className="min-w-0 flex-1 truncate">{highlight(player.full_name, input)}</span>
             <span
               className={cn(
                 "shrink-0 text-footnote",

@@ -954,6 +954,8 @@ export interface components {
             position: string | null;
             /** Team Abbreviation */
             team_abbreviation: string | null;
+            /** Team Primary Color */
+            team_primary_color?: string | null;
         };
         /** PlayerSeasonStats */
         PlayerSeasonStats: {

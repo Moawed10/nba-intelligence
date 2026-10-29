@@ -1,6 +1,11 @@
+import { ArrowLeftRight, Target } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
+import { CourtBackdrop } from "@/components/brand/court-backdrop";
+import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { ChartFrame } from "@/components/data/chart-frame";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
@@ -77,10 +82,10 @@ export async function PlayerProfileView({
 
   return (
     <>
-      <PageHeader
-        title={data.player.full_name}
-        description={identity(data) || undefined}
-        actions={<FreshnessBadge status={freshness.status} lastSync={freshness.last_successful_sync} />}
+      <ProfileHero
+        profile={data}
+        line={stats.data?.seasons.find((s) => s.season === season) ?? null}
+        freshness={<FreshnessBadge status={freshness.status} lastSync={freshness.last_successful_sync} />}
       />
       {stats.error ? (
         <ApiErrorView error={stats.error} />
@@ -91,7 +96,7 @@ export async function PlayerProfileView({
           message="NBA Intelligence stores box scores from the 2018-19 season onward."
         />
       ) : (
-        <div className="space-y-10">
+        <div className="mt-8 space-y-8">
           <ProfileControls seasons={seasons} season={season} stat={stat} />
           <SeasonAverages line={stats.data.seasons.find((s) => s.season === season)!} />
           <Suspense key={`trend-${season}-${stat}`} fallback={<LoadingBlock label="Loading trend" />}>
@@ -116,6 +121,107 @@ export async function PlayerProfileView({
         </div>
       )}
     </>
+  );
+}
+
+const HERO_STATS = [
+  { key: "pts", label: "PTS" },
+  { key: "reb", label: "REB" },
+  { key: "ast", label: "AST" },
+] as const;
+
+function ProfileHero({
+  profile,
+  line,
+  freshness,
+}: {
+  profile: PlayerProfile;
+  line: SeasonLine | null;
+  freshness: React.ReactNode;
+}) {
+  const { player } = profile;
+  const color = player.team?.primary_color ?? null;
+  return (
+    <section
+      aria-labelledby="player-name"
+      className="relative overflow-hidden rounded-2xl border border-border bg-card"
+      style={
+        color
+          ? {
+              backgroundImage: `linear-gradient(115deg, color-mix(in oklab, ${color} 30%, var(--card)) 0%, var(--card) 62%)`,
+            }
+          : undefined
+      }
+    >
+      <CourtBackdrop color={color} />
+      <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <PlayerAvatar
+            name={player.full_name}
+            team={player.team}
+            size="xl"
+            className="max-sm:size-16 max-sm:text-lg"
+          />
+          <div className="min-w-0">
+            <p className="kicker flex items-center gap-2">
+              {player.team && <TeamMark team={player.team} size="xs" />}
+              {player.team
+                ? `${player.team.city} ${player.team.name}`
+                : player.is_active
+                  ? "Free agent"
+                  : "Former player"}
+            </p>
+            <h1
+              id="player-name"
+              tabIndex={-1}
+              className="mt-1 text-[2rem] leading-tight font-bold tracking-tight outline-none sm:text-display"
+            >
+              {player.full_name}
+            </h1>
+            <p className="mt-1 text-subhead text-muted-foreground">
+              {identity(profile) || "Biography not available"}
+            </p>
+            <div className="mt-2">{freshness}</div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 lg:items-end">
+          {line && (
+            <dl className="flex gap-6 sm:gap-8" aria-label={`${line.season} regular-season averages`}>
+              {HERO_STATS.map((s) => (
+                <div key={s.key}>
+                  <dt className="kicker">{s.label}</dt>
+                  <dd className="text-[2.25rem] leading-none font-semibold tracking-tight tabular-nums sm:text-[2.75rem]">
+                    {formatStat(line.per_game[s.key])}
+                  </dd>
+                </div>
+              ))}
+              <div>
+                <dt className="kicker">GP</dt>
+                <dd className="text-[2.25rem] leading-none font-semibold tracking-tight text-muted-foreground tabular-nums sm:text-[2.75rem]">
+                  {line.games_played}
+                </dd>
+              </div>
+            </dl>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/predict?player=${player.id}`}
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-subhead font-semibold text-primary-foreground transition-transform hover:brightness-110 active:scale-[0.98]"
+            >
+              <Target aria-hidden className="size-4" />
+              Predict next game
+            </Link>
+            <Link
+              href={`/compare?p1=${player.id}`}
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card/70 px-4 text-subhead font-medium transition-colors hover:border-foreground/25 active:scale-[0.98]"
+            >
+              <ArrowLeftRight aria-hidden className="size-4" />
+              Compare
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

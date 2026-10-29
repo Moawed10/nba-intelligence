@@ -14,10 +14,12 @@ const META = {
 };
 
 const TEAMS = [
-  { id: 1, abbreviation: "AAA", city: "Alpha", name: "Ants", conference: "East", division: "Atlantic", primary_color: null, secondary_color: null },
-  { id: 2, abbreviation: "BBB", city: "Bravo", name: "Bears", conference: "West", division: "Pacific", primary_color: null, secondary_color: null },
+  { id: 1, abbreviation: "AAA", city: "Alpha", name: "Ants", conference: "East", division: "Atlantic", primary_color: "#1D428A", secondary_color: "#FFC72C" },
+  { id: 2, abbreviation: "BBB", city: "Bravo", name: "Bears", conference: "West", division: "Pacific", primary_color: "#CE1141", secondary_color: "#000000" },
 ];
-const ref = ({ id, abbreviation, city, name }) => ({ id, abbreviation, city, name });
+const ref = ({ id, abbreviation, city, name, primary_color, secondary_color }) => ({
+  id, abbreviation, city, name, primary_color, secondary_color,
+});
 
 const POSITIONS = ["G", "F", "C", "G-F", "F-C"];
 const PLAYERS = [
@@ -64,7 +66,7 @@ function gameLines(player, season) {
   const year = Number(season.slice(0, 4));
   const opponent = TEAMS[(player.team?.id ?? 1) % 2];
   return Array.from({ length: GAMES_PER_SEASON[season] ?? 0 }, (_, n) => {
-    const b = box(n);
+    const b = box(n + (player.id % 5));
     return {
       game_id: `${String(year % 100).padStart(2, "0")}${String(n).padStart(8, "0")}`,
       game_date: new Date(Date.UTC(year, 9, 20 + n * 2)).toISOString().slice(0, 10),
@@ -185,12 +187,43 @@ createServer((req, res) => {
 
   if (path === "/health") return send(res, 200, { status: "ok" });
   if (path === "/teams") return send(res, 200, TEAMS);
+  if (path === "/data-status") {
+    return send(res, 200, {
+      generated_at: "2099-11-10T12:00:00Z",
+      data_version: 1,
+      datasets: [],
+      seasons: SEASONS.map((season) => ({ season, final_games: GAMES_PER_SEASON[season], remaining_games: 0, player_lines: 0 })),
+      row_counts: {},
+    });
+  }
   if (path === "/players") {
     let items = PLAYERS;
+    const season = q.get("season");
+    if (season) {
+      items = items
+        .filter((p) => p.is_active && GAMES_PER_SEASON[season])
+        .map((p) => {
+          const s = summary(gameLines(p, season));
+          return {
+            ...p,
+            season_averages: {
+              season, games_played: s.games_played, ...s.per_game,
+              fg_pct: s.shooting.fg_pct, fg_pct_status: null,
+            },
+          };
+        });
+    }
     if (q.get("team_id")) items = items.filter((p) => String(p.team?.id) === q.get("team_id"));
     if (q.get("position")) items = items.filter((p) => p.position?.includes(q.get("position")));
     if (q.get("active") === "true") items = items.filter((p) => p.is_active);
-    return send(res, 200, page([...items].sort((a, b) => a.full_name.localeCompare(b.full_name))));
+    const sort = q.get("sort") ?? "full_name";
+    const key = sort.replace(/^-/, "");
+    const value = (p) => (key === "full_name" ? p.full_name : key === "games" ? p.season_averages.games_played : p.season_averages[key]);
+    const sorted = [...items].sort((a, b) => {
+      const order = key === "full_name" ? a.full_name.localeCompare(b.full_name) : value(a) - value(b);
+      return (sort.startsWith("-") ? -order : order) || a.full_name.localeCompare(b.full_name);
+    });
+    return send(res, 200, page(sorted));
   }
   if (path === "/players/search") {
     const term = (q.get("q") ?? "").toLowerCase();

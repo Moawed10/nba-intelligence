@@ -25,41 +25,62 @@ async function expectAccessible(page: Page) {
   }
 }
 
-const directoryRows = (page: Page) => page.getByRole("region", { name: /players/i }).locator("tbody tr");
+const directoryRows = (page: Page, isMobile = false) =>
+  isMobile
+    ? page.getByRole("list", { name: /regular season/ }).getByRole("listitem")
+    : page.locator("#directory-title").locator("xpath=ancestor::section").locator("tbody tr");
 
 test.describe("player directory", () => {
-  test("renders the first page on the server and paginates", async ({ page }) => {
+  test("renders the first page on the server and paginates", async ({ page, isMobile }) => {
     await page.goto("/players");
-    await expect(directoryRows(page)).toHaveCount(25);
+    await expect(page.getByText("2099-00 regular season").first()).toBeVisible();
+    await expect(directoryRows(page, isMobile)).toHaveCount(25);
     await expect(page.getByText("Page 1 of 2 · 30 total")).toBeVisible();
     await page.getByRole("link", { name: "Next page" }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(directoryRows(page)).toHaveCount(5);
+    await expect(directoryRows(page, isMobile)).toHaveCount(5);
   });
 
-  test("filters live in the URL and change the results", async ({ page }) => {
+  test("sorting by a statistic orders every page on the server", async ({ page, request, isMobile }) => {
+    test.skip(isMobile, "column headers are a desktop table feature");
+    const top = await (await request.get(`${STUB}/players?season=2099-00&sort=-reb&limit=1`)).json();
+    await page.goto("/players");
+    await page.getByRole("link", { name: /^REB/ }).click();
+    await expect(page).toHaveURL(/sort=-reb/);
+    await expect(page.getByRole("columnheader", { name: /REB/ })).toHaveAttribute("aria-sort", "descending");
+    await expect(directoryRows(page).first()).toContainText(top.items[0].full_name);
+    await page.getByRole("link", { name: /^REB/ }).click();
+    await expect(page).toHaveURL(/sort=reb/);
+    await expect(page.getByRole("columnheader", { name: /REB/ })).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  test("filters live in the URL and change the results", async ({ page, isMobile }) => {
     await page.goto("/players");
     await page.getByLabel("Team").selectOption({ label: "Alpha Ants" });
     await expect(page).toHaveURL(/team=1/);
-    await expect(directoryRows(page)).toHaveCount(15);
-    await page.getByLabel("Position").selectOption({ label: "Centers" });
+    await expect(directoryRows(page, isMobile)).toHaveCount(15);
+    await page.getByRole("radio", { name: "Centers" }).click();
     await expect(page).toHaveURL(/position=C/);
-    await expect(directoryRows(page)).toHaveCount(6);
+    await expect(directoryRows(page, isMobile)).toHaveCount(6);
     await page.reload();
-    await expect(page.getByLabel("Position")).toHaveValue("C");
-    await expect(directoryRows(page)).toHaveCount(6);
+    await expect(page.getByRole("radio", { name: "Centers" })).toBeChecked();
+    await expect(directoryRows(page, isMobile)).toHaveCount(6);
+
+    await page.getByLabel("Season", { exact: true }).selectOption("2098-99");
+    await expect(page).toHaveURL(/season=2098-99/);
+    await expect(page.getByText("2098-99 regular season").first()).toBeVisible();
 
     await page.goto("/players");
     await page.getByLabel("Include former players").check();
     await expect(page).toHaveURL(/status=all/);
-    await expect(page.getByText("Page 1 of 2 · 31 total")).toBeVisible();
+    await expect(page.getByText("Page 1 of 2 · 30 total")).toBeVisible();
   });
 
-  test("shows an empty state with a way back", async ({ page }) => {
+  test("shows an empty state with a way back", async ({ page, isMobile }) => {
     await page.goto("/players?team=99");
     await expect(page.getByText("No players match these filters")).toBeVisible();
     await page.getByRole("link", { name: "Clear filters" }).click();
-    await expect(directoryRows(page)).toHaveCount(25);
+    await expect(directoryRows(page, isMobile)).toHaveCount(25);
   });
 
   test("search opens a profile and focuses its heading", async ({ page, isMobile }) => {
@@ -86,6 +107,9 @@ test.describe("player profile", () => {
     await page.goto(`/players/${STAR}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Zed Fixture");
     await expect(page.getByText("Alpha Ants · G · 6′7″, 215 lb")).toBeVisible();
+    const hero = page.getByRole("region", { name: "Zed Fixture" });
+    await expect(hero.getByRole("link", { name: "Predict next game" })).toHaveAttribute("href", `/predict?player=${STAR}`);
+    await expect(hero.getByRole("link", { name: "Compare" })).toHaveAttribute("href", `/compare?p1=${STAR}`);
     await expect(page.getByRole("heading", { name: `${season.season} regular season` })).toBeVisible();
     await expect(page.getByText(`${season.games_played} games played`)).toBeVisible();
     const averages = page.getByRole("region", { name: `${season.season} regular season` });

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 import { BrandMark } from "./brand-mark";
+import { CommandSearch } from "./command-search";
 import { MoreMenu } from "./more-menu";
 import { isActive, PRIMARY_NAV } from "./nav-config";
 import { ThemeToggle } from "./theme-toggle";
@@ -64,6 +65,7 @@ export function TopNav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 md:ml-0">
+          <CommandSearch />
           <WithPathname>{(pathname) => <MoreMenu pathname={pathname} />}</WithPathname>
           <ThemeToggle />
         </div>
