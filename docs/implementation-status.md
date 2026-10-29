@@ -909,6 +909,6 @@ The "recent games" block from the original design was folded into the game log, 
 - The Predictions page shows stored forecasts with 80% ranges, inputs and the double-double chance, and makes a forecast on request.
 - Found and fixed a reproducibility bug: snapshots were stored rounded while the model saw full precision.
 
-**Tests run:** backend 210 passed; frontend lint, type-check and unit tests clean; Playwright 211 passed, 4 skipped; 1,000-request real-data run.
+**Tests run:** backend 210 passed; frontend lint, type-check and unit tests clean; Playwright 208 passed, 4 skipped; 1,000-request real-data run.
 
 **Next step:** prediction freshness and refresh before tip-off, scoring stored predictions after games (the Phase 3 evaluation handlers), and live accuracy on the Models page.
