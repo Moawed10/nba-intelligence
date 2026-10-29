@@ -13,12 +13,14 @@ import type {
   ModelReleaseSummary,
   PlayerGameLine,
   PlayerProfile,
+  Prediction,
   TeamSeasonStats,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
 import { hrefWith, param, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
+import { Forecast } from "./forecast";
 import { PredictPicker } from "./predict-client";
 
 const PLAYER_ID = /^\d{1,10}$/;
@@ -169,6 +171,11 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   const gap = game && lastPlayed ? daysBetween(lastPlayed, game.game_date) : 0;
   const restDays = gap > 0 ? gap - 1 : null;
   const note = servingNote(releases.data);
+  const serving = releases.data?.some((r) => r.status === "active") ?? false;
+  const stored =
+    serving && game
+      ? await serverTry<Prediction[]>("/predictions", { player_id: player.id, game_id: game.id })
+      : null;
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
@@ -259,20 +266,24 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               </div>
             </div>
 
-            <Unavailable
-              kind="no_model"
-              title={note.title}
-              action={
-                <Link href="/models" className="text-subhead font-medium text-primary hover:underline">
-                  See how the models are evaluated
-                </Link>
-              }
-            >
-              {note.body}
-            </Unavailable>
+            {serving ? (
+              <Forecast initial={stored?.data?.[0] ?? null} playerId={player.id} gameId={game.id} />
+            ) : (
+              <Unavailable
+                kind="no_model"
+                title={note.title}
+                action={
+                  <Link href="/models" className="text-subhead font-medium text-primary hover:underline">
+                    See how the models are evaluated
+                  </Link>
+                }
+              >
+                {note.body}
+              </Unavailable>
+            )}
 
             <div>
-              <h3 className="kicker mb-3">What a forecast would draw on · from final box scores so far</h3>
+              <h3 className="kicker mb-3">Context · from final box scores so far</h3>
               {recent.length ? (
                 <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   {FORM_STATS.map(({ key, label }) => {

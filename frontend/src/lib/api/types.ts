@@ -38,3 +38,5 @@ export type TargetMetrics = Schemas["TargetMetrics"];
 export type AlgorithmMetrics = Schemas["AlgorithmMetrics"];
 export type TeamRef = Schemas["TeamRef"];
 export type DatasetStatus = Schemas["DatasetStatus"];
+export type Prediction = Schemas["Prediction"];
+export type PredictedValue = Schemas["PredictedValue"];
