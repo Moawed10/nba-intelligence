@@ -103,7 +103,9 @@ def list_players(
     descending = sort.startswith("-")
     if totals is not None and stat_sort:
         key = sort.lstrip("-")
-        column = totals.c.games if key == "games" else getattr(totals.c, key) / totals.c.games
+        # Players whose only lines are did-not-play have no games; NULLIF sorts them last.
+        per_game = getattr(totals.c, key) / func.nullif(totals.c.games, 0)
+        column = totals.c.games if key == "games" else per_game
     else:
         column = PLAYER_SORTS[sort.lstrip("-")]
     rows = ctx.session.execute(

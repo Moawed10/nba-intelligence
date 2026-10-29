@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
@@ -58,7 +59,7 @@ function SortHeader({ state, column }: { state: DirectoryState; column: (typeof 
 function PlayerCell({ player }: { player: DirectoryPlayer }) {
   return (
     <div className="flex items-center gap-3">
-      <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="sm" />
+      <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="md" />
       <div className="min-w-0">
         <Link
           href={`/players/${player.id}`}
@@ -128,7 +129,7 @@ function DirectoryTable({
                       className={cn(
                         "px-3 py-2 text-right tabular-nums",
                         state.sortKey === column.key
-                          ? "font-semibold text-foreground"
+                          ? "numeral text-headline text-foreground"
                           : "text-muted-foreground",
                       )}
                     >
@@ -150,7 +151,7 @@ function DirectoryTable({
         {players.map((player) => (
           <li key={player.id} className="relative py-3">
             <PlayerCell player={player} />
-            <dl className="mt-2 grid grid-cols-4 gap-2 pl-11 text-center">
+            <dl className="mt-2 grid grid-cols-4 gap-2 pl-13 text-center">
               {MOBILE_STATS.map((key) => (
                 <div key={key}>
                   <dt className="kicker">{key.toUpperCase()}</dt>
@@ -164,6 +165,54 @@ function DirectoryTable({
         ))}
       </ul>
     </>
+  );
+}
+
+function Podium({ players, column }: { players: DirectoryPlayer[]; column: (typeof SORT_COLUMNS)[number] }) {
+  const value = (p: DirectoryPlayer) =>
+    column.key === "games" ? p.season_averages?.games_played : p.season_averages?.[column.key];
+  return (
+    <section aria-labelledby="podium-title" className="border-b border-border px-4 py-5 sm:px-5">
+      <h3 id="podium-title" className="kicker mb-3">
+        Top 3 · {column.description}
+      </h3>
+      <ol className="stagger grid gap-3 sm:grid-cols-3">
+        {players.map((p, i) => (
+          <li key={p.id}>
+            <Link
+              href={`/players/${p.id}`}
+              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-background/40 transition-colors hover:border-foreground/25"
+            >
+              <PlayerCutout
+                id={p.id}
+                name={p.full_name}
+                team={p.team}
+                eager={i === 0}
+                className="h-36 sm:h-40"
+              />
+              <span className="flex items-end justify-between gap-3 p-4 pt-3">
+                <span className="min-w-0">
+                  <span className="kicker block text-primary">#{i + 1}</span>
+                  <span className="block truncate font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase group-hover:text-primary">
+                    {p.full_name}
+                  </span>
+                  <span className="block text-footnote text-muted-foreground">
+                    {p.team?.abbreviation ?? "No current team"}
+                    {p.position ? ` · ${p.position}` : ""}
+                  </span>
+                </span>
+                <span className="text-right">
+                  <span className="numeral block text-[2.75rem]">
+                    {column.key === "games" ? (value(p) ?? "—") : formatStat(value(p) ?? null)}
+                  </span>
+                  <span className="kicker">{column.label}</span>
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -189,7 +238,8 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
 
   const team = teams.data?.find((t) => String(t.id) === state.team);
   const positionLabel = POSITIONS.find((p) => p.value === state.position)?.label;
-  const sortLabel = SORT_COLUMNS.find((c) => c.key === state.sortKey)?.description ?? "Name";
+  const sortColumn = SORT_COLUMNS.find((c) => c.key === state.sortKey);
+  const sortLabel = sortColumn?.description ?? "Name";
   const caption = [
     `${season} regular season`,
     team && `${team.city} ${team.name}`,
@@ -247,6 +297,9 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
       ) : (
         players?.data && (
           <>
+            {state.page === 1 && state.descending && sortColumn && players.data.items.length >= 3 && (
+              <Podium players={players.data.items.slice(0, 3)} column={sortColumn} />
+            )}
             <div className="px-4 md:px-0">
               <DirectoryTable players={players.data.items} state={{ ...state, season }} caption={caption} />
             </div>

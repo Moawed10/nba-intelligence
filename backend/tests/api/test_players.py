@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import text
 
 from tests.api.conftest import NO_SHOTS, RETIRED, SEASON_LABEL, STAR
 
@@ -174,3 +175,18 @@ def test_trends_use_previous_games_only(client):
 )
 def test_trends_reject_invalid_requests(client, player, params, status):
     assert client.get(f"/api/v1/players/{player}/trends", params=params).status_code == status
+
+
+def test_stat_sort_survives_players_who_only_had_did_not_play_lines(client, loaded):
+    with loaded.begin() as conn:
+        conn.execute(
+            text("UPDATE player_game_stats SET minutes = 0 WHERE player_id = :p"), {"p": NO_SHOTS}
+        )
+    response = client.get(
+        "/api/v1/players", params={"season": SEASON_LABEL, "sort": "-pts", "limit": 50}
+    )
+    assert response.status_code == 200
+    rows = {p["id"]: p for p in response.json()["items"]}
+    assert rows[NO_SHOTS]["season_averages"]["games_played"] == 0
+    assert rows[NO_SHOTS]["season_averages"]["pts"] is None
+    assert list(rows)[-1] == NO_SHOTS  # no per-game value sorts last
