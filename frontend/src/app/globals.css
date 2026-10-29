@@ -170,7 +170,9 @@
 }
 
 @utility panel {
-  background: var(--card);
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--foreground) 3%, transparent) 0, transparent 140px),
+    var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
 }

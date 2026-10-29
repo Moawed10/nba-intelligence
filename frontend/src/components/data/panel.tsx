@@ -25,7 +25,10 @@ export function Panel({
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-border px-4 pt-4 pb-3 sm:px-5">
         <div className="min-w-0">
           {kicker && <p className="kicker mb-1">{kicker}</p>}
-          <h2 id={`${id}-title`} className="text-headline font-semibold">
+          <h2
+            id={`${id}-title`}
+            className="font-[family-name:var(--font-display)] text-title2 leading-none font-bold tracking-tight uppercase"
+          >
             {title}
           </h2>
         </div>

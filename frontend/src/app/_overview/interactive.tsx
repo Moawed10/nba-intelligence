@@ -61,7 +61,7 @@ function GameChip({
         <TeamMark team={entry.team} size="xs" />
         <span className={cn("flex-1 text-left", won && "font-semibold")}>{entry.team.abbreviation}</span>
         {final && (
-          <span className={cn("tabular-nums", won ? "font-semibold" : "text-muted-foreground")}>
+          <span className={cn("numeral text-headline", won ? "text-foreground" : "text-muted-foreground")}>
             {entry.score}
           </span>
         )}
@@ -90,19 +90,23 @@ function GameChip({
 
 function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }) {
   const entry = game[side];
+  const other = game[side === "home" ? "away" : "home"];
+  const lost = game.status === "final" && (entry.score ?? 0) < (other.score ?? 0);
   return (
     <div
       className={cn("relative flex flex-col items-center gap-2 text-center", side === "home" && "md:order-3")}
     >
-      <TeamMark team={entry.team} size="lg" />
+      <TeamMark team={entry.team} size="xl" className="max-sm:size-14" />
       <div>
         <p className="kicker">{side === "home" ? "Home" : "Away"}</p>
-        <p className="text-headline font-semibold">
+        <p className="font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase">
           {entry.team.city} {entry.team.name}
         </p>
       </div>
       {entry.score != null && (
-        <p className="text-[2.5rem] leading-none font-semibold tabular-nums">{entry.score}</p>
+        <p className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
+          {entry.score}
+        </p>
       )}
     </div>
   );
