@@ -41,6 +41,19 @@ test.describe("predictions", () => {
     await expect(page.getByRole("region", { name: "Forecast @ BBB" })).toBeVisible();
   });
 
+  test("switching games replaces the forecast instead of keeping the previous one", async ({ page }) => {
+    await page.goto("/predict?player=1000");
+    const first = page.getByRole("region", { name: "Forecast vs BBB" });
+    await first.getByRole("button", { name: "Make forecast" }).click();
+    await expect(first.getByRole("img", { name: /^Points: predicted/ })).toBeVisible();
+
+    const list = page.getByRole("listbox", { name: "Upcoming games" });
+    await list.getByRole("option", { name: /@ Bravo Bears/ }).click();
+    const second = page.getByRole("region", { name: "Forecast @ BBB" });
+    await expect(second.getByRole("button", { name: "Make forecast" })).toBeVisible();
+    await expect(second.getByRole("img", { name: /^Points: predicted/ })).toHaveCount(0);
+  });
+
   test("upcoming games can be chosen with the keyboard", async ({ page, isMobile }) => {
     test.skip(isMobile, "keyboard flow is covered on pointer devices");
     await page.goto("/predict?player=1000");

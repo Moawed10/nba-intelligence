@@ -189,7 +189,12 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
             </div>
 
             {serving ? (
-              <Forecast initial={stored?.data?.[0] ?? null} playerId={player.id} gameId={game.id} />
+              <Forecast
+                key={game.id}
+                initial={stored?.data?.[0] ?? null}
+                playerId={player.id}
+                gameId={game.id}
+              />
             ) : (
               <Unavailable
                 kind="no_model"

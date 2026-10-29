@@ -2629,7 +2629,9 @@ export interface operations {
     };
     get_player_photo_api_v1_players__player_id__photo_get: {
         parameters: {
-            query?: never;
+            query?: {
+                size?: "small" | "large";
+            };
             header?: never;
             path: {
                 player_id: number;
