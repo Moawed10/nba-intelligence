@@ -124,8 +124,8 @@ def _escape_like(value: str) -> str:
 
 
 SEARCH_SQL = text("""
-    SELECT p.id, p.full_name, p.position, p.is_active, t.abbreviation AS team_abbreviation,
-           t.primary_color AS team_primary_color
+    SELECT p.id, p.full_name, p.position, p.is_active, t.id AS team_id,
+           t.abbreviation AS team_abbreviation, t.primary_color AS team_primary_color
     FROM players p
     LEFT JOIN teams t ON t.id = p.current_team_id
     CROSS JOIN LATERAL (SELECT search_normalize(:q) AS q) n

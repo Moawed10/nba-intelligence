@@ -230,6 +230,7 @@ export function PlayerSearch({
               team={
                 player.team_abbreviation
                   ? {
+                      id: player.team_id ?? 0,
                       abbreviation: player.team_abbreviation,
                       primary_color: player.team_primary_color ?? null,
                     }

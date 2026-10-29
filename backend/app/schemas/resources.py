@@ -30,6 +30,7 @@ class PlayerSearchResult(BaseModel):
     full_name: str
     position: str | None
     is_active: bool
+    team_id: int | None = None
     team_abbreviation: str | None
     team_primary_color: str | None = None
 

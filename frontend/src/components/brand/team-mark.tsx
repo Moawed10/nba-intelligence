@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import type { TeamRef } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
+import { TEAM_LOGOS } from "./team-logos";
+
 const SIZE = {
   xs: "size-6 rounded-md text-[0.5625rem]",
   sm: "size-8 rounded-lg text-[0.625rem]",
@@ -26,16 +28,39 @@ export function teamStyle(team: Pick<TeamRef, "primary_color"> | null | undefine
   return color ? { background: color, color: readableOn(color) } : {};
 }
 
-/** A team monogram in its primary color. Decorative: the abbreviation is always also in text. */
+/**
+ * The team's logo, served from public/logos (light and dark variants follow the theme), or a monogram in its
+ * primary color when no logo is stored. Decorative: the team is always also named in text.
+ */
 export function TeamMark({
   team,
   size = "sm",
   className,
 }: {
-  team: Pick<TeamRef, "abbreviation" | "primary_color"> | null | undefined;
+  team: Pick<TeamRef, "id" | "abbreviation" | "primary_color"> | null | undefined;
   size?: keyof typeof SIZE;
   className?: string;
 }) {
+  if (team && TEAM_LOGOS.has(team.id)) {
+    return (
+      <span
+        aria-hidden
+        className={cn("inline-flex shrink-0 items-center justify-center", SIZE[size], className)}
+      >
+        {(["L", "D"] as const).map((variant) => (
+          // eslint-disable-next-line @next/next/no-img-element -- static SVGs; next/image adds nothing here
+          <img
+            key={variant}
+            src={`/logos/${team.id}-${variant}.svg`}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className={cn("size-full object-contain", variant === "L" ? "dark:hidden" : "hidden dark:block")}
+          />
+        ))}
+      </span>
+    );
+  }
   return (
     <span
       aria-hidden

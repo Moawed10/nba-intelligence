@@ -1865,6 +1865,17 @@
             ],
             "title": "Team Abbreviation"
           },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
           "team_primary_color": {
             "anyOf": [
               {
