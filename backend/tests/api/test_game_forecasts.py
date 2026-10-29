@@ -41,11 +41,17 @@ def _add_game_models(engine: Engine, directory) -> None:
             digest = save_artifact(directory / path, model, target=target, conformal=conformal)
             s.add(
                 ModelVersion(
-                    release_id=release.id, target=ModelTarget(target), algorithm=algorithm,
-                    is_selected=True, hyperparameters={"fit": "production"},
-                    features=list(TEAM_FEATURES), interval_calibration=conformal,
-                    artifact_path=path, artifact_sha256=digest, random_seed=0,
-                )  # fmt: skip
+                    release_id=release.id,
+                    target=ModelTarget(target),
+                    algorithm=algorithm,
+                    is_selected=True,
+                    hyperparameters={"fit": "production"},
+                    features=list(TEAM_FEATURES),
+                    interval_calibration=conformal,
+                    artifact_path=path,
+                    artifact_sha256=digest,
+                    random_seed=0,
+                )
             )
 
 
