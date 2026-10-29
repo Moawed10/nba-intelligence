@@ -23,9 +23,21 @@ def _year(year: str, city: str, name: str, **overrides) -> dict:
 FRAME = pd.DataFrame(
     [
         _year("1970-71", "Seattle", "SuperSonics"),
-        _year("2007-08", "Seattle", "SuperSonics", FG3M=500, FG3A=1400, OREB=900, DREB=2600,
-              STL=600, BLK=400, TOV=1200, NBA_FINALS_APPEARANCE="LEAGUE CHAMPION", PO_WINS=16,
-              PO_LOSSES=6),  # fmt: skip
+        _year(
+            "2007-08",
+            "Seattle",
+            "SuperSonics",
+            FG3M=500,
+            FG3A=1400,
+            OREB=900,
+            DREB=2600,
+            STL=600,
+            BLK=400,
+            TOV=1200,
+            NBA_FINALS_APPEARANCE="LEAGUE CHAMPION",
+            PO_WINS=16,
+            PO_LOSSES=6,
+        ),  # fmt: skip
         _year("2008-09", "Oklahoma City", "Thunder", GP=0),
     ]
 )
