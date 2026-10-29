@@ -12,19 +12,10 @@ import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
 import type { DatasetStatus, ModelSnapshot, Overview, Standouts } from "@/lib/api/types";
 import { formatGameDate, formatPercent, formatStat } from "@/lib/format";
+import { TARGET_ORDER, targetLabel } from "@/lib/models";
 import { cn } from "@/lib/utils";
 
 import { LeadersBoard, ScheduleBoard } from "./_overview/interactive";
-
-const TARGET_LABELS: Record<string, string> = {
-  pts: "Points",
-  reb: "Rebounds",
-  ast: "Assists",
-  fg3m: "3-pointers made",
-  stl: "Steals",
-  blk: "Blocks",
-  min: "Minutes",
-};
 
 const DATASET_LABELS: Record<string, string> = {
   schedule: "Schedule",
@@ -114,7 +105,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
       </Unavailable>
     );
   }
-  const regression = model.metrics.filter((m) => m.target !== "double_double");
+  const regression = TARGET_ORDER.flatMap((t) => model.metrics.filter((m) => m.target === t));
   const doubleDouble = model.metrics.find((m) => m.target === "double_double");
   const serving = model.release.status === "active";
   return (
@@ -157,7 +148,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
             return (
               <tr key={m.target} className="border-b border-border/50 last:border-0">
                 <th scope="row" className="py-1.5 text-left font-normal">
-                  {TARGET_LABELS[m.target] ?? m.target}
+                  {targetLabel(m.target)}
                 </th>
                 <td className={cn("py-1.5 text-right tabular-nums", better && "font-semibold")}>
                   {m.mae?.toFixed(2) ?? "—"}

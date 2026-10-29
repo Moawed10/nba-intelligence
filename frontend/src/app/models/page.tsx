@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { NotConnected } from "@/components/data/not-connected";
 import { PageHeader } from "@/components/data/page-header";
+import { LoadingBlock } from "@/components/data/state-view";
+
+import { ModelsView } from "./release";
 
 export const metadata: Metadata = { title: "Models" };
 
-export default function ModelsPage() {
+export default function ModelsPage({ searchParams }: PageProps<"/models">) {
   return (
     <>
       <PageHeader
+        kicker="Machine learning"
         title="Models"
-        description="How accurate the predictions are, measured on games the models never saw."
+        description="How accurate the predictions are, measured on a season the models never saw."
       />
-      <NotConnected shows="measured error against a simple baseline, interval coverage and past predictions next to actual results" />
+      <Suspense fallback={<LoadingBlock label="Loading model evaluation" className="panel p-5" />}>
+        <ModelsView searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }
