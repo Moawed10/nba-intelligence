@@ -24,16 +24,16 @@ Grounded in the repository as of 2026-10-28. Status is tracked in [implementatio
 
 ## Plan
 
-| Phase | Work | Data dependency |
-|---|---|---|
-| 1 | Audit (this document) | none |
-| 2 | Design system: Geist type, refined tokens and surfaces, motion scale, team monograms, sparkline, compare bar, skeletons, typed unavailable states | none |
-| 3 | Shell: navigation indicator, page transitions, mobile nav | none |
-| 4 | Players: directory with season averages and sorting, richer search, scouting-report profile, compare entry point | `/players` season averages (new) |
-| 5 | Overview: schedule strip with date navigation, matchup panel, standout performances, leaders, model snapshot, freshness | `/overview`, `/leaders` (new) |
-| 6 | Predictions: player → game → prediction workflow, interval chart, factors, history | Phase 7 inference API |
-| 7 | Compare: two selectors, versus hero, comparison bars, trend overlay, URL state | `/compare/players` (new) |
-| 8 | Models: registry, evaluation dashboard, algorithm comparison, methodology | `/models` endpoints over the Phase 6 registry |
-| 9 | Polish and verification on 4 viewports, both themes, reduced motion | all |
+| Phase | Work | Data dependency | Status |
+|---|---|---|---|
+| 1 | Audit (this document) | none | Complete |
+| 2 | Design system: Geist type, refined tokens and surfaces, motion scale, team monograms, compare bar, skeletons, typed unavailable states | none | Complete |
+| 3 | Shell: navigation indicator, page transitions, mobile nav | none | Complete |
+| 4 | Players: directory with season averages and sorting, richer search, scouting-report profile, compare entry point | `/players` season averages (new) | Complete |
+| 5 | Overview: schedule strip with date navigation, matchup panel, standout performances, leaders, model snapshot, freshness | `/overview`, `/leaders` (new) | Complete |
+| 6 | Predictions: player → game → prediction workflow, interval chart, factors, history | Phase 7 inference API | Blocked: workflow and context done; forecast needs Phase 7 |
+| 7 | Compare: two selectors, versus hero, comparison bars, trend overlay, URL state | `/compare/players` (new) | Complete (composed from existing endpoints; radar chart open) |
+| 8 | Models: registry, evaluation dashboard, algorithm comparison, methodology | `/models` endpoints over the Phase 6 registry | Complete for evaluation records; live accuracy needs Phase 7 |
+| 9 | Polish and verification on 4 viewports, both themes, reduced motion | all | Complete for current scope (4 viewports, both themes, reduced motion in E2E) |
 
 Every number on every screen comes from an endpoint. Anything without data shows a typed state: loading, empty, no games scheduled, stale, not yet built, no trained model, backend error, rate limited, or offline.

@@ -15,16 +15,16 @@ The authoritative ledger of development progress. A status here is only as good 
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
 | 7 | Prediction API & Inference | Not Started | 0% (0/14) | Phases 4, 6 |
-| 8 | Prediction Center | Not Started | 0% (0/12) | Phases 2, 7 |
-| 9 | Model Analytics | Not Started | 0% (0/10) | Phases 6, 7 |
-| 10 | Player Comparison | Not Started | 0% (0/9) | Phases 4, 5 |
-| 11 | Overview & Games | Not Started | 0% (0/9) | Phases 4, 5 |
+| 8 | Prediction Center | In Progress | 42% (5/12) | Phase 7 inference API (forecast, interval, explanation) |
+| 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
+| 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
+| 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
 | 12 | Accessibility Audit | Not Started | 0% (0/10) | Core screens |
 | 13 | Performance & Security | Not Started | 0% (0/12) | Core functionality |
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 73 / 174 verified deliverables = **42%**.
+**Overall:** 96 / 174 verified deliverables = **55%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -39,7 +39,7 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | ML Models Validated | 6 | Pass |
 | Prediction Backend Functional | 7 | Not Verified |
 | Functional MVP | 1–8 + applicable security, accessibility, integration checks | Not Verified |
-| Analytics Features Complete | 9–11 | Not Verified |
+| Analytics Features Complete | 9–11 | Not Verified (9, 10, 11 in progress) |
 | Release Quality Gates | 12–14 | Not Verified |
 | Production Release | 15 | Not Verified |
 
@@ -479,22 +479,22 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 8 — Prediction Center Frontend
 
-**Status:** Not Started · **Progress:** 0% (0/12) · **Dependencies:** Phases 2, 7
+**Status:** In Progress · **Progress:** 42% (5/12) · **Dependencies:** Phases 2, 7
 
 #### Deliverables
 
-- [ ] Player selection (`?player=`)
-- [ ] Upcoming game selection
+- [x] Player selection (`?player=`)
+- [x] Upcoming game selection
 - [ ] Submit to `POST /predictions`, duplicate-safe
 - [ ] Predicted values (`StatTile`)
 - [ ] Interval display (`IntervalBar`) labelled "likely range (80%)"
-- [ ] Last-5 and season comparisons
+- [x] Last-5 and season comparisons
 - [ ] Prediction distribution visualization
 - [ ] Explanation panel
 - [ ] Model release and data cutoff display
-- [ ] Loading, error and named unavailable states
+- [x] Loading, error and named unavailable states
 - [ ] Keyboard-only workflow
-- [ ] Mobile layout
+- [x] Mobile layout
 
 #### Acceptance criteria
 
@@ -510,26 +510,26 @@ The "recent games" block from the original design was folded into the game log, 
 | Full keyboard workflow | Yes | Not measured | Not Verified |
 | Horizontal overflow at 375 px | None | Not measured | Not Verified |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `frontend/src/app/predict/`, `tests/e2e/predict.spec.ts` (16 runs across 4 viewports; axe serious/critical 0 in both themes; no overflow at 375 px). The forecast panel states that no release is serving predictions instead of showing a number. · **Decision:** Not Verified (forecast, interval, explanation and submission wait for Phase 7)
 
 ---
 
 ### Phase 9 — Model Analytics & Historical Evaluation
 
-**Status:** Not Started · **Progress:** 0% (0/10) · **Dependencies:** Phases 6, 7
+**Status:** In Progress · **Progress:** 50% (5/10) · **Dependencies:** Phases 6, 7
 
 #### Deliverables
 
-- [ ] `/models` screen
-- [ ] Metrics from `/models/metrics`
-- [ ] Baseline vs advanced comparison
+- [x] `/models` screen
+- [x] Metrics from `/models/metrics`
+- [x] Baseline vs advanced comparison
 - [ ] Actual-vs-predicted chart
 - [ ] Residual distributions
 - [ ] Interval coverage per target and bin
 - [ ] Historical prediction explorer
 - [ ] Backtest vs pregame labelling
-- [ ] Release selection
-- [ ] Methodology explanation
+- [x] Release selection
+- [x] Methodology explanation
 
 #### Acceptance criteria
 
@@ -544,25 +544,25 @@ The "recent games" block from the original design was folded into the game log, 
 | Backtests distinguished from pregame | Yes | Not measured | Not Verified |
 | Analytics integration tests passing | ≥ 95% (100% critical) | Not measured | Not Verified |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `frontend/src/app/models/`, `tests/e2e/models.spec.ts`. Metrics come from `/models/{version}` (registry evaluation records) rather than a separate `/models/metrics`. Coverage is shown per target; per-bin coverage is in the training report but not yet exposed by the API. · **Decision:** Not Verified (actual-vs-predicted, residuals, history and backtest labels need stored predictions)
 
 ---
 
 ### Phase 10 — Player Comparison
 
-**Status:** Not Started · **Progress:** 0% (0/9) · **Dependencies:** Phases 4, 5
+**Status:** In Progress · **Progress:** 78% (7/9) · **Dependencies:** Phases 4, 5
 
 #### Deliverables
 
-- [ ] Dual player selection (`?p1=&p2=`)
+- [x] Dual player selection (`?p1=&p2=`)
 - [ ] `GET /compare/players` endpoint + integration
-- [ ] Side-by-side stats
+- [x] Side-by-side stats
 - [ ] Radar chart (league-percentile normalized)
-- [ ] Trend overlays
-- [ ] Season selection
-- [ ] Swap players
-- [ ] Mobile layout
-- [ ] Accessible chart alternatives
+- [x] Trend overlays
+- [x] Season selection
+- [x] Swap players
+- [x] Mobile layout
+- [x] Accessible chart alternatives
 
 #### Acceptance criteria
 
@@ -577,25 +577,25 @@ The "recent games" block from the original design was folded into the game log, 
 | Mobile overflow outside scroll regions | None | Not measured | Not Verified |
 | Comparison workflows passing | ≥ 95% | Not measured | Not Verified |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `frontend/src/app/compare/`, `tests/e2e/compare.spec.ts` (24 runs across 4 viewports). Composed from `/players/{id}`, `/players/{id}/stats` and `/players/{id}/trends`, so both sides use the same season definitions; no dedicated endpoint yet. · **Decision:** Not Verified (radar chart and endpoint open)
 
 ---
 
 ### Phase 11 — Overview, Games & Supporting Screens
 
-**Status:** Not Started · **Progress:** 0% (0/9) · **Dependencies:** Phases 4, 5
+**Status:** In Progress · **Progress:** 67% (6/9) · **Dependencies:** Phases 4, 5
 
 #### Deliverables
 
-- [ ] `GET /overview` + `/` screen
-- [ ] Featured players and recent performances
-- [ ] Upcoming matchups
+- [x] `GET /overview` + `/` screen
+- [x] Featured players and recent performances
+- [x] Upcoming matchups
 - [ ] Prediction shortcuts
-- [ ] `/games` with date navigation
+- [x] `/games` with date navigation
 - [ ] `/games/[id]` matchup detail
-- [ ] Completed results and box scores
+- [x] Completed results and box scores
 - [ ] `/about` methodology, data sources, limitations, repository link
-- [ ] All routes connected
+- [x] All routes connected
 
 #### Acceptance criteria
 
@@ -609,7 +609,7 @@ The "recent games" block from the original design was folded into the game log, 
 | Supporting-screen E2E passing | ≥ 95% | Not measured | Not Verified |
 | Loading, empty and error states on all pages | All | Not measured | Not Verified |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `frontend/src/app/page.tsx`, `frontend/src/app/_overview/`, `frontend/src/app/games/`, `tests/e2e/{overview,games}.spec.ts`. No route renders a placeholder any more. · **Decision:** Not Verified (prediction shortcuts, `/games/[id]` and the About repository link open)
 
 ---
 
@@ -876,3 +876,23 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 197 passed; frontend type-check clean.
 
 **Next step:** redesign phases 2–9.
+
+### Session — 2026-10-29 (redesign phases 5–9)
+
+**Phase:** product redesign ([redesign-plan.md](redesign-plan.md)); advances master Phases 8–11
+
+**Completed:**
+- Overview command center: schedule board with date navigation and matchups, league leaders by category, Game Score standouts, held-out model accuracy, data freshness.
+- Compare: two-player head to head in `?p1=&p2=&season=`, category leads, season-average form chart with a table equivalent.
+- Models: release timeline, accuracy against the baseline, algorithm comparison, prediction-range widths, double-double scores, feature inventory, release history.
+- Predictions: player and upcoming-game workflow with real form, rest and opponent context; an explicit "not serving" state instead of a forecast.
+- Games: schedule, results and full box scores by date; the last placeholder route is gone.
+- Fixed the Linux-only CI layout failures (position filter width, top-bar slack measurement) and a label-in-name accessibility issue on game chips.
+
+**Files changed:** `frontend/src/app/{page.tsx,_overview,compare,models,predict,games,players}`, `frontend/src/components/data/{compare-bar,segmented-control}.tsx`, `frontend/src/lib/{models,api/types}.ts`, `frontend/tests/e2e/**`, docs.
+
+**Tests run:** frontend unit 38 passed; Playwright 204 passed, 4 skipped (4 viewports, both themes); lint and type-check clean.
+
+**Problems encountered:** the real-data reproducibility rerun from the previous session was not repeated; the candidate release was trained from a dirty tree and must be retrained from a clean commit before activation.
+
+**Next step:** Phase 7 inference API, then forecasts, intervals and prediction history in the Predictions and Models screens.

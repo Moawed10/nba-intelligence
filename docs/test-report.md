@@ -262,3 +262,36 @@ Findings, as measured:
 - Registry: 1 release and 37 model versions (7 targets × 4 held-out families, 7 production refits, 2 double-double), with 16 persisted artifacts (6.0 MB) and 58 evaluation rows.
 
 A second real-data run for points, unregistered and meant to repeat the reproducibility check at full scale, was stopped before it finished. Reproducibility is verified by the automated test on the synthetic league.
+
+## Product redesign (Overview, Compare, Models, Predictions, Games)
+
+### Automated
+
+| Suite | Result |
+|---|---|
+| ESLint, `tsc --noEmit` (after `next typegen`) | Clean |
+| Vitest unit | 38 passed |
+| Playwright, 4 viewports (1440, 1024, 768, 375) | 204 passed, 4 skipped (desktop-only or pointer-only cases) |
+
+New E2E specs run against the synthetic stub API (`tests/e2e/stub-api.mjs`, season 2099-00, never real data):
+
+- `overview.spec.ts`: date browsing, matchup and top scorers, leader categories, standouts, model accuracy, freshness.
+- `compare.spec.ts`: picking, swapping, season change, remove, duplicate guard, no shared season, unknown id, chart/table.
+- `models.spec.ts`: release status, accuracy rows, algorithm ranking, ranges, double-double, unknown version, features.
+- `predict.spec.ts`: search and leader quick picks, game switching, the not-serving forecast state, former and unknown players.
+- `games.spec.ts`: full box scores, linkable dates, malformed date.
+
+Each spec includes an axe pass (WCAG 2.2 AA tags, serious and critical violations must be 0) in dark and light themes, plus a horizontal-overflow check.
+
+### Manual checks against the real API
+
+- Overview at 1440 and 375 px, no console errors. Leaders, standouts and model metrics match `/overview`.
+- Compare for Jokić and Dončić defaults to 2025-26 (71 and 64 games) because 2026-27 has fewer than 10 games for both.
+- Models shows release `2026.10.29-1` as a candidate; table values match `/models/2026.10.29-1`.
+- Predictions for Jokić lists 6 upcoming games. Rest, defensive rating and pace match `/teams/{id}/stats`.
+- Games for 2026-10-27 shows 4 finals with full box scores, including overtime team minutes.
+
+### CI fixes
+
+- Linux CI rendered the position filter wider than macOS at 320 px; it now scrolls within its column.
+- The top-bar slack test counted a gap for the hidden desktop navigation; it now measures visible items only.
