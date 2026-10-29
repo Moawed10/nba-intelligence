@@ -157,6 +157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/models/{version}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Live Accuracy */
+        get: operations["get_live_accuracy_api_v1_models__version__live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/overview": {
         parameters: {
             query?: never;
@@ -327,6 +344,23 @@ export interface paths {
         };
         /** Get Prediction */
         get: operations["get_prediction_api_v1_predictions__prediction_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/predictions/{prediction_id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Explanation */
+        get: operations["get_explanation_api_v1_predictions__prediction_id__explanation_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -763,6 +797,41 @@ export interface components {
              */
             stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
         };
+        /**
+         * LiveAccuracy
+         * @description Final pregame forecasts of this release scored against box scores after the games.
+         */
+        LiveAccuracy: {
+            /** Activated At */
+            activated_at: string | null;
+            double_double: components["schemas"]["LiveDoubleDouble"] | null;
+            /** Games */
+            games: number;
+            /** Stats */
+            stats: components["schemas"]["LiveStat"][];
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
+        };
+        /** LiveDoubleDouble */
+        LiveDoubleDouble: {
+            /** Brier */
+            brier: number | null;
+            /** N */
+            n: number;
+        };
+        /** LiveStat */
+        LiveStat: {
+            /** Interval Coverage */
+            interval_coverage: number | null;
+            /** Mae */
+            mae: number | null;
+            /** N */
+            n: number;
+            /** Stat */
+            stat: string;
+        };
         /** Meta */
         Meta: {
             data_freshness: components["schemas"]["DataFreshness"];
@@ -1150,6 +1219,10 @@ export interface components {
         };
         /** Prediction */
         Prediction: {
+            /** Actuals */
+            actuals: {
+                [key: string]: number;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -1168,6 +1241,13 @@ export interface components {
             } | null;
             /** Feature Schema Version */
             feature_schema_version: string;
+            /**
+             * Freshness
+             * @enum {string}
+             */
+            freshness: "current" | "stale" | "invalid" | "superseded" | "final_pregame";
+            /** Freshness Reason */
+            freshness_reason: string | null;
             /** Game Id */
             game_id: string;
             /**
@@ -1193,6 +1273,31 @@ export interface components {
             supersedes_prediction_id: string | null;
             /** Values */
             values: components["schemas"]["PredictedValue"][];
+        };
+        /**
+         * PredictionExplanation
+         * @description What the model received. These are inputs, not attributions of the model's reasoning.
+         */
+        PredictionExplanation: {
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+            /** Features */
+            features: {
+                [key: string]: number | null;
+            };
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Method */
+            method: string;
+            /**
+             * Prediction Id
+             * Format: uuid
+             */
+            prediction_id: string;
         };
         /** PredictionRequest */
         PredictionRequest: {
@@ -2107,6 +2212,73 @@ export interface operations {
             };
         };
     };
+    get_live_accuracy_api_v1_models__version__live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveAccuracy"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     get_overview_api_v1_overview_get: {
         parameters: {
             query?: never;
@@ -2818,6 +2990,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Prediction"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_explanation_api_v1_predictions__prediction_id__explanation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prediction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionExplanation"];
                 };
             };
             /** @description Bad Request */

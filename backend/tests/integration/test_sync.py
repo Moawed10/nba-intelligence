@@ -51,9 +51,11 @@ def test_due_jobs_run_once_and_are_rescheduled(engine, source):
     assert worker.run_due(engine, source, NOW) == {
         "schedule": "succeeded",
         "game_logs": "succeeded",
+        "predictions": "succeeded",
     }
     nxt = schedules(engine)
     assert nxt["schedule"] == NOW + timedelta(minutes=30)
+    assert nxt["predictions"] == NOW + timedelta(minutes=15)
     assert nxt["game_logs"] == NOW + timedelta(minutes=10), "unfinalized box scores keep polling"
 
     # A restarted worker at the same instant finds nothing due: schedules are persisted.
@@ -62,6 +64,7 @@ def test_due_jobs_run_once_and_are_rescheduled(engine, source):
     assert worker.run_due(engine, source, later) == {
         "schedule": "succeeded",
         "game_logs": "succeeded",
+        "predictions": "succeeded",
     }
 
 

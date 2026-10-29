@@ -30,5 +30,18 @@ class Prediction(BaseModel):
     feature_schema_version: str
     double_double_probability: float | None
     supersedes_prediction_id: uuid.UUID | None
+    freshness: Literal["current", "stale", "invalid", "superseded", "final_pregame"]
+    freshness_reason: str | None
     values: list[PredictedValue]
+    actuals: dict[str, float] | None
     explanation: dict[str, Any] | None
+
+
+class PredictionExplanation(BaseModel):
+    """What the model received. These are inputs, not attributions of the model's reasoning."""
+
+    prediction_id: uuid.UUID
+    method: str
+    inputs: dict[str, Any]
+    context: dict[str, Any]
+    features: dict[str, float | None]

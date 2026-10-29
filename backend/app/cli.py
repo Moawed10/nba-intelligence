@@ -108,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     train = sub.add_parser("train", help="Train, evaluate and register a candidate model release")
     train.add_argument("--targets", help="Comma-separated subset of targets (no registration)")
     train.add_argument("--fast", action="store_true", help="Small search grids, for smoke runs")
+    sub.add_parser("predictions", help="Score finished games and refresh stale forecasts once")
     activate = sub.add_parser("activate", help="Verify a release's artifacts and make it serve")
     activate.add_argument("version")
 
@@ -119,6 +120,12 @@ def main(argv: list[str] | None = None) -> int:
         return train_command(args)
     if args.command == "activate":
         return activate_command(args.version)
+    if args.command == "predictions":
+        result = worker.maintain_predictions(
+            get_engine(), datetime.now(UTC), get_settings().artifacts_dir
+        )
+        print(json.dumps(result if result is not None else "skipped: running elsewhere"))
+        return 0
     configure_logging()
     client = NBAStatsClient()
     all_types = list(SeasonType)

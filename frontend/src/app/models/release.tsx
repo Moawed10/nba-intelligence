@@ -5,7 +5,7 @@ import { InfoHint } from "@/components/data/info-hint";
 import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
-import type { ModelReleaseDetail, ModelReleaseSummary, TargetMetrics } from "@/lib/api/types";
+import type { LiveAccuracy, ModelReleaseDetail, ModelReleaseSummary, TargetMetrics } from "@/lib/api/types";
 import { formatGameDate, formatPercent } from "@/lib/format";
 import { algorithmLabel, TARGET_ORDER, targetLabel } from "@/lib/models";
 import { param, type SearchParams } from "@/lib/url";
@@ -264,6 +264,62 @@ function FeatureList({ features }: { features: string[] }) {
   );
 }
 
+function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetrics[] }) {
+  const reference = new Map(heldOut.map((m) => [m.target, m.mae]));
+  return (
+    <div className="space-y-3">
+      <div role="region" aria-label="Live accuracy by statistic" tabIndex={0} className="overflow-x-auto">
+        <table className="w-full text-subhead tabular-nums">
+          <caption className="sr-only">
+            Average miss of final pregame forecasts after {live.games} games, next to the held-out season
+          </caption>
+          <thead className="text-footnote text-muted-foreground">
+            <tr className="border-b border-border">
+              <th scope="col" className="py-2 text-left font-medium">
+                Statistic
+              </th>
+              <th scope="col" className="py-2 text-right font-medium">
+                Live miss
+              </th>
+              <th scope="col" className="py-2 text-right font-medium">
+                Held-out miss
+              </th>
+              <th scope="col" className="py-2 text-right font-medium">
+                In range
+              </th>
+              <th scope="col" className="py-2 text-right font-medium">
+                Forecasts
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {live.stats.map((s) => (
+              <tr key={s.stat} className="border-b border-border/50 last:border-0">
+                <th scope="row" className="py-2 text-left font-normal">
+                  {targetLabel(s.stat)}
+                </th>
+                <td className="py-2 text-right font-semibold">{s.mae?.toFixed(2) ?? "—"}</td>
+                <td className="py-2 text-right text-muted-foreground">
+                  {reference.get(s.stat)?.toFixed(2) ?? "—"}
+                </td>
+                <td className="py-2 text-right">{formatPercent(s.interval_coverage)}</td>
+                <td className="py-2 text-right text-muted-foreground">{s.n.toLocaleString("en-US")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-footnote text-muted-foreground">
+        Each player-game counts once, using the last forecast made before tip-off, across {live.games}{" "}
+        {live.games === 1 ? "game" : "games"}.
+        {live.double_double?.brier != null &&
+          ` Double-double Brier score ${live.double_double.brier.toFixed(3)} over ${live.double_double.n} forecasts.`}{" "}
+        Small samples swing widely; compare with the held-out season only after many games.
+      </p>
+    </div>
+  );
+}
+
 export async function ModelsView({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const query = await searchParams;
   const list = await serverTry<ModelReleaseSummary[]>("/models");
@@ -279,7 +335,11 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
   const requested = param(query, "version");
   const known = requested && VERSION.test(requested) && releases.some((r) => r.version === requested);
   const version = known ? requested : (releases.find((r) => r.status === "active") ?? releases[0]).version;
-  const result = await serverTry<ModelReleaseDetail>(`/models/${version}`);
+  const [result, liveResult] = await Promise.all([
+    serverTry<ModelReleaseDetail>(`/models/${version}`),
+    serverTry<LiveAccuracy>(`/models/${version}/live`),
+  ]);
+  const live = liveResult.data;
   if (result.error) return <ApiErrorView error={result.error} />;
   const release = result.data;
   const testSeason = release.test_season ?? "the test season";
@@ -373,15 +433,19 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
       </Panel>
 
       <Panel id="live" kicker="After release" title="Live accuracy" className="lg:col-span-7">
-        <Unavailable
-          kind={active ? "empty" : "not_built"}
-          title={active ? "No scored predictions yet" : "Starts when a release is activated"}
-        >
-          Predictions are stored before tip-off and scored against the final box score.{" "}
-          {active
-            ? "Scored results appear here once games with stored predictions are final."
-            : "This release has not served predictions, so there is no live record to show."}
-        </Unavailable>
+        {live && live.games > 0 ? (
+          <LiveTable live={live} heldOut={regression} />
+        ) : (
+          <Unavailable
+            kind={active ? "empty" : "not_built"}
+            title={active ? "No scored predictions yet" : "Starts when a release is activated"}
+          >
+            Predictions are stored before tip-off and scored against the final box score.{" "}
+            {active
+              ? "Scored results appear here once games with stored predictions are final."
+              : "This release has not served predictions, so there is no live record to show."}
+          </Unavailable>
+        )}
       </Panel>
       <Panel id="double-double" kicker="Probability" title="Double-double" className="lg:col-span-5">
         {doubleDouble?.brier != null ? (

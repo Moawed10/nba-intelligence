@@ -378,3 +378,26 @@ class TeamHistory(BaseModel):
     team: TeamRef
     seasons: list[HistoricSeason]
     meta: Meta
+
+
+class LiveStat(BaseModel):
+    stat: str
+    n: int
+    mae: float | None
+    interval_coverage: float | None
+
+
+class LiveDoubleDouble(BaseModel):
+    n: int
+    brier: float | None
+
+
+class LiveAccuracy(BaseModel):
+    """Final pregame forecasts of this release scored against box scores after the games."""
+
+    version: str
+    status: str
+    activated_at: datetime | None
+    games: int
+    stats: list[LiveStat]
+    double_double: LiveDoubleDouble | None

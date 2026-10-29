@@ -20,7 +20,8 @@ ENDPOINTS = {
     "/api/v1/games/{game_id}", "/api/v1/games/{game_id}/boxscore", "/api/v1/health",
     "/api/v1/readiness", "/api/v1/data-status", "/api/v1/overview", "/api/v1/leaders",
     "/api/v1/standouts", "/api/v1/models", "/api/v1/models/{version}", "/api/v1/predictions",
-    "/api/v1/predictions/{prediction_id}",
+    "/api/v1/predictions/{prediction_id}", "/api/v1/predictions/{prediction_id}/explanation",
+    "/api/v1/models/{version}/live",
 }  # fmt: skip
 # The only write: an append-only pregame forecast. Ingestion, training and activation stay offline.
 WRITES = {("/api/v1/predictions", "post")}

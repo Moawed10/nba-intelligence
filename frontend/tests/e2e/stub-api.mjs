@@ -339,6 +339,13 @@ createServer((req, res) => {
       }])),
     });
   }
+  if (path === `/models/${RELEASE.version}/live`) {
+    return send(res, 200, {
+      version: RELEASE.version, status: RELEASE.status, activated_at: RELEASE.activated_at, games: 2,
+      stats: [{ stat: "pts", n: 6, mae: 5.25, interval_coverage: 0.8333 }, { stat: "reb", n: 6, mae: 2.1, interval_coverage: 0.6667 }],
+      double_double: { n: 6, brier: 0.07 },
+    });
+  }
   if (path.startsWith("/models/")) return error(res, 404, "model_not_found", "No such model version.");
   // Predictions are stateless here: GET lists none, POST returns a fixed synthetic forecast.
   if (path === "/predictions" && req.method === "GET") return send(res, 200, []);
@@ -355,6 +362,7 @@ createServer((req, res) => {
         id: "00000000-0000-4000-8000-000000000001", player_id, game_id, release_version: RELEASE.version,
         kind: "pregame", status: "ok", created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
         feature_schema_version: "stub", double_double_probability: 0.25, supersedes_prediction_id: null,
+        freshness: "current", freshness_reason: null, actuals: null,
         values: [value("pts", 24, 8), value("reb", 7, 3), value("ast", 5, 2.5), value("fg3m", 2, 1.5),
           value("stl", 1, 1), value("blk", 0.5, 0.5), value("min", 33, 6)],
         explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: {} },

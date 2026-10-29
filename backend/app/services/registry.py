@@ -15,13 +15,17 @@ from app.models import (
 )
 from app.schemas.resources import (
     AlgorithmMetrics,
+    LiveAccuracy,
     ModelReleaseDetail,
     ModelReleaseSummary,
     ModelSnapshot,
     TargetMetrics,
 )
+from app.services import prediction_lifecycle
 
 REGISTRY_TTL = 300
+# Scoring does not advance data_version, so live accuracy relies on a short TTL instead.
+LIVE_TTL = 120
 
 
 def _versions(session: Session, release: ModelRelease) -> list[ModelVersion]:
@@ -138,3 +142,19 @@ def snapshot(ctx: Context) -> ModelSnapshot | None:
         test_season=detail.test_season,
         metrics=detail.selected_metrics,
     )
+
+
+def live(ctx: Context, version: str) -> LiveAccuracy:
+    def compute() -> LiveAccuracy:
+        release = ctx.session.scalar(select(ModelRelease).where(ModelRelease.version == version))
+        if release is None:
+            raise not_found("model_release", version)
+        summary = prediction_lifecycle.live_accuracy(ctx.session, release.id)
+        return LiveAccuracy(
+            version=release.version,
+            status=release.status.value,
+            activated_at=release.activated_at,
+            **summary,
+        )
+
+    return ctx.cached("model_live", LIVE_TTL, version, compute)

@@ -10,11 +10,11 @@ The authoritative ledger of development progress. A status here is only as good 
 |---|---|---|---|---|
 | 1 | Repository Audit & Architecture | Complete | 100% (8/8) | None |
 | 2 | Design System & Foundation | Complete | 100% (12/12) | None |
-| 3 | Database, Ingestion & Sync | In Progress | 95% (18/19) | Prediction-evaluation handlers (Phase 7) |
+| 3 | Database, Ingestion & Sync | Complete | 100% (19/19) | None |
 | 4 | Core Backend APIs | Complete | 100% (11/11) | None |
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
-| 7 | Prediction API & Inference | In Progress | 73% (11/15) | Freshness service and dependency-aware refresh |
+| 7 | Prediction API & Inference | Complete | 100% (15/15) | None |
 | 7B | Player Photos & Team History | Complete | 100% (7/7) | None |
 | 8 | Prediction Center | In Progress | 83% (10/12) | Distribution chart; keyboard workflow not yet verified |
 | 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
@@ -25,7 +25,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 119 / 182 verified deliverables = **65%**.
+**Overall:** 124 / 182 verified deliverables = **68%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -35,10 +35,10 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 |---|---|---|
 | Architecture Ready | 1 | Pass |
 | Application Foundation | 2 | Pass |
-| Real NBA Data Available | 3–4 | Not Verified (data and read API verified; Phase 3 closes with the Phase 7 handlers) |
+| Real NBA Data Available | 3–4 | Pass |
 | Player Analytics Functional | 5 | Pass |
 | ML Models Validated | 6 | Pass |
-| Prediction Backend Functional | 7 | Not Verified (all 10 gates pass; freshness and refresh deliverables open) |
+| Prediction Backend Functional | 7 | Pass |
 | Functional MVP | 1–8 + applicable security, accessibility, integration checks | Not Verified |
 | Analytics Features Complete | 9–11 | Not Verified (9, 10, 11 in progress) |
 | Release Quality Gates | 12–14 | Not Verified |
@@ -182,7 +182,7 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 ### Phase 3 — Database, NBA Data Ingestion & Synchronization
 
-**Status:** In Progress · **Progress:** 95% (18/19) · **Last Updated:** 2026-10-28
+**Status:** Complete · **Progress:** 100% (19/19) · **Last Updated:** 2026-10-29
 **Dependencies:** Phase 1 (done); the last deliverable completes with Phase 7
 **Objective:** Real NBA data for 2018-19 onward, stored without duplicates, with provenance, freshness and automatic synchronization.
 
@@ -203,7 +203,7 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 - [x] Reconciliation report (`python -m app.cli integrity`)
 - [x] Sync worker with persisted `sync_schedules`, game-aware polling and advisory-lock exclusion (`app/sync/worker.py`)
 - [x] Game lifecycle state machine with no-downgrade rule (`app/ingestion/lifecycle.py`)
-- [ ] `sync_events` outbox and handlers. Emission, dedupe and drain are done; prediction-evaluation handlers come in Phase 7.
+- [x] `sync_events` outbox and handlers. `GAME_STATS_FINALIZED` scores that game's forecasts (Phase 7).
 - [x] Freshness exposed in `GET /api/v1/data-status` and in `meta.data_freshness` on every data response (6 datasets; the 2 prediction datasets are added with Phase 7)
 - [x] Retry classification, full-jitter backoff, `Retry-After`, lease recovery
 - [x] Weekly corrections job; sync tests including the New York season boundary
@@ -225,9 +225,9 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 | Executions with persisted job status | 100% | 61 / 61 dev runs finished with a status; test asserts no unfinished runs | Pass |
 | Retry behavior bounded and tested | Yes | Unit tests for statuses, timeouts, cap, `Retry-After` | Pass |
 | Failed/interrupted job recovery | Integration test | Abandoned-lease recovery and next-cycle retry tests | Pass |
-| Finalized-game reconciliation fixtures passing | 100% | Data side passes (finalization, events); prediction evaluation pending Phase 7 | Not Verified |
+| Finalized-game reconciliation fixtures passing | 100% | Finalization, events and forecast scoring (`test_final_pregame_forecast_is_scored_and_counted_live`) | Pass |
 | Cache invalidation on tested dependencies | 100% | Cached responses are keyed by `data_version`; a new succeeded run invalidates them (`test_cache_hits_skip_the_database_until_data_version_changes`, unit tests) | Pass |
-| Freshness metadata for synchronized datasets | All 8 | 6 / 8 (prediction features and predictions pending Phase 7) | Not Verified |
+| Freshness metadata for synchronized datasets | All 8 | 8 / 8: every prediction response carries a freshness state and reason | Pass |
 | Scheduler restart recovery | Verified | Persisted `next_run_at`; restart at the same instant runs nothing (test and live) | Pass |
 | Critical sync tests passing | 100% | 171 / 171 backend tests | Pass |
 
@@ -254,7 +254,7 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 #### Completion decision
 
-**Result:** Not Verified. **Reason:** 16 of 18 criteria pass; the other 2 depend on Phase 7 predictions.
+**Result:** Pass. **Reason:** 18 of 18 criteria pass after the Phase 7 handlers.
 
 ---
 
@@ -440,12 +440,12 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 7 — Prediction API & Inference Engine
 
-**Status:** In Progress · **Progress:** 73% (11/15) · **Dependencies:** Phases 4, 6
+**Status:** Complete · **Progress:** 100% (15/15) · **Dependencies:** Phases 4, 6
 
 #### Deliverables
 
 - [x] Artifact loader with SHA-256 and schema checks
-- [ ] Inference service (bounded thread pool)
+- [x] Inference service (bounded thread pool)
 - [x] Player and matchup validation
 - [x] Pregame feature snapshot at `min(now, tipoff_at)`
 - [x] Predictions for all 7 regression targets
@@ -453,11 +453,11 @@ The "recent games" block from the original design was folded into the game log, 
 - [x] Double-double probability
 - [x] Append-only persistence (`predictions`, `prediction_values`)
 - [x] Snapshot-hash reuse (the prediction cache)
-- [ ] `POST /predictions`, `GET /predictions/{id}`, `/history`, `/explanation`
+- [x] `POST /predictions`, `GET /predictions/{id}`, `/history`, `/explanation`
 - [x] Error handling: `insufficient_data`, `invalid_matchup`, `game_already_started`, `model_unavailable`
 - [x] Prediction API, reproducibility and immutability tests
-- [ ] Prediction freshness service (current/stale/invalid/superseded/final_pregame)
-- [ ] Dependency-aware refresh inserting superseding rows, stopping at tip-off
+- [x] Prediction freshness service (current/stale/invalid/superseded/final_pregame)
+- [x] Dependency-aware refresh inserting superseding rows, stopping at tip-off
 - [x] Team logos in place of abbreviation monograms (owner request, 2026-10-29): fetched once into `frontend/public/logos/{team_id}.svg` by a script, served by the app (never hotlinked from nba.com), used by `TeamMark` with the team name as alt text and the monogram as fallback
 
 #### Acceptance criteria
@@ -475,8 +475,7 @@ The "recent games" block from the original design was folded into the game log, 
 | Silently overwritten predictions | 0 | 0: changed inputs append a superseding row; test checks the old row is unchanged | Pass |
 | New pregame predictions after tip-off | 0 | 0: refused with 409 `game_already_started` (tested) | Pass |
 
-**Evidence:** `backend/app/ml/inference.py`, `backend/app/services/predictions.py`, `backend/app/api/v1/predictions.py`, `backend/tests/api/test_predictions.py`; release `2026.10.29-2` retrained from clean commit `da61251` (metrics identical to `-1`) and activated with `app.cli activate`. History is `GET /predictions?player_id=&game_id=`; the explanation is embedded in each prediction rather than a separate endpoint. FastAPI's default worker pool serves inference, not a dedicated bounded pool. · **Decision:** Not Verified (freshness service, dependency-aware refresh, bounded pool and `/explanation` open)
-
+**Evidence:** `backend/app/ml/inference.py`, `backend/app/services/{predictions,prediction_lifecycle}.py`, `backend/app/sync/worker.py` (`predictions` job every 15 min and the `GAME_STATS_FINALIZED` handler), `backend/tests/api/test_predictions.py` (22 tests). Release `2026.10.29-2` was retrained from a clean commit and activated. Inference runs at most 4 at a time (`inference_busy` after 10 s). Explanations are at `GET /predictions/{id}/explanation`, and live accuracy at `GET /models/{version}/live`. A forecast older than 12 h whose inputs are unchanged stays `current`, since the same model and snapshot give the same forecast. Age only triggers a recheck. · **Decision:** Pass
 ---
 
 ### Phase 7B — Player Photos & Team History
@@ -956,3 +955,20 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 221 passed; frontend lint, type-check and 38 unit tests clean; Playwright 228 passed, 4 skipped; 36 / 36 contrast pairs.
 
 **Next step:** the rest of Phase 7 (forecast refresh and post-game scoring).
+
+### Session — 2026-10-29 (Phase 7 completion)
+
+**Phase:** 7, which also closes Phase 3
+
+**Completed:**
+- Prediction freshness (current, stale, invalid, superseded, final pregame) on every prediction response, with a reason.
+- A `predictions` worker job (every 15 min): scores finished games, then re-forecasts stale predictions for games in the next 48 h. It runs under its own advisory lock and does not advance `data_version`.
+- The `GAME_STATS_FINALIZED` handler scores a game's forecasts as soon as its box score is stable.
+- `GET /predictions/{id}/explanation`, `GET /models/{version}/live`, a 4-slot inference limit, and the `app.cli predictions` command.
+- The Predictions page shows freshness with an "Update forecast" action and, once scored, the actual results. The Models page shows live accuracy once games are scored.
+
+**Real data:** the job checked 47 stored forecasts for games in the next 48 h in about 5 s. None were stale or scorable yet, since those games haven't been played.
+
+**Tests run:** backend 230 passed; frontend lint, type-check and 38 unit tests clean; Playwright 228 passed, 4 skipped.
+
+**Next step:** Phase 9 analytics that need scored forecasts (actual vs predicted, residuals, history explorer), and the Phase 8 distribution chart and keyboard check.

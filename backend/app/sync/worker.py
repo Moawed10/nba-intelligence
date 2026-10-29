@@ -9,12 +9,14 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import Engine, exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.ingestion import jobs
 from app.ingestion.client import StatsSource
 from app.ingestion.transforms import current_season_start_year
@@ -29,6 +31,7 @@ from app.models import (
     SyncEventType,
     SyncSchedule,
 )
+from app.services import prediction_lifecycle
 
 log = logging.getLogger(__name__)
 
@@ -49,6 +52,9 @@ JOBS: dict[str, JobSpec] = {
     "game_logs": JobSpec(interval=timedelta(hours=6), active_interval=timedelta(minutes=10)),
     "metadata": JobSpec(interval=timedelta(hours=24)),
     "corrections": JobSpec(interval=timedelta(days=7)),
+    # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
+    # no NBA data, so it runs outside ingestion runs and does not advance data_version.
+    "predictions": JobSpec(interval=timedelta(minutes=15)),
 }
 
 
@@ -169,9 +175,36 @@ def finalize_stable_box_scores(engine: Engine, run_started: datetime, now: datet
 
 
 EventHandler = Callable[[Session, SyncEvent], None]
-# Prediction refresh and evaluation handlers register here in Phase 7. Caches need no handler:
-# every committed run advances data_version, which is part of every cache key.
-HANDLERS: dict[SyncEventType, EventHandler] = {}
+
+
+def _score_finalized(session: Session, event: SyncEvent) -> None:
+    prediction_lifecycle.score_game(session, event.payload["game_id"], datetime.now(UTC))
+
+
+# Caches need no handler: every committed run advances data_version, part of every cache key.
+HANDLERS: dict[SyncEventType, EventHandler] = {
+    SyncEventType.GAME_STATS_FINALIZED: _score_finalized,
+}
+
+
+def maintain_predictions(
+    engine: Engine, now: datetime, artifacts_dir: Path
+) -> dict[str, int] | None:
+    """Score pending finals, then refresh stale forecasts. None when another worker holds it."""
+    key = func.hashtextextended("predictions", 0)
+    with Session(engine) as s:
+        if not s.scalar(select(func.pg_try_advisory_lock(key))):
+            return None
+        try:
+            scored = prediction_lifecycle.score_pending(s, now)
+            s.commit()
+            counts = prediction_lifecycle.refresh_due(s, artifacts_dir, now)
+            s.commit()
+            return {"scored": scored, **counts}
+        finally:
+            s.rollback()
+            s.execute(select(func.pg_advisory_unlock(key)))
+            s.commit()
 
 
 def drain_events(engine: Engine, now: datetime, batch: int = 500) -> int:
@@ -205,7 +238,18 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
     for job in due_jobs(engine, now):
         started = datetime.now(UTC)
         outcome = "succeeded"
-        for name, params, body in job_executions(job, client, engine, season):
+        if job == "predictions":
+            try:
+                result = maintain_predictions(engine, now, get_settings().artifacts_dir)
+                if result is None:
+                    outcome = "skipped: running elsewhere"
+                else:
+                    log.info("predictions maintained", extra=result)
+            except Exception:
+                log.exception("prediction maintenance failed")
+                outcome = "failed"
+        for name, params, body in ([] if job == "predictions" else
+                                   job_executions(job, client, engine, season)):  # fmt: skip
             try:
                 if jobs.run_job(engine, name, params, body) is None:
                     outcome = "skipped: running elsewhere"

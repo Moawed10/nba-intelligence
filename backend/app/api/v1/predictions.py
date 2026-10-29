@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Response
 
 from app.api.deps import Ctx
-from app.schemas.predictions import Prediction, PredictionRequest
+from app.schemas.predictions import Prediction, PredictionExplanation, PredictionRequest
 from app.services import predictions
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -30,5 +30,10 @@ def list_predictions(
 
 @router.get("/{prediction_id}", response_model=Prediction)
 def get_prediction(ctx: Ctx, prediction_id: uuid.UUID) -> Prediction:
-    ctx.cache_for(3600)
     return predictions.get_prediction(ctx, prediction_id)
+
+
+@router.get("/{prediction_id}/explanation", response_model=PredictionExplanation)
+def get_explanation(ctx: Ctx, prediction_id: uuid.UUID) -> PredictionExplanation:
+    ctx.cache_for(3600)
+    return predictions.explanation(ctx, prediction_id)

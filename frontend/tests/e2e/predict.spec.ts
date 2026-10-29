@@ -28,6 +28,7 @@ test.describe("predictions", () => {
       forecast.getByRole("img", { name: /^Points: predicted 24\.0, likely range 16\.0 to 32\.0/ }),
     ).toBeVisible();
     await expect(forecast.getByText("25%")).toBeVisible();
+    await expect(forecast.getByText("Up to date")).toBeVisible();
     await expect(forecast.getByText(/Inputs: last 5 23\.0 · last 10 22\.0/)).toBeVisible();
     await expect(forecast.getByText("111.9")).toBeVisible();
 

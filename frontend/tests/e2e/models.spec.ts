@@ -13,9 +13,9 @@ test.describe("models", () => {
     const accuracy = page.getByRole("region", { name: "Accuracy against the baseline" });
     await expect(accuracy.getByRole("row", { name: /Points XGBoost 4\.50 4\.70 4\.3%/ })).toBeVisible();
     await expect(accuracy.getByRole("row", { name: /Rebounds Ridge regression 1\.90 1\.95/ })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Live accuracy" })).toContainText(
-      "No scored predictions yet",
-    );
+    const live = page.getByRole("region", { name: "Live accuracy", exact: true });
+    await expect(live.getByRole("row", { name: /Points 5\.25 4\.50 83\.3% 6/ })).toBeVisible();
+    await expect(live.getByText(/across 2 games/)).toBeVisible();
   });
 
   test("ranks candidate algorithms by validation error", async ({ page }) => {

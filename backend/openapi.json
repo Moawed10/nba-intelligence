@@ -1115,6 +1115,129 @@
         "title": "Leaders",
         "type": "object"
       },
+      "LiveAccuracy": {
+        "description": "Final pregame forecasts of this release scored against box scores after the games.",
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated At"
+          },
+          "double_double": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveDoubleDouble"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "stats": {
+            "items": {
+              "$ref": "#/components/schemas/LiveStat"
+            },
+            "title": "Stats",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "activated_at",
+          "games",
+          "stats",
+          "double_double"
+        ],
+        "title": "LiveAccuracy",
+        "type": "object"
+      },
+      "LiveDoubleDouble": {
+        "properties": {
+          "brier": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brier"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "n",
+          "brier"
+        ],
+        "title": "LiveDoubleDouble",
+        "type": "object"
+      },
+      "LiveStat": {
+        "properties": {
+          "interval_coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Coverage"
+          },
+          "mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mae"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "stat": {
+            "title": "Stat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stat",
+          "n",
+          "mae",
+          "interval_coverage"
+        ],
+        "title": "LiveStat",
+        "type": "object"
+      },
       "Meta": {
         "properties": {
           "data_freshness": {
@@ -2340,6 +2463,20 @@
       },
       "Prediction": {
         "properties": {
+          "actuals": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actuals"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -2376,6 +2513,28 @@
           "feature_schema_version": {
             "title": "Feature Schema Version",
             "type": "string"
+          },
+          "freshness": {
+            "enum": [
+              "current",
+              "stale",
+              "invalid",
+              "superseded",
+              "final_pregame"
+            ],
+            "title": "Freshness",
+            "type": "string"
+          },
+          "freshness_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freshness Reason"
           },
           "game_id": {
             "title": "Game Id",
@@ -2443,10 +2602,60 @@
           "feature_schema_version",
           "double_double_probability",
           "supersedes_prediction_id",
+          "freshness",
+          "freshness_reason",
           "values",
+          "actuals",
           "explanation"
         ],
         "title": "Prediction",
+        "type": "object"
+      },
+      "PredictionExplanation": {
+        "description": "What the model received. These are inputs, not attributions of the model's reasoning.",
+        "properties": {
+          "context": {
+            "additionalProperties": true,
+            "title": "Context",
+            "type": "object"
+          },
+          "features": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Features",
+            "type": "object"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "title": "Inputs",
+            "type": "object"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "prediction_id": {
+            "format": "uuid",
+            "title": "Prediction Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "method",
+          "inputs",
+          "context",
+          "features"
+        ],
+        "title": "PredictionExplanation",
         "type": "object"
       },
       "PredictionRequest": {
@@ -4426,6 +4635,89 @@
         ]
       }
     },
+    "/api/v1/models/{version}/live": {
+      "get": {
+        "operationId": "get_live_accuracy_api_v1_models__version__live_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-\\d{1,3}$",
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveAccuracy"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Live Accuracy",
+        "tags": [
+          "models"
+        ]
+      }
+    },
     "/api/v1/overview": {
       "get": {
         "operationId": "get_overview_api_v1_overview_get",
@@ -5670,6 +5962,89 @@
           }
         },
         "summary": "Get Prediction",
+        "tags": [
+          "predictions"
+        ]
+      }
+    },
+    "/api/v1/predictions/{prediction_id}/explanation": {
+      "get": {
+        "operationId": "get_explanation_api_v1_predictions__prediction_id__explanation_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "prediction_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Prediction Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionExplanation"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Explanation",
         "tags": [
           "predictions"
         ]

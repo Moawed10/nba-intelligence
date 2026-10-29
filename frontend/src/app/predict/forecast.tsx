@@ -9,6 +9,7 @@ import { ApiError, describeError, networkError } from "@/lib/api/errors";
 import type { Prediction } from "@/lib/api/types";
 import { formatRelativeTime, formatStat } from "@/lib/format";
 import { targetLabel } from "@/lib/models";
+import { cn } from "@/lib/utils";
 
 const ERROR_TITLES: Record<string, string> = {
   insufficient_data: "Not enough recent games for a forecast",
@@ -38,9 +39,53 @@ function Inputs({ prediction, stat }: { prediction: Prediction; stat: string }) 
   );
 }
 
-function ForecastView({ prediction }: { prediction: Prediction }) {
+const FRESHNESS: Record<Prediction["freshness"], string> = {
+  current: "Up to date",
+  stale: "Newer data available",
+  invalid: "Matchup changed",
+  superseded: "Newer forecast available",
+  final_pregame: "Made before tip-off",
+};
+
+function ForecastView({
+  prediction,
+  onRefresh,
+  pending,
+}: {
+  prediction: Prediction;
+  onRefresh: () => void;
+  pending: boolean;
+}) {
+  const stale = prediction.freshness === "stale" && !prediction.freshness_reason?.includes("release");
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3 text-subhead">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 font-medium">
+          <span
+            aria-hidden
+            className={cn(
+              "size-1.5 rounded-full",
+              prediction.freshness === "current" || prediction.freshness === "final_pregame"
+                ? "bg-positive"
+                : "bg-muted-foreground",
+            )}
+          />
+          {FRESHNESS[prediction.freshness]}
+        </span>
+        {prediction.freshness_reason && (
+          <span className="text-footnote text-muted-foreground">{prediction.freshness_reason}</span>
+        )}
+        {stale && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={pending}
+            className="min-h-9 rounded-full border border-border px-4 text-subhead font-medium transition-colors hover:border-foreground/25 disabled:opacity-60"
+          >
+            {pending ? "Updating…" : "Update forecast"}
+          </button>
+        )}
+      </div>
       <ul className="grid gap-x-8 gap-y-5 md:grid-cols-2">
         {prediction.values.map((v) => (
           <li key={v.stat}>
@@ -53,6 +98,19 @@ function ForecastView({ prediction }: { prediction: Prediction }) {
               max={Math.max(AXIS_MAX[v.stat] ?? 10, v.upper)}
             />
             <Inputs prediction={prediction} stat={v.stat} />
+            {prediction.actuals?.[v.stat] != null && (
+              <p className="mt-1 text-footnote">
+                Actual{" "}
+                <span className="font-semibold tabular-nums">{formatStat(prediction.actuals[v.stat])}</span>{" "}
+                <span className="text-muted-foreground">
+                  ·{" "}
+                  {prediction.actuals[v.stat] >= v.lower && prediction.actuals[v.stat] <= v.upper
+                    ? "inside"
+                    : "outside"}{" "}
+                  the range
+                </span>
+              </p>
+            )}
           </li>
         ))}
       </ul>
@@ -99,7 +157,7 @@ export function Forecast({
     });
   }
 
-  if (prediction) return <ForecastView prediction={prediction} />;
+  if (prediction) return <ForecastView prediction={prediction} onRefresh={request} pending={pending} />;
   if (error) {
     const known = ERROR_TITLES[error.code];
     const { title, message } = known ? { title: known, message: error.message } : describeError(error);

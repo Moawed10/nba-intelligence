@@ -30,11 +30,15 @@ from app.models import (
     ModelTarget,
     ModelVersion,
     Player,
+    PlayerGameStats,
     Prediction,
     ReleaseStatus,
     SeasonType,
     Team,
 )
+from app.services import prediction_lifecycle
+from app.services.prediction_lifecycle import refresh_due, score_game, score_pending
+from app.sync.worker import maintain_predictions
 from tests.api.conftest import FINAL, NOW, SCHEDULED, _players
 from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, player_id, schedule
 
@@ -271,3 +275,133 @@ def test_stored_snapshot_reproduces_the_stored_values_exactly(league, tmp_path, 
     again = inference.predict(release, features)
     stored = {v["stat"]: (v["point"], v["lower"], v["upper"]) for v in body["values"]}
     assert again.values == stored
+
+
+def _fresh(client: TestClient, prediction_id: str) -> str:
+    return client.get(f"/api/v1/predictions/{prediction_id}").json()["freshness"]
+
+
+def _add_star_game(engine: Engine, game_id: str, pts_bonus: int = 0) -> None:
+    """Copy the star's last box score into another game, as if he had played it."""
+    with Session(engine) as s, s.begin():
+        source = s.scalar(
+            select(PlayerGameStats).where(
+                PlayerGameStats.player_id == STAR, PlayerGameStats.game_id == EXTRA[1].id
+            )
+        )
+        columns = {c.key: getattr(source, c.key) for c in PlayerGameStats.__table__.columns}
+        columns.update(game_id=game_id, pts=columns["pts"] + pts_bonus)
+        s.add(PlayerGameStats(**columns))
+
+
+def test_freshness_follows_new_data_and_refresh_supersedes(league, tmp_path, serving):
+    first = _post(serving).json()
+    assert first["freshness"] == "current"
+    assert _fresh(serving, first["id"]) == "current"
+
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE player_game_stats SET pts = pts + 12 WHERE player_id = :p AND game_id = :g"
+            ),
+            {"p": STAR, "g": EXTRA[1].id},
+        )
+    body = serving.get(f"/api/v1/predictions/{first['id']}").json()
+    assert body["freshness"] == "stale" and "New games" in body["freshness_reason"]
+
+    with Session(league) as s:
+        counts = refresh_due(s, tmp_path, NOW)
+    assert counts == {"checked": 1, "refreshed": 1, "skipped": 0}
+    assert _fresh(serving, first["id"]) == "superseded"
+    latest = serving.get("/api/v1/predictions", params={"player_id": STAR}).json()[0]
+    assert latest["supersedes_prediction_id"] == first["id"] and latest["freshness"] == "current"
+
+
+def test_forecasts_become_final_pregame_at_tipoff(serving):
+    first = _post(serving).json()
+    serving.app.state.api.clock = lambda: datetime(2099, 11, 11, 1, tzinfo=UTC)
+    assert _fresh(serving, first["id"]) == "final_pregame"
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "UPDATE players SET current_team_id = 3 WHERE id = :p",
+        "UPDATE games SET status = 'postponed' WHERE id = :g",
+    ],
+)
+def test_matchup_changes_make_a_forecast_invalid(league, serving, change):
+    first = _post(serving).json()
+    with league.begin() as conn:
+        conn.execute(text(change), {"p": STAR, "g": NEXT_GAME.id})
+    assert _fresh(serving, first["id"]) == "invalid"
+
+
+def test_final_pregame_forecast_is_scored_and_counted_live(league, tmp_path, serving):
+    _post(serving)
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE player_game_stats SET pts = pts + 12 WHERE player_id = :p AND game_id = :g"
+            ),
+            {"p": STAR, "g": EXTRA[1].id},
+        )
+    second = _post(serving).json()
+    _add_star_game(league, NEXT_GAME.id, pts_bonus=3)
+    with league.begin() as conn:
+        conn.execute(
+            text("UPDATE games SET status = 'final', stats_finalized_at = now() WHERE id = :g"),
+            {"g": NEXT_GAME.id},
+        )
+    with Session(league) as s, s.begin():
+        written = score_pending(s, NOW)
+    assert written == 2 * (len(TARGETS) + 1)  # both rows scored; live counts only the final one
+
+    scored = serving.get(f"/api/v1/predictions/{second['id']}").json()
+    with Session(league) as s:
+        actual = s.scalar(
+            select(PlayerGameStats.pts).where(
+                PlayerGameStats.player_id == STAR, PlayerGameStats.game_id == NEXT_GAME.id
+            )
+        )
+    assert scored["actuals"]["pts"] == actual
+    assert scored["freshness"] == "final_pregame"
+
+    live = serving.get("/api/v1/models/2099.11.10-1/live").json()
+    assert live["games"] == 1
+    points = next(s for s in live["stats"] if s["stat"] == "pts")
+    assert points["n"] == 1
+    assert points["mae"] == pytest.approx(abs(second["values"][0]["point"] - actual))
+    assert live["double_double"]["n"] == 1
+
+
+def test_players_who_did_not_play_are_not_scored(league, serving):
+    _post(serving)
+    with league.begin() as conn:
+        conn.execute(text("UPDATE games SET status = 'final' WHERE id = :g"), {"g": NEXT_GAME.id})
+    with Session(league) as s, s.begin():
+        assert score_game(s, NEXT_GAME.id, NOW) == 0
+
+
+def test_explanation_lists_every_input(serving):
+    first = _post(serving).json()
+    body = serving.get(f"/api/v1/predictions/{first['id']}/explanation").json()
+    assert set(body["features"]) == set(FEATURES)
+    assert body["inputs"]["pts"]["pts_avg_10"] == pytest.approx(first["values"][0]["point"])
+
+
+def test_inference_is_bounded(serving, monkeypatch):
+    monkeypatch.setattr(prediction_lifecycle._inference_slots, "acquire", lambda timeout: False)
+    response = _post(serving)
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "inference_busy"
+
+
+def test_worker_job_scores_and_refreshes(league, tmp_path, serving):
+    _post(serving)
+    assert maintain_predictions(league, NOW, tmp_path) == {
+        "scored": 0,
+        "checked": 1,
+        "refreshed": 0,
+        "skipped": 0,
+    }
