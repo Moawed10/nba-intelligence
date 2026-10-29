@@ -47,7 +47,12 @@ export function AlgorithmComparison({
           segments={targets.map((t) => ({ value: t, label: SHORT[t] ?? t }))}
         />
       </div>
-      <div className="overflow-x-auto">
+      <div
+        role="region"
+        aria-label={`${targetLabel(target)}: algorithm comparison`}
+        tabIndex={0}
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[30rem] text-subhead tabular-nums">
           <caption className="sr-only">
             {targetLabel(target)}: mean absolute error of each algorithm on the validation season and on{" "}

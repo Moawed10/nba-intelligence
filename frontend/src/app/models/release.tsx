@@ -97,7 +97,7 @@ function AccuracyTable({ metrics, testSeason }: { metrics: TargetMetrics[]; test
     m.mae != null && m.baseline_mae ? (m.baseline_mae - m.mae) / m.baseline_mae : null;
   const maxGain = Math.max(0.0001, ...rows.map((m) => gain(m) ?? 0));
   return (
-    <div className="overflow-x-auto">
+    <div role="region" aria-label="Accuracy by statistic" tabIndex={0} className="overflow-x-auto">
       <table className="w-full min-w-[44rem] text-subhead tabular-nums">
         <caption className="sr-only">
           Accuracy of each selected model on {testSeason}, a season none of the models saw while training
@@ -190,7 +190,7 @@ function RangesTable({ calibration }: { calibration: Record<string, Calibration>
   const edges = first.edges.map((e) => e.toFixed(1));
   const bins = [`< ${edges[0]}`, `${edges[0]}–${edges[1]}`, `> ${edges[1]}`];
   return (
-    <div className="overflow-x-auto">
+    <div role="region" aria-label="Prediction range widths" tabIndex={0} className="overflow-x-auto">
       <table className="w-full text-subhead tabular-nums">
         <caption className="sr-only">
           Half-width of the {Math.round((1 - first.alpha) * 100)}% prediction range by predicted minutes

@@ -265,7 +265,13 @@ function BoxScoreTables({ box }: { box: BoxScore }) {
         </p>
       )}
       {box.teams.map((team) => (
-        <div key={team.team.id} className="overflow-x-auto">
+        <div
+          key={team.team.id}
+          role="region"
+          aria-label={`${team.team.city} ${team.team.name} box score`}
+          tabIndex={0}
+          className="overflow-x-auto"
+        >
           <table className="w-full min-w-[40rem] text-subhead tabular-nums">
             <caption className="mb-2 text-left font-semibold">
               {team.team.city} {team.team.name}

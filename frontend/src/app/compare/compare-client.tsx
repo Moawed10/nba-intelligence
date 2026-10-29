@@ -305,7 +305,12 @@ export function CompareTrend({ players, season }: { players: [Picked, Picked]; s
             </div>
           }
           table={
-            <div className="max-h-96 overflow-auto">
+            <div
+              role="region"
+              aria-label="Game-by-game values"
+              tabIndex={0}
+              className="max-h-96 overflow-auto"
+            >
               <table className="w-full text-subhead tabular-nums">
                 <caption className="sr-only">
                   {label} in each game for {names[0]} and {names[1]}, {season}
