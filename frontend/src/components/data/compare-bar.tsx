@@ -5,15 +5,24 @@ interface CompareBarProps {
   left: number | null;
   right: number | null;
   format: (value: number | null) => string;
-  /** Which direction is better for this statistic; decides the highlighted side. */
-  better?: "higher" | "lower";
+  /** Which direction is better for this statistic; "neither" highlights no side (e.g. pace). */
+  better?: "higher" | "lower" | "neither";
+  /** Names announced to screen readers for the leading side. */
+  names?: [string, string];
 }
 
 /** Two values on a shared scale, mirrored from the centre. The leader is stated in text too. */
-export function CompareBar({ label, left, right, format, better = "higher" }: CompareBarProps) {
+export function CompareBar({
+  label,
+  left,
+  right,
+  format,
+  better = "higher",
+  names = ["First player", "Second player"],
+}: CompareBarProps) {
   const max = Math.max(left ?? 0, right ?? 0) || 1;
   const winner =
-    left == null || right == null || left === right
+    better === "neither" || left == null || right == null || left === right
       ? null
       : (better === "higher") === left > right
         ? "left"
@@ -31,7 +40,7 @@ export function CompareBar({ label, left, right, format, better = "higher" }: Co
       </span>
       <span className="text-center text-footnote text-muted-foreground">
         {label}
-        {winner && <span className="sr-only">, {winner === "left" ? "first" : "second"} player leads</span>}
+        {winner && <span className="sr-only">, {names[winner === "left" ? 0 : 1]} leads</span>}
       </span>
       <span
         className={cn(

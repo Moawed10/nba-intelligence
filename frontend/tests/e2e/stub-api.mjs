@@ -177,6 +177,85 @@ function playerRoute(res, id, resource, q, page) {
   return send(res, 200, page(lines));
 }
 
+const TODAY = "2099-11-10";
+const game = (id, date, away, home, status, scores) => ({
+  id, season: "2099-00", season_type: "regular", game_date: date, status,
+  tipoff_at: `${date}T23:30:00Z`, arena: "Fixture Arena",
+  away: { team: ref(TEAMS[away]), score: scores?.[0] ?? null },
+  home: { team: ref(TEAMS[home]), score: scores?.[1] ?? null },
+});
+const GAMES = [
+  game("0099000101", "2099-11-09", 0, 1, "final", [101, 112]),
+  game("0099000102", TODAY, 1, 0, "scheduled"),
+];
+
+function teamStats(id) {
+  const t = TEAMS.find((x) => x.id === id);
+  return {
+    team_id: id, season: "2099-00", season_type: "regular", games: 10,
+    record: id === 1 ? { wins: 6, losses: 4 } : { wins: 3, losses: 7 },
+    pts_per_game: 110, opp_pts_per_game: 108, possessions_per_game: 100,
+    offensive_rating: id === 1 ? 114.2 : 108.5, defensive_rating: id === 1 ? 109.1 : 111.9,
+    net_rating: id === 1 ? 5.1 : -3.4, pace: id === 1 ? 99.5 : 101.2,
+    shooting: shooting(box(t.id)), meta: META,
+  };
+}
+
+function boxScore(g) {
+  const teams = [g.away, g.home].map((side, i) => {
+    const players = PLAYERS.filter((p) => p.is_active && p.team.id === side.team.id).slice(0, 5)
+      .map((p, n) => {
+        const b = box(n + i);
+        return { player_id: p.id, full_name: p.full_name, minutes: 30, box: b, shooting: shooting(b), double_double: false };
+      });
+    return { team: side.team, is_home: i === 1, minutes: 240, players, totals: box(i), shooting: shooting(box(i)) };
+  });
+  return { game: g, stats_finalized: true, teams, meta: META };
+}
+
+function leaders(stat, limit) {
+  const rows = PLAYERS.filter((p) => p.is_active)
+    .map((p) => ({ p, s: summary(gameLines(p, "2099-00")) }))
+    .map(({ p, s }) => ({ player_id: p.id, full_name: p.full_name, team: p.team, games_played: s.games_played, value: s.per_game[stat] ?? 0 }))
+    .sort((a, b) => b.value - a.value || a.full_name.localeCompare(b.full_name))
+    .slice(0, limit)
+    .map((row, i) => ({ ...row, rank: i + 1 }));
+  return { season: "2099-00", stat, minimum_games: 21, qualified_players: 30, leaders: rows, meta: META };
+}
+
+const STANDOUTS = {
+  window_start: "2099-11-03", window_end: "2099-11-09",
+  criterion: "Highest Game Score in completed games over the 7 days ending on the latest final",
+  performances: PLAYERS.slice(0, 3).map((p, i) => {
+    const b = box(10 - i);
+    return {
+      game_id: "0099000101", game_date: "2099-11-09", player_id: p.id, full_name: p.full_name,
+      team: p.team, opponent: ref(TEAMS[p.team.id % 2]), is_home: p.team.id === 2,
+      result: p.team.id === 2 ? "W" : "L", minutes: 34, box: b, shooting: shooting(b),
+      game_score: 30 - i * 2.5, double_double: false,
+    };
+  }),
+  meta: META,
+};
+
+const RELEASE = {
+  version: "2099.11.10-1", status: "candidate", created_at: "2099-11-10T12:00:00Z", activated_at: null,
+  data_version: 1, feature_schema_version: "stub", git_sha: "0000000",
+  train_start: "2090-10-01", train_end: "2095-06-30", val_start: "2095-10-01", val_end: "2096-06-30",
+  test_start: "2096-10-01", test_end: "2097-06-30",
+  selected: { pts: "xgboost", reb: "ridge", double_double: "logistic" },
+};
+const METRICS = [
+  { target: "pts", algorithm: "xgboost", n: 1000, mae: 4.5, rmse: 6.0, r2: 0.5, baseline_mae: 4.7, interval_coverage: 0.8, brier: null, log_loss: null },
+  { target: "reb", algorithm: "ridge", n: 1000, mae: 1.9, rmse: 2.5, r2: 0.45, baseline_mae: 1.95, interval_coverage: 0.81, brier: null, log_loss: null },
+  { target: "double_double", algorithm: "logistic", n: 1000, mae: null, rmse: null, r2: null, baseline_mae: null, interval_coverage: null, brier: 0.05, log_loss: 0.18 },
+];
+const SNAPSHOT = { release: RELEASE, test_season: "2096-97", metrics: METRICS };
+const DATASETS = ["schedule", "final_box_scores", "player_game_logs"].map((dataset) => ({
+  dataset, status: "fresh", last_successful_sync: "2099-11-10T12:00:00Z", last_attempted_sync: "2099-11-10T12:00:00Z",
+  last_error: null, coverage_start: "2098-10-20", coverage_end: "2099-11-09",
+}));
+
 createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const q = url.searchParams;
@@ -196,6 +275,44 @@ createServer((req, res) => {
       row_counts: {},
     });
   }
+  if (path === "/overview") {
+    return send(res, 200, {
+      generated_at: "2099-11-10T12:00:00Z", today: TODAY,
+      upcoming: GAMES.filter((g) => g.status === "scheduled"),
+      recent: GAMES.filter((g) => g.status === "final"),
+      leaders: leaders("pts", 5), standouts: STANDOUTS, model: SNAPSHOT, datasets: DATASETS,
+    });
+  }
+  if (path === "/leaders") return send(res, 200, leaders(q.get("stat") ?? "pts", Number(q.get("limit") ?? 10)));
+  if (path === "/standouts") return send(res, 200, STANDOUTS);
+  if (path === "/games") {
+    const from = q.get("date_from") ?? "0000", to = q.get("date_to") ?? "9999";
+    return send(res, 200, page(GAMES.filter((g) => g.game_date >= from && g.game_date <= to)));
+  }
+  const boxMatch = path.match(/^\/games\/(\w+)\/boxscore$/);
+  if (boxMatch) {
+    const g = GAMES.find((x) => x.id === boxMatch[1]);
+    return g ? send(res, 200, boxScore(g)) : error(res, 404, "game_not_found", "No such game.");
+  }
+  const statsMatch = path.match(/^\/teams\/(\d+)\/stats$/);
+  if (statsMatch) return send(res, 200, teamStats(Number(statsMatch[1])));
+  if (path === "/models") return send(res, 200, [{ ...RELEASE }]);
+  if (path === `/models/${RELEASE.version}`) {
+    return send(res, 200, {
+      ...RELEASE, test_season: "2096-97", selected_metrics: METRICS,
+      algorithms: [
+        { target: "pts", algorithm: "rolling_baseline", selected: false, validation_mae: 4.8, test_mae: 4.7, test_rmse: 6.2, test_r2: 0.44 },
+        { target: "pts", algorithm: "ridge", selected: false, validation_mae: 4.6, test_mae: 4.6, test_rmse: 6.1, test_r2: 0.47 },
+        { target: "pts", algorithm: "xgboost", selected: true, validation_mae: 4.5, test_mae: 4.5, test_rmse: 6.0, test_r2: 0.5 },
+      ],
+      features: ["pts_avg_10", "min_avg_10", "rest_days"],
+      interval_calibration: Object.fromEntries(["pts", "reb"].map((t, i) => [t, {
+        alpha: 0.2, method: "mondrian_split_conformal", binned_by: "predicted_minutes",
+        edges: [18, 27], counts: [300, 300, 300], quantiles: [3 + i, 5 + i, 7 + i],
+      }])),
+    });
+  }
+  if (path.startsWith("/models/")) return error(res, 404, "model_not_found", "No such model version.");
   if (path === "/players") {
     let items = PLAYERS;
     const season = q.get("season");

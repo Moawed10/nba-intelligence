@@ -1,5 +1,6 @@
-import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+
+import { expectAccessible } from "./helpers";
 
 // Server-rendered pages read from tests/e2e/stub-api.mjs (synthetic season 2099-00).
 const STUB = "http://127.0.0.1:8799/api/v1";
@@ -7,23 +8,6 @@ const STAR = 1000;
 
 const oneDecimal = (value: number) =>
   value.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-async function expectAccessible(page: Page) {
-  for (const theme of ["dark", "light"] as const) {
-    await page.evaluate((t) => localStorage.setItem("nbai-theme", t), theme);
-    await page.reload();
-    await expect(page.locator("main h1")).toBeVisible();
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-      .analyze();
-    const blocking = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
-    expect(blocking.map((v) => `${theme}: ${v.id} — ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
-  }
-}
 
 const directoryRows = (page: Page, isMobile = false) =>
   isMobile
