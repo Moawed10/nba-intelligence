@@ -336,3 +336,63 @@ def transform_teams(
         }
         for t in static_teams
     ]
+
+
+# A season total of zero in these columns means the source did not record them that year.
+UNRECORDED_WHEN_ZERO = ("oreb", "dreb", "stl", "blk", "tov")
+ADVANCED_FIRST_SEASON = 1996
+FINALS = {"FINALS APPEARANCE": "finals", "LEAGUE CHAMPION": "champion"}
+
+
+def _optional_int(value: Any) -> int | None:
+    return None if value is None or pd.isna(value) else int(value)
+
+
+def transform_team_history(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    """TeamYearByYearStats (regular season totals) to team_seasons rows, one per played season."""
+    rows = []
+    for r in frame.to_dict("records"):
+        if not r.get("GP"):
+            continue
+        row: dict[str, Any] = {
+            "team_id": int(r["TEAM_ID"]),
+            "season_id": int(str(r["YEAR"])[:4]),
+            "city": r["TEAM_CITY"],
+            "name": r["TEAM_NAME"],
+            "games": int(r["GP"]),
+            "wins": int(r["WINS"]),
+            "losses": int(r["LOSSES"]),
+            "conference_rank": _optional_int(r.get("CONF_RANK")) or None,
+            "division_rank": _optional_int(r.get("DIV_RANK")) or None,
+            "playoff_wins": _optional_int(r.get("PO_WINS")),
+            "playoff_losses": _optional_int(r.get("PO_LOSSES")),
+            "finals": FINALS.get(str(r.get("NBA_FINALS_APPEARANCE", "")).upper()),
+            "pts": int(r["PTS"]),
+        }
+        for column in ("fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "reb", "ast",
+                       "stl", "blk", "tov", "pf"):  # fmt: skip
+            row[column] = _optional_int(r.get(column.upper()))
+        for column in UNRECORDED_WHEN_ZERO:
+            if row[column] == 0:
+                row[column] = None
+        if not row["fg3a"]:
+            row["fg3m"] = row["fg3a"] = None
+        rows.append(row)
+    return rows
+
+
+def transform_team_advanced(frame: pd.DataFrame) -> dict[int, dict[str, float | None]]:
+    """LeagueDashTeamStats (Advanced, per game) to pace and ratings by team id."""
+    return {
+        int(r["TEAM_ID"]): {
+            "pace": _optional_float(r.get("PACE")),
+            "off_rating": _optional_float(r.get("OFF_RATING")),
+            "def_rating": _optional_float(r.get("DEF_RATING")),
+            "net_rating": _optional_float(r.get("NET_RATING")),
+        }
+        for r in frame.to_dict("records")
+    }
+
+
+def _optional_float(value: Any) -> float | None:
+    return None if value is None or pd.isna(value) else float(value)

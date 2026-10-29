@@ -7,10 +7,12 @@ from typing import Any
 
 from nba_api.stats.endpoints import (
     CommonAllPlayers,
+    LeagueDashTeamStats,
     LeagueGameLog,
     LeagueStandingsV3,
     PlayerIndex,
     ScheduleLeagueV2,
+    TeamYearByYearStats,
 )
 from nba_api.stats.static import teams as static_teams
 from sqlalchemy import Engine, func, select, update
@@ -21,6 +23,7 @@ from app.config import get_settings
 from app.ingestion.client import FetchResult, StatsSource
 from app.ingestion.lifecycle import resolve_status
 from app.ingestion.transforms import (
+    ADVANCED_FIRST_SEASON,
     ATYPICAL_SEASONS,
     LOG_SEASON_TYPE,
     Rejection,
@@ -29,6 +32,8 @@ from app.ingestion.transforms import (
     transform_player_logs,
     transform_players,
     transform_schedule,
+    transform_team_advanced,
+    transform_team_history,
     transform_team_logs,
     transform_teams,
 )
@@ -47,6 +52,7 @@ from app.models import (
     SyncEventType,
     Team,
     TeamGameStats,
+    TeamSeason,
 )
 
 log = logging.getLogger(__name__)
@@ -179,6 +185,41 @@ def ingest_teams(client: StatsSource, season: int) -> Callable[[RunContext], Non
         rows = transform_teams(static_teams.get_teams(), standings)
         ctx.valid += len(rows)
         ctx.counted(upsert(ctx.session, Team, rows, ["id"]))
+
+    return body
+
+
+def ingest_team_history(client: StatsSource) -> Callable[[RunContext], None]:
+    """Every franchise's regular seasons under that year's name, plus pace and ratings from
+    1996-97 (the first season the source publishes them)."""
+
+    def body(ctx: RunContext) -> None:
+        rows: list[dict[str, Any]] = []
+        for team_id in ctx.session.scalars(select(Team.id).order_by(Team.id)).all():
+            frame = ctx.fetched_from(
+                client.fetch(TeamYearByYearStats, team_id=team_id, per_mode_simple="Totals",
+                             season_type_all_star="Regular Season")
+            )  # fmt: skip
+            rows += transform_team_history(frame)
+        for season in sorted({r["season_id"] for r in rows}):
+            ensure_season(ctx.session, season)
+        advanced: dict[tuple[int, int], dict[str, float | None]] = {}
+        for season in range(ADVANCED_FIRST_SEASON, current_season_start_year() + 1):
+            frame = ctx.fetched_from(
+                client.fetch(LeagueDashTeamStats, season=season_label(season),
+                             measure_type_detailed_defense="Advanced", per_mode_detailed="PerGame",
+                             cacheable=_is_completed_season(season))
+            )  # fmt: skip
+            for team_id, values in transform_team_advanced(frame).items():
+                advanced[(team_id, season)] = values
+        empty = {"pace": None, "off_rating": None, "def_rating": None, "net_rating": None}
+        for row in rows:
+            row.update(advanced.get((row["team_id"], row["season_id"]), empty))
+        ctx.valid += len(rows)
+        ctx.counted(
+            upsert(ctx.session, TeamSeason, rows, ["team_id", "season_id"],
+                   provenance=provenance(ctx.run_id, "TeamYearByYearStats"))
+        )  # fmt: skip
 
     return body
 

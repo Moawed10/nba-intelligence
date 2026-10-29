@@ -3,9 +3,25 @@ from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
 from app.api.errors import not_found
-from app.models import Game, GameStatus, Player, Season, SeasonType, Team, TeamGameStats
+from app.models import (
+    Game,
+    GameStatus,
+    Player,
+    Season,
+    SeasonType,
+    Team,
+    TeamGameStats,
+    TeamSeason,
+)
 from app.schemas.common import Shooting
-from app.schemas.resources import PlayerSummary, Record, TeamDetail, TeamSeasonStats
+from app.schemas.resources import (
+    HistoricSeason,
+    PlayerSummary,
+    Record,
+    TeamDetail,
+    TeamHistory,
+    TeamSeasonStats,
+)
 from app.schemas.resources import Team as TeamSchema
 from app.services.common import latest_season, resolve_season, team_ref
 from app.stats import pace, per_100, possessions, ratio
@@ -138,3 +154,46 @@ def team_stats(
 
     key = (team_id, season, season_type)
     return ctx.cached_model("team_stats", TEAM_TTL, key, DATASET, compute)
+
+
+HISTORY_PER_GAME = ("pts", "reb", "oreb", "ast", "stl", "blk", "tov", "fg3m", "pf")
+
+
+def _historic(row: TeamSeason, label: str) -> HistoricSeason:
+    def per_game(column: str) -> float | None:
+        total = getattr(row, column)
+        return None if total is None else round(total / row.games, 1)
+
+    def pct(made: int | None, attempted: int | None) -> float | None:
+        return None if made is None or not attempted else round(made / attempted, 4)
+
+    return HistoricSeason(
+        season=label, city=row.city, name=row.name, games=row.games, wins=row.wins,
+        losses=row.losses, win_pct=round(row.wins / row.games, 4),
+        conference_rank=row.conference_rank, division_rank=row.division_rank,
+        playoff_wins=row.playoff_wins, playoff_losses=row.playoff_losses, finals=row.finals,
+        per_game={c: per_game(c) for c in HISTORY_PER_GAME},
+        fg_pct=pct(row.fgm, row.fga), fg3_pct=pct(row.fg3m, row.fg3a), ft_pct=pct(row.ftm, row.fta),
+        pace=row.pace, off_rating=row.off_rating, def_rating=row.def_rating,
+        net_rating=row.net_rating,
+    )  # fmt: skip
+
+
+def team_history(ctx: Context, team_id: int) -> TeamHistory:
+    """Every season of a franchise, newest first, under the name it had that year."""
+
+    def compute() -> TeamHistory:
+        team = _team_or_404(ctx.session, team_id)
+        rows = ctx.session.execute(
+            select(TeamSeason, Season.label)
+            .join(Season, Season.id == TeamSeason.season_id)
+            .where(TeamSeason.team_id == team_id)
+            .order_by(TeamSeason.season_id.desc())
+        ).all()
+        return TeamHistory(
+            team=team_ref(team),
+            seasons=[_historic(row, label) for row, label in rows],
+            meta=ctx.meta(DATASET),
+        )
+
+    return ctx.cached_model("team_history", TEAM_TTL, team_id, DATASET, compute)

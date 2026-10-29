@@ -26,6 +26,7 @@ from app.models.reference import (
     SeasonType,
     Team,
     TeamGameStats,
+    TeamSeason,
 )
 from app.models.registry import (
     Algorithm,
@@ -67,5 +68,6 @@ __all__ = [
     "SyncEventType",
     "SyncSchedule",
     "Team",
+    "TeamSeason",
     "TeamGameStats",
 ]

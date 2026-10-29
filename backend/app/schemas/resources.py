@@ -347,3 +347,34 @@ class Overview(BaseModel):
     leaders: Leaders | None
     model: ModelSnapshot | None
     datasets: list[DatasetStatus]
+
+
+class HistoricSeason(BaseModel):
+    """One regular season of a franchise as published by the source. None means not recorded."""
+
+    season: str
+    city: str
+    name: str
+    games: int
+    wins: int
+    losses: int
+    win_pct: float
+    conference_rank: int | None
+    division_rank: int | None
+    playoff_wins: int | None
+    playoff_losses: int | None
+    finals: Literal["finals", "champion"] | None
+    per_game: dict[str, float | None]
+    fg_pct: float | None
+    fg3_pct: float | None
+    ft_pct: float | None
+    pace: float | None
+    off_rating: float | None
+    def_rating: float | None
+    net_rating: float | None
+
+
+class TeamHistory(BaseModel):
+    team: TeamRef
+    seasons: list[HistoricSeason]
+    meta: Meta

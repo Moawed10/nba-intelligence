@@ -8,6 +8,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -59,6 +60,52 @@ class Team(Base):
     division: Mapped[str | None] = mapped_column(String(16))
     primary_color: Mapped[str | None] = mapped_column(String(7))
     secondary_color: Mapped[str | None] = mapped_column(String(7))
+
+
+class TeamSeason(Provenance, Base):
+    """A franchise's regular season as published by the source, under that season's name.
+
+    Counting columns are NULL when the source did not record them that season (e.g. turnovers before
+    the 1970s, 3-pointers before 1979-80); pace and ratings exist from 1996-97.
+    """
+
+    __tablename__ = "team_seasons"
+
+    team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id", ondelete="RESTRICT"), primary_key=True
+    )
+    season_id: Mapped[int] = mapped_column(
+        ForeignKey("seasons.id", ondelete="RESTRICT"), primary_key=True
+    )
+    city: Mapped[str] = mapped_column(String(64))
+    name: Mapped[str] = mapped_column(String(64))
+    games: Mapped[int] = mapped_column(SmallInteger)
+    wins: Mapped[int] = mapped_column(SmallInteger)
+    losses: Mapped[int] = mapped_column(SmallInteger)
+    conference_rank: Mapped[int | None] = mapped_column(SmallInteger)
+    division_rank: Mapped[int | None] = mapped_column(SmallInteger)
+    playoff_wins: Mapped[int | None] = mapped_column(SmallInteger)
+    playoff_losses: Mapped[int | None] = mapped_column(SmallInteger)
+    finals: Mapped[str | None] = mapped_column(String(24))
+    fgm: Mapped[int | None] = mapped_column(Integer)
+    fga: Mapped[int | None] = mapped_column(Integer)
+    fg3m: Mapped[int | None] = mapped_column(Integer)
+    fg3a: Mapped[int | None] = mapped_column(Integer)
+    ftm: Mapped[int | None] = mapped_column(Integer)
+    fta: Mapped[int | None] = mapped_column(Integer)
+    oreb: Mapped[int | None] = mapped_column(Integer)
+    dreb: Mapped[int | None] = mapped_column(Integer)
+    reb: Mapped[int | None] = mapped_column(Integer)
+    ast: Mapped[int | None] = mapped_column(Integer)
+    stl: Mapped[int | None] = mapped_column(Integer)
+    blk: Mapped[int | None] = mapped_column(Integer)
+    tov: Mapped[int | None] = mapped_column(Integer)
+    pf: Mapped[int | None] = mapped_column(Integer)
+    pts: Mapped[int] = mapped_column(Integer)
+    pace: Mapped[float | None] = mapped_column(Float)
+    off_rating: Mapped[float | None] = mapped_column(Float)
+    def_rating: Mapped[float | None] = mapped_column(Float)
+    net_rating: Mapped[float | None] = mapped_column(Float)
 
 
 class Player(Provenance, Base):

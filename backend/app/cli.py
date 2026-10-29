@@ -89,6 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     isub = ingest.add_subparsers(dest="target", required=True)
     current = current_season_start_year()
     isub.add_parser("teams")
+    isub.add_parser("team-history", help="All seasons of every franchise (about 60 requests)")
     isub.add_parser("players")
     for name in ("schedule", "season"):
         p = isub.add_parser(name)
@@ -123,7 +124,9 @@ def main(argv: list[str] | None = None) -> int:
     all_types = list(SeasonType)
 
     if args.command == "ingest":
-        if args.target == "teams":
+        if args.target == "team-history":
+            ok = _run("team_history", {}, jobs.ingest_team_history(client))
+        elif args.target == "teams":
             ok = _run("teams", {"season": current}, jobs.ingest_teams(client, current))
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
