@@ -14,7 +14,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 4 | Core Backend APIs | Complete | 100% (11/11) | None |
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
-| 7 | Prediction API & Inference | Not Started | 0% (0/14) | Phases 4, 6 |
+| 7 | Prediction API & Inference | Not Started | 0% (0/15) | Phases 4, 6 |
 | 8 | Prediction Center | In Progress | 42% (5/12) | Phase 7 inference API (forecast, interval, explanation) |
 | 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
 | 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
@@ -24,7 +24,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 96 / 174 verified deliverables = **55%**.
+**Overall:** 96 / 175 verified deliverables = **55%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -439,7 +439,7 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 7 — Prediction API & Inference Engine
 
-**Status:** Not Started · **Progress:** 0% (0/14) · **Dependencies:** Phases 4, 6
+**Status:** Not Started · **Progress:** 0% (0/15) · **Dependencies:** Phases 4, 6
 
 #### Deliverables
 
@@ -457,6 +457,7 @@ The "recent games" block from the original design was folded into the game log, 
 - [ ] Prediction API, reproducibility and immutability tests
 - [ ] Prediction freshness service (current/stale/invalid/superseded/final_pregame)
 - [ ] Dependency-aware refresh inserting superseding rows, stopping at tip-off
+- [ ] Team logos in place of abbreviation monograms (owner request, 2026-10-29): fetched once into `frontend/public/logos/{team_id}.svg` by a script, served by the app (never hotlinked from nba.com), used by `TeamMark` with the team name as alt text and the monogram as fallback
 
 #### Acceptance criteria
 

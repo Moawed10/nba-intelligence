@@ -20,7 +20,7 @@ Grounded in the repository as of 2026-10-28. Status is tracked in [implementatio
 
 **Design resources reviewed.** Componentry, Magic UI, Aceternity and React Bits ship copy-paste Tailwind + Framer Motion components built on the `motion` package this project already uses. Patterns are adapted with the existing dependency; no new animation library is added. Componentry's site states no license on its landing page, so its code is not copied.
 
-**Images.** NBA team logos and player headshots are NBA property, so the product uses team-color monograms and initials instead. Team colors are factual and stored in `teams.primary_color` and `secondary_color`.
+**Images.** NBA team logos and player headshots are NBA property, so the product uses team-color monograms and initials instead. Team colors are factual and stored in `teams.primary_color` and `secondary_color`. The owner has asked for team logos in Phase 7: they will be fetched once, served from the app rather than hotlinked, and keep the monogram as fallback. The logos remain NBA trademarks, used here in a non-commercial portfolio project.
 
 ## Plan
 
