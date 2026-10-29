@@ -17,14 +17,18 @@ ENDPOINTS = {
     "/api/v1/teams/{team_id}/stats", "/api/v1/games", "/api/v1/games/upcoming",
     "/api/v1/games/{game_id}", "/api/v1/games/{game_id}/boxscore", "/api/v1/health",
     "/api/v1/readiness", "/api/v1/data-status", "/api/v1/overview", "/api/v1/leaders",
-    "/api/v1/standouts", "/api/v1/models", "/api/v1/models/{version}",
+    "/api/v1/standouts", "/api/v1/models", "/api/v1/models/{version}", "/api/v1/predictions",
+    "/api/v1/predictions/{prediction_id}",
 }  # fmt: skip
+# The only write: an append-only pregame forecast. Ingestion, training and activation stay offline.
+WRITES = {("/api/v1/predictions", "post")}
 
 
-def test_every_endpoint_is_documented_read_only(client):
+def test_every_endpoint_is_documented_and_only_predictions_write(client):
     schema = client.get("/api/v1/openapi.json").json()
     assert set(schema["paths"]) == ENDPOINTS
-    assert {m for ops in schema["paths"].values() for m in ops} == {"get"}
+    operations = {(path, m) for path, ops in schema["paths"].items() for m in ops}
+    assert {op for op in operations if op[1] != "get"} == WRITES
 
 
 def test_health_and_readiness(client):

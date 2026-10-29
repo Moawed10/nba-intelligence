@@ -61,6 +61,20 @@ def train_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def activate_command(version: str) -> int:
+    from app.ml.artifacts import ArtifactMismatch
+    from app.ml.inference import activate
+
+    try:
+        with session_scope(get_engine()) as session:
+            release = activate(session, version, get_settings().artifacts_dir, datetime.now(UTC))
+            print(f"{release.version} is active")
+    except (LookupError, ArtifactMismatch, FileNotFoundError) as error:
+        print(f"Not activated: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def openapi_json() -> str:
     from app.main import create_app
 
@@ -93,6 +107,8 @@ def main(argv: list[str] | None = None) -> int:
     train = sub.add_parser("train", help="Train, evaluate and register a candidate model release")
     train.add_argument("--targets", help="Comma-separated subset of targets (no registration)")
     train.add_argument("--fast", action="store_true", help="Small search grids, for smoke runs")
+    activate = sub.add_parser("activate", help="Verify a release's artifacts and make it serve")
+    activate.add_argument("version")
 
     args = parser.parse_args(argv)
     if args.command == "openapi":
@@ -100,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "train":
         return train_command(args)
+    if args.command == "activate":
+        return activate_command(args.version)
     configure_logging()
     client = NBAStatsClient()
     all_types = list(SeasonType)
