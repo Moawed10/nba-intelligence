@@ -13,7 +13,14 @@ import { SegmentedControl } from "@/components/data/segmented-control";
 import { Unavailable } from "@/components/data/unavailable";
 import { clientGet } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
-import type { BoxScore, GamePage, GameSummary, Leaders, TeamSeasonStats } from "@/lib/api/types";
+import type {
+  BoxScore,
+  BoxScorePlayer,
+  GamePage,
+  GameSummary,
+  Leaders,
+  TeamSeasonStats,
+} from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
 import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -101,7 +108,7 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
   );
 }
 
-function Matchup({ game }: { game: GameSummary }) {
+function Matchup({ game, fullBox }: { game: GameSummary; fullBox?: boolean }) {
   const stats = useQuery({
     queryKey: ["matchup-stats", game.away.team.id, game.home.team.id, game.season],
     queryFn: ({ signal }) =>
@@ -181,7 +188,13 @@ function Matchup({ game }: { game: GameSummary }) {
         </div>
       )}
 
-      {game.status === "final" && box.data && (
+      {game.status === "final" && box.error && (
+        <Unavailable kind="error" title="The box score couldn't load">
+          {describeError(box.error).message}
+        </Unavailable>
+      )}
+      {fullBox && game.status === "final" && box.data && <BoxScoreTables box={box.data} />}
+      {!fullBox && game.status === "final" && box.data && (
         <div className="grid gap-3 sm:grid-cols-2">
           {box.data.teams.map((team) => {
             const top = [...team.players].sort((a, b) => b.box.pts - a.box.pts)[0];
@@ -212,12 +225,126 @@ function Matchup({ game }: { game: GameSummary }) {
   );
 }
 
+const BOX_COLUMNS = [
+  { label: "MIN", title: "Minutes", value: (p: BoxScorePlayer) => p.minutes.toFixed(0) },
+  { label: "PTS", title: "Points", value: (p: BoxScorePlayer) => p.box.pts },
+  { label: "REB", title: "Rebounds", value: (p: BoxScorePlayer) => p.box.reb },
+  { label: "AST", title: "Assists", value: (p: BoxScorePlayer) => p.box.ast },
+  { label: "STL", title: "Steals", value: (p: BoxScorePlayer) => p.box.stl },
+  { label: "BLK", title: "Blocks", value: (p: BoxScorePlayer) => p.box.blk },
+  { label: "TO", title: "Turnovers", value: (p: BoxScorePlayer) => p.box.tov },
+  {
+    label: "FG",
+    title: "Field goals made–attempted",
+    value: (p: BoxScorePlayer) => `${p.box.fgm}–${p.box.fga}`,
+  },
+  {
+    label: "3P",
+    title: "3-pointers made–attempted",
+    value: (p: BoxScorePlayer) => `${p.box.fg3m}–${p.box.fg3a}`,
+  },
+  {
+    label: "FT",
+    title: "Free throws made–attempted",
+    value: (p: BoxScorePlayer) => `${p.box.ftm}–${p.box.fta}`,
+  },
+  {
+    label: "+/−",
+    title: "Plus-minus",
+    value: (p: BoxScorePlayer) =>
+      p.box.plus_minus == null ? "—" : p.box.plus_minus > 0 ? `+${p.box.plus_minus}` : p.box.plus_minus,
+  },
+];
+
+function BoxScoreTables({ box }: { box: BoxScore }) {
+  return (
+    <div className="space-y-6">
+      {!box.stats_finalized && (
+        <p className="text-footnote text-muted-foreground">
+          Box score not finalized by the source yet; numbers may still change.
+        </p>
+      )}
+      {box.teams.map((team) => (
+        <div key={team.team.id} className="overflow-x-auto">
+          <table className="w-full min-w-[40rem] text-subhead tabular-nums">
+            <caption className="mb-2 text-left font-semibold">
+              {team.team.city} {team.team.name}
+            </caption>
+            <thead className="text-footnote text-muted-foreground">
+              <tr className="border-b border-border">
+                <th scope="col" className="py-1.5 text-left font-medium">
+                  Player
+                </th>
+                {BOX_COLUMNS.map((c) => (
+                  <th key={c.label} scope="col" className="py-1.5 text-right font-medium">
+                    <abbr title={c.title} className="no-underline">
+                      {c.label}
+                    </abbr>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...team.players]
+                .sort((a, b) => b.minutes - a.minutes)
+                .map((p) => (
+                  <tr key={p.player_id} className="border-b border-border/50">
+                    <th scope="row" className="py-1.5 pr-3 text-left font-normal">
+                      <Link href={`/players/${p.player_id}`} className="hover:text-primary">
+                        {p.full_name}
+                      </Link>
+                    </th>
+                    {BOX_COLUMNS.map((c) => (
+                      <td key={c.label} className="py-1.5 text-right">
+                        {c.value(p)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+            </tbody>
+            <tfoot>
+              <tr className="font-semibold">
+                <th scope="row" className="py-1.5 text-left">
+                  Team
+                </th>
+                <td className="py-1.5 text-right">{team.minutes}</td>
+                {[
+                  team.totals.pts,
+                  team.totals.reb,
+                  team.totals.ast,
+                  team.totals.stl,
+                  team.totals.blk,
+                  team.totals.tov,
+                  `${team.totals.fgm}–${team.totals.fga}`,
+                  `${team.totals.fg3m}–${team.totals.fg3a}`,
+                  `${team.totals.ftm}–${team.totals.fta}`,
+                  "",
+                ].map((v, i) => (
+                  <td key={i} className="py-1.5 text-right">
+                    {v}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ScheduleBoard({
   initialDate,
   initialGames,
+  fullBox,
+  urlPath,
 }: {
   initialDate: string;
   initialGames: GameSummary[];
+  /** Full box scores for final games instead of the top-scorer summary. */
+  fullBox?: boolean;
+  /** Mirror the browsed date into `?date=` on this path so the day can be linked. */
+  urlPath?: string;
 }) {
   const [date, setDate] = useState(initialDate);
   const [selectedId, setSelectedId] = useState<string | null>(initialGames[0]?.id ?? null);
@@ -234,8 +361,10 @@ export function ScheduleBoard({
   const selected = list.find((g) => g.id === selectedId) ?? list[0] ?? null;
 
   function move(days: number) {
-    setDate((d) => shiftDate(d, days));
+    const next = shiftDate(date, days);
+    setDate(next);
     setSelectedId(null);
+    if (urlPath) window.history.replaceState(null, "", `${urlPath}?date=${next}`);
   }
 
   return (
@@ -281,7 +410,7 @@ export function ScheduleBoard({
           ))}
         </div>
       )}
-      {selected && <Matchup key={selected.id} game={selected} />}
+      {selected && <Matchup key={selected.id} game={selected} fullBox={fullBox} />}
     </div>
   );
 }

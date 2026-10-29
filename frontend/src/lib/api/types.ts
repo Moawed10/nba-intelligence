@@ -15,6 +15,7 @@ export type TeamSeasonStats = Schemas["TeamSeasonStats"];
 export type GameSummary = Schemas["GameSummary"];
 export type GameDetail = Schemas["GameDetail"];
 export type BoxScore = Schemas["BoxScore"];
+export type BoxScorePlayer = Schemas["BoxScorePlayer"];
 export type DataStatus = Schemas["DataStatus"];
 export type Meta = Schemas["Meta"];
 export type PlayerPage = Schemas["Page_DirectoryPlayer_"];
