@@ -50,6 +50,14 @@ test.describe("models", () => {
     await expect(page.getByText("rest_days", { exact: true })).toBeVisible();
   });
 
+  test("section navigator jumps to a panel on wide screens", async ({ page }, info) => {
+    test.skip(!info.project.name.startsWith("desktop"), "the navigator shows at 1280 px and wider");
+    await page.goto("/models");
+    const nav = page.getByRole("complementary", { name: "Model sections" });
+    await nav.getByRole("button", { name: "Releases" }).click();
+    await expect(page.getByRole("heading", { name: "Releases" })).toBeInViewport();
+  });
+
   test("is accessible in both themes without horizontal overflow", async ({ page }) => {
     await page.goto("/models");
     await expect(page.getByRole("region", { name: "Accuracy against the baseline" })).toBeVisible();

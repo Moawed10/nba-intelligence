@@ -1,0 +1,89 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { type CSSProperties, useTransition } from "react";
+
+import AnimatedList from "@/components/bits/animated-list";
+import { TeamMark } from "@/components/brand/team-mark";
+import type { GameSummary } from "@/lib/api/types";
+import { formatGameDate, formatGameTime } from "@/lib/format";
+import { hrefWith } from "@/lib/url";
+import { cn } from "@/lib/utils";
+
+/** The list adopts the app's tokens so it reads correctly in both themes. */
+const TOKENS = {
+  "--al-tile": "var(--card)",
+  "--al-tile-edge": "var(--border)",
+  "--al-tile-highlight": "transparent",
+  "--al-tile-shadow": "none",
+  "--al-well": "transparent",
+  "--al-ink": "var(--foreground)",
+  "--al-muted": "var(--muted-foreground)",
+  "--al-thumb": "var(--border)",
+  "--al-hover": "none",
+  "--al-active": "none",
+} as CSSProperties;
+
+/** Upcoming games as a keyboard-navigable list (arrow keys, Home, End, Enter); choosing one loads its forecast. */
+export function GamePicker({
+  games,
+  playerId,
+  teamId,
+  selectedId,
+}: {
+  games: GameSummary[];
+  playerId: number;
+  teamId: number;
+  selectedId: string | null;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const selected = Math.max(
+    0,
+    games.findIndex((g) => g.id === selectedId),
+  );
+
+  return (
+    <div aria-busy={pending} className={cn("transition-opacity", pending && "opacity-70")}>
+      <AnimatedList
+        label="Upcoming games"
+        items={games.map((g) => ({ id: g.id, title: g.id }))}
+        initialSelectedIndex={selected}
+        selectOnHover={false}
+        frame={false}
+        width="100%"
+        maxHeight={420}
+        gap={6}
+        radius={12}
+        accentColor="var(--primary)"
+        style={TOKENS}
+        onItemSelect={(_, index) =>
+          startTransition(() =>
+            router.push(hrefWith("/predict", {}, { player: playerId, game: games[index].id }), {
+              scroll: false,
+            }),
+          )
+        }
+        renderItem={(_, index, isSelected) => {
+          const game = games[index];
+          const home = game.home.team.id === teamId;
+          const opponent = home ? game.away.team : game.home.team;
+          return (
+            <span className="flex w-full items-center gap-3">
+              <TeamMark team={opponent} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className={cn("block truncate font-medium", isSelected && "text-primary")}>
+                  {home ? "vs" : "@"} {opponent.city} {opponent.name}
+                </span>
+                <span className="block text-footnote text-muted-foreground">
+                  {game.tipoff_at ? formatGameTime(game.tipoff_at) : formatGameDate(game.game_date, true)}
+                </span>
+              </span>
+              {game.id === selectedId && <span className="kicker text-primary">Selected</span>}
+            </span>
+          );
+        }}
+      />
+    </div>
+  );
+}

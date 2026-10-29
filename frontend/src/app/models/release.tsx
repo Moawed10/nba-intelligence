@@ -12,6 +12,7 @@ import { param, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
 import { AlgorithmComparison } from "./algorithms";
+import { ModelsNav } from "./models-nav";
 
 const VERSION = /^\d{4}\.\d{2}\.\d{2}-\d{1,3}$/;
 
@@ -349,160 +350,170 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
   const active = release.status === "active";
 
   return (
-    <div className="grid gap-5 lg:grid-cols-12">
-      {requested && !known && (
-        <Unavailable kind="empty" title={`No release named ${requested}`} className="lg:col-span-12">
-          Showing the latest release instead.
-        </Unavailable>
-      )}
-      <Panel
-        id="release"
-        kicker="Release"
-        title={<span className="font-mono">{release.version}</span>}
-        actions={<StatusBadge status={release.status} />}
-        className="lg:col-span-12"
-      >
-        <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
-          <Timeline release={release} testSeason={testSeason} />
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-subhead sm:grid-cols-4 lg:grid-cols-2">
-            {[
-              ["Trained", formatGameDate(release.created_at.slice(0, 10), true)],
-              ["Inputs", `${release.features.length} features`],
-              ["Data version", String(release.data_version)],
-              ["Code", release.git_sha ? release.git_sha.slice(0, 7) : "—"],
-            ].map(([term, value]) => (
-              <div key={term}>
-                <dt className="text-footnote text-muted-foreground">{term}</dt>
-                <dd className={cn("font-medium", term === "Code" && "font-mono")}>{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-        <p className="mt-5 text-footnote text-muted-foreground">
-          Seasons are split by date, never shuffled: models learn from training seasons, are chosen on
-          validation, and are scored once on {testSeason}. Every input is computed only from games before the
-          one being predicted.
-        </p>
-      </Panel>
-
-      <Panel
-        id="accuracy"
-        kicker={`Held out · ${testSeason}`}
-        title="Accuracy against the baseline"
-        actions={
-          <InfoHint term="Average miss">
-            Mean absolute error: how far the prediction lands from the actual box score, on average. The
-            baseline predicts each player&apos;s average over the previous 10 games.
-          </InfoHint>
-        }
-        className="lg:col-span-12"
-      >
-        {regression.length ? (
-          <AccuracyTable metrics={regression} testSeason={testSeason} />
-        ) : (
-          <Unavailable kind="not_built" title="No held-out evaluation recorded for this release" />
-        )}
-      </Panel>
-
-      <Panel id="algorithms" kicker="Model selection" title="Algorithm comparison" className="lg:col-span-7">
-        {release.algorithms.length ? (
-          <AlgorithmComparison algorithms={release.algorithms} testSeason={testSeason} />
-        ) : (
-          <Unavailable kind="not_built" title="No candidate algorithms recorded" />
-        )}
-      </Panel>
-
-      <Panel id="ranges" kicker="Uncertainty" title="Prediction ranges" className="lg:col-span-5">
-        {Object.keys(calibration).length ? (
-          <div className="space-y-4">
-            <p className="text-subhead">
-              Each prediction comes with a range meant to contain the actual result 4 times in 5. Ranges widen
-              for players expected to play more minutes.
-            </p>
-            <RangesTable calibration={calibration} />
-            <p className="text-footnote text-muted-foreground">
-              Split conformal intervals by predicted minutes, calibrated on {testSeason} for the production
-              models. Ranges calibrated on validation and checked on {testSeason} held{" "}
-              {formatPercent(Math.min(...regression.map((m) => m.interval_coverage ?? 1)))}–
-              {formatPercent(Math.max(...regression.map((m) => m.interval_coverage ?? 0)))} of results.
-            </p>
-          </div>
-        ) : (
-          <Unavailable kind="not_built" title="No interval calibration stored for this release" />
-        )}
-      </Panel>
-
-      <Panel id="live" kicker="After release" title="Live accuracy" className="lg:col-span-7">
-        {live && live.games > 0 ? (
-          <LiveTable live={live} heldOut={regression} />
-        ) : (
-          <Unavailable
-            kind={active ? "empty" : "not_built"}
-            title={active ? "No scored predictions yet" : "Starts when a release is activated"}
-          >
-            Predictions are stored before tip-off and scored against the final box score.{" "}
-            {active
-              ? "Scored results appear here once games with stored predictions are final."
-              : "This release has not served predictions, so there is no live record to show."}
+    <div className="xl:grid xl:grid-cols-[13rem_minmax(0,1fr)] xl:gap-8">
+      <aside aria-label="Model sections" className="hidden xl:block">
+        <ModelsNav />
+      </aside>
+      <div className="grid gap-5 lg:grid-cols-12">
+        {requested && !known && (
+          <Unavailable kind="empty" title={`No release named ${requested}`} className="lg:col-span-12">
+            Showing the latest release instead.
           </Unavailable>
         )}
-      </Panel>
-      <Panel id="double-double" kicker="Probability" title="Double-double" className="lg:col-span-5">
-        {doubleDouble?.brier != null ? (
-          <div className="space-y-3">
-            <dl className="grid grid-cols-3 gap-3 text-center">
+        <Panel
+          id="release"
+          kicker="Release"
+          title={<span className="font-mono">{release.version}</span>}
+          actions={<StatusBadge status={release.status} />}
+          className="lg:col-span-12"
+        >
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
+            <Timeline release={release} testSeason={testSeason} />
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-subhead sm:grid-cols-4 lg:grid-cols-2">
               {[
-                ["Brier score", doubleDouble.brier.toFixed(3)],
-                ["Log loss", doubleDouble.log_loss?.toFixed(3) ?? "—"],
-                ["Player-games", doubleDouble.n.toLocaleString("en-US")],
+                ["Trained", formatGameDate(release.created_at.slice(0, 10), true)],
+                ["Inputs", `${release.features.length} features`],
+                ["Data version", String(release.data_version)],
+                ["Code", release.git_sha ? release.git_sha.slice(0, 7) : "—"],
               ].map(([term, value]) => (
-                <div key={term} className="rounded-lg bg-muted/60 p-3">
+                <div key={term}>
                   <dt className="text-footnote text-muted-foreground">{term}</dt>
-                  <dd className="text-title3 font-semibold tabular-nums">{value}</dd>
+                  <dd className={cn("font-medium", term === "Code" && "font-mono")}>{value}</dd>
                 </div>
               ))}
             </dl>
-            <p className="text-footnote text-muted-foreground">
-              {algorithmLabel(doubleDouble.algorithm)} with isotonic calibration, scored on {testSeason}. Both
-              scores are lower-is-better measures of probability accuracy.
-            </p>
           </div>
-        ) : (
-          <Unavailable kind="not_built" title="No double-double evaluation recorded" />
-        )}
-      </Panel>
+          <p className="mt-5 text-footnote text-muted-foreground">
+            Seasons are split by date, never shuffled: models learn from training seasons, are chosen on
+            validation, and are scored once on {testSeason}. Every input is computed only from games before
+            the one being predicted.
+          </p>
+        </Panel>
 
-      <Panel id="inputs" kicker="Features" title="What the models see" className="lg:col-span-12">
-        <FeatureList features={release.features} />
-      </Panel>
+        <Panel
+          id="accuracy"
+          kicker={`Held out · ${testSeason}`}
+          title="Accuracy against the baseline"
+          actions={
+            <InfoHint term="Average miss">
+              Mean absolute error: how far the prediction lands from the actual box score, on average. The
+              baseline predicts each player&apos;s average over the previous 10 games.
+            </InfoHint>
+          }
+          className="lg:col-span-12"
+        >
+          {regression.length ? (
+            <AccuracyTable metrics={regression} testSeason={testSeason} />
+          ) : (
+            <Unavailable kind="not_built" title="No held-out evaluation recorded for this release" />
+          )}
+        </Panel>
 
-      <Panel id="history" kicker="Registry" title="Releases" className="lg:col-span-12">
-        <ul className="divide-y divide-border">
-          {releases.map((r) => (
-            <li key={r.version} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-              <span className="flex items-center gap-3">
-                {r.version === version ? (
-                  <span className="font-mono font-semibold" aria-current="true">
-                    {r.version}
-                  </span>
-                ) : (
-                  <Link
-                    href={`/models?version=${r.version}`}
-                    className="font-mono text-primary hover:underline"
-                  >
-                    {r.version}
-                  </Link>
-                )}
-                <StatusBadge status={r.status} />
-              </span>
-              <span className="text-footnote text-muted-foreground">
-                Trained {formatGameDate(r.created_at.slice(0, 10), true)} · test {r.test_start.slice(0, 4)}–
-                {r.test_end.slice(0, 4)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </Panel>
+        <Panel
+          id="algorithms"
+          kicker="Model selection"
+          title="Algorithm comparison"
+          className="lg:col-span-7"
+        >
+          {release.algorithms.length ? (
+            <AlgorithmComparison algorithms={release.algorithms} testSeason={testSeason} />
+          ) : (
+            <Unavailable kind="not_built" title="No candidate algorithms recorded" />
+          )}
+        </Panel>
+
+        <Panel id="ranges" kicker="Uncertainty" title="Prediction ranges" className="lg:col-span-5">
+          {Object.keys(calibration).length ? (
+            <div className="space-y-4">
+              <p className="text-subhead">
+                Each prediction comes with a range meant to contain the actual result 4 times in 5. Ranges
+                widen for players expected to play more minutes.
+              </p>
+              <RangesTable calibration={calibration} />
+              <p className="text-footnote text-muted-foreground">
+                Split conformal intervals by predicted minutes, calibrated on {testSeason} for the production
+                models. Ranges calibrated on validation and checked on {testSeason} held{" "}
+                {formatPercent(Math.min(...regression.map((m) => m.interval_coverage ?? 1)))}–
+                {formatPercent(Math.max(...regression.map((m) => m.interval_coverage ?? 0)))} of results.
+              </p>
+            </div>
+          ) : (
+            <Unavailable kind="not_built" title="No interval calibration stored for this release" />
+          )}
+        </Panel>
+
+        <Panel id="live" kicker="After release" title="Live accuracy" className="lg:col-span-7">
+          {live && live.games > 0 ? (
+            <LiveTable live={live} heldOut={regression} />
+          ) : (
+            <Unavailable
+              kind={active ? "empty" : "not_built"}
+              title={active ? "No scored predictions yet" : "Starts when a release is activated"}
+            >
+              Predictions are stored before tip-off and scored against the final box score.{" "}
+              {active
+                ? "Scored results appear here once games with stored predictions are final."
+                : "This release has not served predictions, so there is no live record to show."}
+            </Unavailable>
+          )}
+        </Panel>
+        <Panel id="double-double" kicker="Probability" title="Double-double" className="lg:col-span-5">
+          {doubleDouble?.brier != null ? (
+            <div className="space-y-3">
+              <dl className="grid grid-cols-3 gap-3 text-center">
+                {[
+                  ["Brier score", doubleDouble.brier.toFixed(3)],
+                  ["Log loss", doubleDouble.log_loss?.toFixed(3) ?? "—"],
+                  ["Player-games", doubleDouble.n.toLocaleString("en-US")],
+                ].map(([term, value]) => (
+                  <div key={term} className="rounded-lg bg-muted/60 p-3">
+                    <dt className="text-footnote text-muted-foreground">{term}</dt>
+                    <dd className="text-title3 font-semibold tabular-nums">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="text-footnote text-muted-foreground">
+                {algorithmLabel(doubleDouble.algorithm)} with isotonic calibration, scored on {testSeason}.
+                Both scores are lower-is-better measures of probability accuracy.
+              </p>
+            </div>
+          ) : (
+            <Unavailable kind="not_built" title="No double-double evaluation recorded" />
+          )}
+        </Panel>
+
+        <Panel id="inputs" kicker="Features" title="What the models see" className="lg:col-span-12">
+          <FeatureList features={release.features} />
+        </Panel>
+
+        <Panel id="history" kicker="Registry" title="Releases" className="lg:col-span-12">
+          <ul className="divide-y divide-border">
+            {releases.map((r) => (
+              <li key={r.version} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                <span className="flex items-center gap-3">
+                  {r.version === version ? (
+                    <span className="font-mono font-semibold" aria-current="true">
+                      {r.version}
+                    </span>
+                  ) : (
+                    <Link
+                      href={`/models?version=${r.version}`}
+                      className="font-mono text-primary hover:underline"
+                    >
+                      {r.version}
+                    </Link>
+                  )}
+                  <StatusBadge status={r.status} />
+                </span>
+                <span className="text-footnote text-muted-foreground">
+                  Trained {formatGameDate(r.created_at.slice(0, 10), true)} · test {r.test_start.slice(0, 4)}–
+                  {r.test_end.slice(0, 4)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      </div>
     </div>
   );
 }

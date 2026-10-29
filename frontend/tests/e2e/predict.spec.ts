@@ -20,8 +20,12 @@ test.describe("predictions", () => {
   test("lists upcoming games and switches the forecast between them", async ({ page }) => {
     await page.goto("/predict?player=1000");
     const games = page.getByRole("region", { name: "Upcoming games" });
-    await expect(games.getByRole("link")).toHaveCount(2);
-    await expect(games.getByRole("link", { name: /vs Bravo Bears/ })).toHaveAttribute("aria-current", "true");
+    const list = games.getByRole("listbox", { name: "Upcoming games" });
+    await expect(list.getByRole("option")).toHaveCount(2);
+    await expect(list.getByRole("option", { name: /vs Bravo Bears/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     const forecast = page.getByRole("region", { name: "Forecast vs BBB" });
     await forecast.getByRole("button", { name: "Make forecast" }).click();
     await expect(
@@ -32,9 +36,23 @@ test.describe("predictions", () => {
     await expect(forecast.getByText(/Inputs: last 5 23\.0 · last 10 22\.0/)).toBeVisible();
     await expect(forecast.getByText("111.9")).toBeVisible();
 
-    await games.getByRole("link", { name: /@ Bravo Bears/ }).click();
+    await list.getByRole("option", { name: /@ Bravo Bears/ }).click();
     await expect(page).toHaveURL(/game=0099000103/);
     await expect(page.getByRole("region", { name: "Forecast @ BBB" })).toBeVisible();
+  });
+
+  test("upcoming games can be chosen with the keyboard", async ({ page, isMobile }) => {
+    test.skip(isMobile, "keyboard flow is covered on pointer devices");
+    await page.goto("/predict?player=1000");
+    const list = page.getByRole("listbox", { name: "Upcoming games" });
+    await list.focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(list.getByRole("option", { name: /@ Bravo Bears/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/game=0099000103/);
   });
 
   test("explains when a player has too few games for a forecast", async ({ page }) => {

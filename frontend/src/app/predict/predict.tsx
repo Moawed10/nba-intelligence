@@ -17,10 +17,11 @@ import type {
   TeamSeasonStats,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
-import { hrefWith, param, type SearchParams } from "@/lib/url";
-import { cn } from "@/lib/utils";
+import { param, type SearchParams } from "@/lib/url";
 
 import { Forecast } from "./forecast";
+import { GamePicker } from "./game-picker";
+import { PlayerCard } from "./player-card";
 import { PredictPicker } from "./predict-client";
 
 const PLAYER_ID = /^\d{1,10}$/;
@@ -56,42 +57,6 @@ function servingNote(releases: ModelReleaseSummary[] | null): { title: string; b
     title: "No model has been trained yet",
     body: "Forecasts appear here once a model has been trained, evaluated on a held-out season and activated.",
   };
-}
-
-function GameOption({
-  game,
-  teamId,
-  href,
-  selected,
-}: {
-  game: GameSummary;
-  teamId: number;
-  href: string;
-  selected: boolean;
-}) {
-  const home = game.home.team.id === teamId;
-  const opponent = home ? game.away.team : game.home.team;
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-current={selected ? "true" : undefined}
-      className={cn(
-        "flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors",
-        selected ? "border-primary/70 bg-primary/10" : "border-border hover:border-foreground/25",
-      )}
-    >
-      <TeamMark team={opponent} size="sm" />
-      <span className="min-w-0 flex-1">
-        <span className="block font-medium">
-          {home ? "vs" : "@"} {opponent.city} {opponent.name}
-        </span>
-        <span className="block text-footnote text-muted-foreground">
-          {game.tipoff_at ? formatGameTime(game.tipoff_at) : formatGameDate(game.game_date, true)}
-        </span>
-      </span>
-    </Link>
-  );
 }
 
 function average(lines: PlayerGameLine[], key: (typeof FORM_STATS)[number]["key"]): number | null {
@@ -180,66 +145,23 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   return (
     <div className="grid gap-5 lg:grid-cols-12">
       {picker}
-      <section
-        aria-labelledby="player-name"
-        className="panel flex flex-wrap items-center gap-4 p-4 sm:p-5 lg:col-span-12"
-      >
-        <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h2 id="player-name" className="text-title3 font-semibold">
-            <Link href={`/players/${player.id}`} className="hover:text-primary">
-              {player.full_name}
-            </Link>
-          </h2>
-          <p className="text-footnote text-muted-foreground">
-            {[
-              player.team ? `${player.team.city} ${player.team.name}` : "Not on a current roster",
-              player.position,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-        {season && (
-          <dl className="flex gap-6 text-center">
-            {(["pts", "reb", "ast"] as const).map((k) => (
-              <div key={k}>
-                <dt className="kicker">{k.toUpperCase()}</dt>
-                <dd className="text-title2 font-semibold tabular-nums">{formatStat(season.per_game[k])}</dd>
-              </div>
-            ))}
-            <div>
-              <dt className="kicker">GP</dt>
-              <dd className="text-title2 font-semibold tabular-nums">{season.games_played}</dd>
-            </div>
-          </dl>
-        )}
-      </section>
+      <div className="grid content-start gap-5 lg:col-span-4">
+        <PlayerCard player={player} season={season} />
 
-      <Panel id="games" kicker="Step 2" title="Upcoming games" className="lg:col-span-4">
-        {upcoming.error ? (
-          <ApiErrorView error={upcoming.error} />
-        ) : games.length === 0 ? (
-          <Unavailable kind="no_games" title={`No games in the next ${LOOKAHEAD_DAYS} days`}>
-            {player.team
-              ? "The schedule shows no upcoming games for this player's team in that window."
-              : "This player isn't on a current roster."}
-          </Unavailable>
-        ) : (
-          <ul className="space-y-2">
-            {games.map((g) => (
-              <li key={g.id}>
-                <GameOption
-                  game={g}
-                  teamId={teamId!}
-                  selected={g.id === game?.id}
-                  href={hrefWith("/predict", {}, { player: player.id, game: g.id })}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+        <Panel id="games" kicker="Step 2" title="Upcoming games">
+          {upcoming.error ? (
+            <ApiErrorView error={upcoming.error} />
+          ) : games.length === 0 ? (
+            <Unavailable kind="no_games" title={`No games in the next ${LOOKAHEAD_DAYS} days`}>
+              {player.team
+                ? "The schedule shows no upcoming games for this player's team in that window."
+                : "This player isn't on a current roster."}
+            </Unavailable>
+          ) : (
+            <GamePicker games={games} playerId={player.id} teamId={teamId!} selectedId={game?.id ?? null} />
+          )}
+        </Panel>
+      </div>
 
       <Panel
         id="forecast"
