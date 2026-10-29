@@ -299,3 +299,16 @@ Each spec includes an axe pass (WCAG 2.2 AA tags, serious and critical violation
 - Wide-table scroll containers on narrow viewports are now focusable, labelled regions (axe `scrollable-region-focusable`).
 - `/games` reads the clock after `connection()`, so the default date is resolved per request instead of during prerender.
 - CI run 40882783640 passed (backend and frontend jobs).
+
+## Phase 7 inference
+
+| Check | Result |
+|---|---|
+| Backend suite | 210 passed (13 in `tests/api/test_predictions.py`) |
+| Served features equal the training row for the same game | Pass (all 60 features) |
+| 1,000 real `POST /predictions` across 50 player-games | 936 succeeded, 64 correctly refused (`insufficient_data`), 0 errors |
+| Latency, warm | p50 63 ms, p95 69 ms, max 145 ms; first call 1.07 s (loads and verifies artifacts) |
+| Recompute from stored snapshots | 57 / 57 hashes match; max absolute difference 0.0 |
+| Retrain from clean commit `da61251` | Release `2026.10.29-2`: every selected metric and calibration identical to `-1`; two random-forest candidates differ at the 16th decimal |
+
+The first reproducibility run found a real bug: snapshots were stored rounded to 6 decimals while the model saw full precision, so XGBoost splits could differ by up to 0.68 points. Snapshots now keep full precision and the model reads the snapshot itself. The 57 forecasts made before the fix remain stored and are superseded by new rows.

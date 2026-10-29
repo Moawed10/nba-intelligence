@@ -14,8 +14,8 @@ The authoritative ledger of development progress. A status here is only as good 
 | 4 | Core Backend APIs | Complete | 100% (11/11) | None |
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
-| 7 | Prediction API & Inference | Not Started | 0% (0/15) | Phases 4, 6 |
-| 8 | Prediction Center | In Progress | 42% (5/12) | Phase 7 inference API (forecast, interval, explanation) |
+| 7 | Prediction API & Inference | In Progress | 73% (11/15) | Freshness service and dependency-aware refresh |
+| 8 | Prediction Center | In Progress | 83% (10/12) | Distribution chart; keyboard workflow not yet verified |
 | 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
 | 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
 | 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
@@ -24,7 +24,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 96 / 175 verified deliverables = **55%**.
+**Overall:** 112 / 175 verified deliverables = **64%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -37,7 +37,7 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | Real NBA Data Available | 3–4 | Not Verified (data and read API verified; Phase 3 closes with the Phase 7 handlers) |
 | Player Analytics Functional | 5 | Pass |
 | ML Models Validated | 6 | Pass |
-| Prediction Backend Functional | 7 | Not Verified |
+| Prediction Backend Functional | 7 | Not Verified (all 10 gates pass; freshness and refresh deliverables open) |
 | Functional MVP | 1–8 + applicable security, accessibility, integration checks | Not Verified |
 | Analytics Features Complete | 9–11 | Not Verified (9, 10, 11 in progress) |
 | Release Quality Gates | 12–14 | Not Verified |
@@ -439,60 +439,60 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 7 — Prediction API & Inference Engine
 
-**Status:** Not Started · **Progress:** 0% (0/15) · **Dependencies:** Phases 4, 6
+**Status:** In Progress · **Progress:** 73% (11/15) · **Dependencies:** Phases 4, 6
 
 #### Deliverables
 
-- [ ] Artifact loader with SHA-256 and schema checks
+- [x] Artifact loader with SHA-256 and schema checks
 - [ ] Inference service (bounded thread pool)
-- [ ] Player and matchup validation
-- [ ] Pregame feature snapshot at `min(now, tipoff_at)`
-- [ ] Predictions for all 7 regression targets
-- [ ] Conformal intervals at inference
-- [ ] Double-double probability
-- [ ] Append-only persistence (`predictions`, `prediction_values`)
-- [ ] Snapshot-hash reuse (the prediction cache)
+- [x] Player and matchup validation
+- [x] Pregame feature snapshot at `min(now, tipoff_at)`
+- [x] Predictions for all 7 regression targets
+- [x] Conformal intervals at inference
+- [x] Double-double probability
+- [x] Append-only persistence (`predictions`, `prediction_values`)
+- [x] Snapshot-hash reuse (the prediction cache)
 - [ ] `POST /predictions`, `GET /predictions/{id}`, `/history`, `/explanation`
-- [ ] Error handling: `insufficient_data`, `invalid_matchup`, `game_already_started`, `model_unavailable`
-- [ ] Prediction API, reproducibility and immutability tests
+- [x] Error handling: `insufficient_data`, `invalid_matchup`, `game_already_started`, `model_unavailable`
+- [x] Prediction API, reproducibility and immutability tests
 - [ ] Prediction freshness service (current/stale/invalid/superseded/final_pregame)
 - [ ] Dependency-aware refresh inserting superseding rows, stopping at tip-off
-- [ ] Team logos in place of abbreviation monograms (owner request, 2026-10-29): fetched once into `frontend/public/logos/{team_id}.svg` by a script, served by the app (never hotlinked from nba.com), used by `TeamMark` with the team name as alt text and the monogram as fallback
+- [x] Team logos in place of abbreviation monograms (owner request, 2026-10-29): fetched once into `frontend/public/logos/{team_id}.svg` by a script, served by the app (never hotlinked from nba.com), used by `TeamMark` with the team name as alt text and the monogram as fallback
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Valid fixtures produce correct responses | 100% | Not measured | Not Verified |
-| Invalid player/game combos return proper errors | 100% | Not measured | Not Verified |
-| Predictions reference valid model versions | 100% | Not measured | Not Verified |
-| Predictions with data cutoff timestamp | 100% | Not measured | Not Verified |
-| Training operations during inference | 0 | Not measured | Not Verified |
-| Inference p95, loaded model | < 1.5 s | Not measured | Not Verified |
-| Success across 1,000 valid requests | ≥ 99% | Not measured | Not Verified |
-| Same model + snapshot reproduces values | Within 1e-9 | Not measured | Not Verified |
-| Silently overwritten predictions | 0 | Not measured | Not Verified |
-| New pregame predictions after tip-off | 0 | Not measured | Not Verified |
+| Valid fixtures produce correct responses | 100% | 13 / 13 prediction tests (`tests/api/test_predictions.py`) | Pass |
+| Invalid player/game combos return proper errors | 100% | 5 / 5 cases: invalid matchup, final game, after tip-off, too few games, unknown player | Pass |
+| Predictions reference valid model versions | 100% | Foreign key to `model_releases`; version returned on every response | Pass |
+| Predictions with data cutoff timestamp | 100% | Non-null column with a cutoff ≤ creation check | Pass |
+| Training operations during inference | 0 | 0: the request path only loads artifacts and calls `predict` | Pass |
+| Inference p95, loaded model | < 1.5 s | 69 ms over 1,000 real requests (first call, which loads artifacts: 1.07 s) | Pass |
+| Success across 1,000 valid requests | ≥ 99% | 936 / 936 eligible requests; 64 correctly refused as `insufficient_data` | Pass |
+| Same model + snapshot reproduces values | Within 1e-9 | 0.0 across 57 real forecasts (after the full-precision snapshot fix) | Pass |
+| Silently overwritten predictions | 0 | 0: changed inputs append a superseding row; test checks the old row is unchanged | Pass |
+| New pregame predictions after tip-off | 0 | 0: refused with 409 `game_already_started` (tested) | Pass |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `backend/app/ml/inference.py`, `backend/app/services/predictions.py`, `backend/app/api/v1/predictions.py`, `backend/tests/api/test_predictions.py`; release `2026.10.29-2` retrained from clean commit `da61251` (metrics identical to `-1`) and activated with `app.cli activate`. History is `GET /predictions?player_id=&game_id=`; the explanation is embedded in each prediction rather than a separate endpoint. FastAPI's default worker pool serves inference, not a dedicated bounded pool. · **Decision:** Not Verified (freshness service, dependency-aware refresh, bounded pool and `/explanation` open)
 
 ---
 
 ### Phase 8 — Prediction Center Frontend
 
-**Status:** In Progress · **Progress:** 42% (5/12) · **Dependencies:** Phases 2, 7
+**Status:** In Progress · **Progress:** 83% (10/12) · **Dependencies:** Phases 2, 7
 
 #### Deliverables
 
 - [x] Player selection (`?player=`)
 - [x] Upcoming game selection
-- [ ] Submit to `POST /predictions`, duplicate-safe
-- [ ] Predicted values (`StatTile`)
-- [ ] Interval display (`IntervalBar`) labelled "likely range (80%)"
+- [x] Submit to `POST /predictions`, duplicate-safe
+- [x] Predicted values (`StatTile`)
+- [x] Interval display (`IntervalBar`) labelled "likely range (80%)"
 - [x] Last-5 and season comparisons
 - [ ] Prediction distribution visualization
-- [ ] Explanation panel
-- [ ] Model release and data cutoff display
+- [x] Explanation panel
+- [x] Model release and data cutoff display
 - [x] Loading, error and named unavailable states
 - [ ] Keyboard-only workflow
 - [x] Mobile layout
@@ -511,7 +511,7 @@ The "recent games" block from the original design was folded into the game log, 
 | Full keyboard workflow | Yes | Not measured | Not Verified |
 | Horizontal overflow at 375 px | None | Not measured | Not Verified |
 
-**Evidence:** `frontend/src/app/predict/`, `tests/e2e/predict.spec.ts` (16 runs across 4 viewports; axe serious/critical 0 in both themes; no overflow at 375 px). The forecast panel states that no release is serving predictions instead of showing a number. · **Decision:** Not Verified (forecast, interval, explanation and submission wait for Phase 7)
+**Evidence:** `frontend/src/app/predict/`, `tests/e2e/predict.spec.ts` (16 runs across 4 viewports; axe serious/critical 0 in both themes; no overflow at 375 px). The forecast panel states that no release is serving predictions instead of showing a number. Forecasts render with `IntervalBar` ranges; the explanation shows the averages the model received, labelled as inputs rather than attributions. · **Decision:** Not Verified (distribution chart and keyboard workflow open)
 
 ---
 
@@ -897,3 +897,18 @@ The "recent games" block from the original design was folded into the game log, 
 **Problems encountered:** the real-data reproducibility rerun from the previous session was not repeated; the candidate release was trained from a dirty tree and must be retrained from a clean commit before activation.
 
 **Next step:** Phase 7 inference API, then forecasts, intervals and prediction history in the Predictions and Models screens.
+
+### Session — 2026-10-29 (Phase 7)
+
+**Phase:** 7, plus the Phase 8 forecast display
+
+**Completed:**
+- Team logos for all 30 teams, served by the app from `public/logos` (owner request).
+- Retrained from a clean commit: release `2026.10.29-2`, metrics identical to `-1`. Activated with the new `activate` CLI command.
+- Inference service, `POST /predictions`, `GET /predictions`, `GET /predictions/{id}`, and append-only storage with snapshot reuse and superseding.
+- The Predictions page shows stored forecasts with 80% ranges, inputs and the double-double chance, and makes a forecast on request.
+- Found and fixed a reproducibility bug: snapshots were stored rounded while the model saw full precision.
+
+**Tests run:** backend 210 passed; frontend lint, type-check and unit tests clean; Playwright 211 passed, 4 skipped; 1,000-request real-data run.
+
+**Next step:** prediction freshness and refresh before tip-off, scoring stored predictions after games (the Phase 3 evaluation handlers), and live accuracy on the Models page.
