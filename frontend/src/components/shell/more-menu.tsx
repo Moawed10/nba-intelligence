@@ -2,7 +2,6 @@
 
 import { Ellipsis } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useRef } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -15,8 +14,7 @@ import {
 
 import { isActive, SECONDARY_NAV } from "./nav-config";
 
-export function MoreMenu() {
-  const pathname = usePathname();
+export function MoreMenu({ pathname }: { pathname: string | null }) {
   // When an item navigates, focus belongs on the new page heading (RouteFocus), not the trigger.
   const navigated = useRef(false);
   return (

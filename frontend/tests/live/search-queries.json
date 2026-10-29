@@ -1,0 +1,602 @@
+[
+  {
+    "query": "mikal bridges",
+    "expected_id": 1628969,
+    "expected": "Mikal Bridges",
+    "kind": "full_name"
+  },
+  {
+    "query": "derrick white",
+    "expected_id": 1628401,
+    "expected": "Derrick White",
+    "kind": "full_name"
+  },
+  {
+    "query": "harrison barnes",
+    "expected_id": 203084,
+    "expected": "Harrison Barnes",
+    "kind": "full_name"
+  },
+  {
+    "query": "jaylen brown",
+    "expected_id": 1627759,
+    "expected": "Jaylen Brown",
+    "kind": "full_name"
+  },
+  {
+    "query": "donovan mitchell",
+    "expected_id": 1628378,
+    "expected": "Donovan Mitchell",
+    "kind": "full_name"
+  },
+  {
+    "query": "tyus jones",
+    "expected_id": 1626145,
+    "expected": "Tyus Jones",
+    "kind": "full_name"
+  },
+  {
+    "query": "jarrett allen",
+    "expected_id": 1628386,
+    "expected": "Jarrett Allen",
+    "kind": "full_name"
+  },
+  {
+    "query": "duncan robinson",
+    "expected_id": 1629130,
+    "expected": "Duncan Robinson",
+    "kind": "full_name"
+  },
+  {
+    "query": "dorian finney-smith",
+    "expected_id": 1627827,
+    "expected": "Dorian Finney-Smith",
+    "kind": "full_name"
+  },
+  {
+    "query": "giannis antetokounmpo",
+    "expected_id": 203507,
+    "expected": "Giannis Antetokounmpo",
+    "kind": "full_name"
+  },
+  {
+    "query": "kyle kuzma",
+    "expected_id": 1628398,
+    "expected": "Kyle Kuzma",
+    "kind": "full_name"
+  },
+  {
+    "query": "jordan clarkson",
+    "expected_id": 203903,
+    "expected": "Jordan Clarkson",
+    "kind": "full_name"
+  },
+  {
+    "query": "aaron gordon",
+    "expected_id": 203932,
+    "expected": "Aaron Gordon",
+    "kind": "full_name"
+  },
+  {
+    "query": "de'aaron fox",
+    "expected_id": 1628368,
+    "expected": "De'Aaron Fox",
+    "kind": "full_name"
+  },
+  {
+    "query": "clint capela",
+    "expected_id": 203991,
+    "expected": "Clint Capela",
+    "kind": "full_name"
+  },
+  {
+    "query": "myles turner",
+    "expected_id": 1626167,
+    "expected": "Myles Turner",
+    "kind": "full_name"
+  },
+  {
+    "query": "draymond green",
+    "expected_id": 203110,
+    "expected": "Draymond Green",
+    "kind": "full_name"
+  },
+  {
+    "query": "al horford",
+    "expected_id": 201143,
+    "expected": "Al Horford",
+    "kind": "full_name"
+  },
+  {
+    "query": "andrew wiggins",
+    "expected_id": 203952,
+    "expected": "Andrew Wiggins",
+    "kind": "full_name"
+  },
+  {
+    "query": "donte divincenzo",
+    "expected_id": 1628978,
+    "expected": "Donte DiVincenzo",
+    "kind": "full_name"
+  },
+  {
+    "query": "kyle anderson",
+    "expected_id": 203937,
+    "expected": "Kyle Anderson",
+    "kind": "full_name"
+  },
+  {
+    "query": "og anunoby",
+    "expected_id": 1628384,
+    "expected": "OG Anunoby",
+    "kind": "full_name"
+  },
+  {
+    "query": "lebron james",
+    "expected_id": 2544,
+    "expected": "LeBron James",
+    "kind": "full_name"
+  },
+  {
+    "query": "derrick jones jr.",
+    "expected_id": 1627884,
+    "expected": "Derrick Jones Jr.",
+    "kind": "full_name"
+  },
+  {
+    "query": "karl-anthony towns",
+    "expected_id": 1626157,
+    "expected": "Karl-Anthony Towns",
+    "kind": "full_name"
+  },
+  {
+    "query": "norman powell",
+    "expected_id": 1626181,
+    "expected": "Norman Powell",
+    "kind": "full_name"
+  },
+  {
+    "query": "jimmy butler iii",
+    "expected_id": 202710,
+    "expected": "Jimmy Butler III",
+    "kind": "full_name"
+  },
+  {
+    "query": "andre drummond",
+    "expected_id": 203083,
+    "expected": "Andre Drummond",
+    "kind": "full_name"
+  },
+  {
+    "query": "jamal murray",
+    "expected_id": 1627750,
+    "expected": "Jamal Murray",
+    "kind": "full_name"
+  },
+  {
+    "query": "landry shamet",
+    "expected_id": 1629013,
+    "expected": "Landry Shamet",
+    "kind": "full_name"
+  },
+  {
+    "query": "naz reid",
+    "expected_id": 1629675,
+    "expected": "Naz Reid",
+    "kind": "full_name"
+  },
+  {
+    "query": "trae young",
+    "expected_id": 1629027,
+    "expected": "Trae Young",
+    "kind": "full_name"
+  },
+  {
+    "query": "malik monk",
+    "expected_id": 1628370,
+    "expected": "Malik Monk",
+    "kind": "full_name"
+  },
+  {
+    "query": "domantas sabonis",
+    "expected_id": 1627734,
+    "expected": "Domantas Sabonis",
+    "kind": "full_name"
+  },
+  {
+    "query": "deandre ayton",
+    "expected_id": 1629028,
+    "expected": "Deandre Ayton",
+    "kind": "full_name"
+  },
+  {
+    "query": "khris middleton",
+    "expected_id": 203114,
+    "expected": "Khris Middleton",
+    "kind": "full_name"
+  },
+  {
+    "query": "jakob poeltl",
+    "expected_id": 1627751,
+    "expected": "Jakob Poeltl",
+    "kind": "full_name"
+  },
+  {
+    "query": "stephen curry",
+    "expected_id": 201939,
+    "expected": "Stephen Curry",
+    "kind": "full_name"
+  },
+  {
+    "query": "josh okogie",
+    "expected_id": 1629006,
+    "expected": "Josh Okogie",
+    "kind": "full_name"
+  },
+  {
+    "query": "marcus smart",
+    "expected_id": 203935,
+    "expected": "Marcus Smart",
+    "kind": "full_name"
+  },
+  {
+    "query": "alex carso",
+    "expected_id": 1627936,
+    "expected": "Alex Caruso",
+    "kind": "typo"
+  },
+  {
+    "query": "miles briges",
+    "expected_id": 1628970,
+    "expected": "Miles Bridges",
+    "kind": "typo"
+  },
+  {
+    "query": "nickeil alexande-walker",
+    "expected_id": 1629638,
+    "expected": "Nickeil Alexander-Walker",
+    "kind": "typo"
+  },
+  {
+    "query": "jerami grnt",
+    "expected_id": 203924,
+    "expected": "Jerami Grant",
+    "kind": "typo"
+  },
+  {
+    "query": "dillon broks",
+    "expected_id": 1628415,
+    "expected": "Dillon Brooks",
+    "kind": "typo"
+  },
+  {
+    "query": "kelly oubr jr.",
+    "expected_id": 1626162,
+    "expected": "Kelly Oubre Jr.",
+    "kind": "typo"
+  },
+  {
+    "query": "luke kenard",
+    "expected_id": 1628379,
+    "expected": "Luke Kennard",
+    "kind": "typo"
+  },
+  {
+    "query": "terance mann",
+    "expected_id": 1629611,
+    "expected": "Terance Mann",
+    "kind": "typo"
+  },
+  {
+    "query": "payton prithard",
+    "expected_id": 1630202,
+    "expected": "Payton Pritchard",
+    "kind": "typo"
+  },
+  {
+    "query": "john colins",
+    "expected_id": 1628381,
+    "expected": "John Collins",
+    "kind": "typo"
+  },
+  {
+    "query": "anthony edwrds",
+    "expected_id": 1630162,
+    "expected": "Anthony Edwards",
+    "kind": "typo"
+  },
+  {
+    "query": "caris levrt",
+    "expected_id": 1627747,
+    "expected": "Caris LeVert",
+    "kind": "typo"
+  },
+  {
+    "query": "gary tren jr.",
+    "expected_id": 1629018,
+    "expected": "Gary Trent Jr.",
+    "kind": "typo"
+  },
+  {
+    "query": "isaiah hartestein",
+    "expected_id": 1628392,
+    "expected": "Isaiah Hartenstein",
+    "kind": "typo"
+  },
+  {
+    "query": "jaden mcdaiels",
+    "expected_id": 1630183,
+    "expected": "Jaden McDaniels",
+    "kind": "typo"
+  },
+  {
+    "query": "jevon carer",
+    "expected_id": 1628975,
+    "expected": "Jevon Carter",
+    "kind": "typo"
+  },
+  {
+    "query": "luguentz dort",
+    "expected_id": 1629652,
+    "expected": "Luguentz Dort",
+    "kind": "typo"
+  },
+  {
+    "query": "bogdan bogdaovic",
+    "expected_id": 203992,
+    "expected": "Bogdan Bogdanović",
+    "kind": "typo"
+  },
+  {
+    "query": "taurean price",
+    "expected_id": 1627752,
+    "expected": "Taurean Prince",
+    "kind": "typo"
+  },
+  {
+    "query": "jordan pole",
+    "expected_id": 1629673,
+    "expected": "Jordan Poole",
+    "kind": "typo"
+  },
+  {
+    "query": "jaren jacksn jr.",
+    "expected_id": 1628991,
+    "expected": "Jaren Jackson Jr.",
+    "kind": "typo"
+  },
+  {
+    "query": "grayson alen",
+    "expected_id": 1628960,
+    "expected": "Grayson Allen",
+    "kind": "typo"
+  },
+  {
+    "query": "fred vanveet",
+    "expected_id": 1627832,
+    "expected": "Fred VanVleet",
+    "kind": "typo"
+  },
+  {
+    "query": "wendell carte jr.",
+    "expected_id": 1628976,
+    "expected": "Wendell Carter Jr.",
+    "kind": "typo"
+  },
+  {
+    "query": "kenrich willams",
+    "expected_id": 1629026,
+    "expected": "Kenrich Williams",
+    "kind": "typo"
+  },
+  {
+    "query": "coby whte",
+    "expected_id": 1629632,
+    "expected": "Coby White",
+    "kind": "typo"
+  },
+  {
+    "query": "keldon johson",
+    "expected_id": 1629640,
+    "expected": "Keldon Johnson",
+    "kind": "typo"
+  },
+  {
+    "query": "grant willams",
+    "expected_id": 1629684,
+    "expected": "Grant Williams",
+    "kind": "typo"
+  },
+  {
+    "query": "kevin durnt",
+    "expected_id": 201142,
+    "expected": "Kevin Durant",
+    "kind": "typo"
+  },
+  {
+    "query": "paul geoge",
+    "expected_id": 202331,
+    "expected": "Paul George",
+    "kind": "typo"
+  },
+  {
+    "query": "jokic",
+    "expected_id": 203999,
+    "expected": "Nikola Jokić",
+    "kind": "last_name"
+  },
+  {
+    "query": "gobert",
+    "expected_id": 203497,
+    "expected": "Rudy Gobert",
+    "kind": "last_name"
+  },
+  {
+    "query": "o'neale",
+    "expected_id": 1626220,
+    "expected": "Royce O'Neale",
+    "kind": "last_name"
+  },
+  {
+    "query": "adebayo",
+    "expected_id": 1628389,
+    "expected": "Bam Adebayo",
+    "kind": "last_name"
+  },
+  {
+    "query": "brunson",
+    "expected_id": 1628973,
+    "expected": "Jalen Brunson",
+    "kind": "last_name"
+  },
+  {
+    "query": "harris",
+    "expected_id": 202699,
+    "expected": "Tobias Harris",
+    "kind": "last_name"
+  },
+  {
+    "query": "caldwell-pope",
+    "expected_id": 203484,
+    "expected": "Kentavious Caldwell-Pope",
+    "kind": "last_name"
+  },
+  {
+    "query": "siakam",
+    "expected_id": 1627783,
+    "expected": "Pascal Siakam",
+    "kind": "last_name"
+  },
+  {
+    "query": "tatum",
+    "expected_id": 1628369,
+    "expected": "Jayson Tatum",
+    "kind": "last_name"
+  },
+  {
+    "query": "hield",
+    "expected_id": 1627741,
+    "expected": "Buddy Hield",
+    "kind": "last_name"
+  },
+  {
+    "query": "lopez",
+    "expected_id": 201572,
+    "expected": "Brook Lopez",
+    "kind": "last_name"
+  },
+  {
+    "query": "harden",
+    "expected_id": 201935,
+    "expected": "James Harden",
+    "kind": "last_name"
+  },
+  {
+    "query": "schroder",
+    "expected_id": 203471,
+    "expected": "Dennis Schröder",
+    "kind": "last_name"
+  },
+  {
+    "query": "derozan",
+    "expected_id": 201942,
+    "expected": "DeMar DeRozan",
+    "kind": "last_name"
+  },
+  {
+    "query": "vucevic",
+    "expected_id": 202696,
+    "expected": "Nikola Vučević",
+    "kind": "last_name"
+  },
+  {
+    "query": "zubac",
+    "expected_id": 1627826,
+    "expected": "Ivica Zubac",
+    "kind": "last_name"
+  },
+  {
+    "query": "hardaway jr.",
+    "expected_id": 203501,
+    "expected": "Tim Hardaway Jr.",
+    "kind": "last_name"
+  },
+  {
+    "query": "hart",
+    "expected_id": 1628404,
+    "expected": "Josh Hart",
+    "kind": "last_name"
+  },
+  {
+    "query": "randle",
+    "expected_id": 203944,
+    "expected": "Julius Randle",
+    "kind": "last_name"
+  },
+  {
+    "query": "gilgeous-alexander",
+    "expected_id": 1628983,
+    "expected": "Shai Gilgeous-Alexander",
+    "kind": "last_name"
+  },
+  {
+    "query": "huerter",
+    "expected_id": 1628989,
+    "expected": "Kevin Huerter",
+    "kind": "last_name"
+  },
+  {
+    "query": "booker",
+    "expected_id": 1626164,
+    "expected": "Devin Booker",
+    "kind": "last_name"
+  },
+  {
+    "query": "holiday",
+    "expected_id": 201950,
+    "expected": "Jrue Holiday",
+    "kind": "last_name"
+  },
+  {
+    "query": "mcconnell",
+    "expected_id": 204456,
+    "expected": "T.J. McConnell",
+    "kind": "last_name"
+  },
+  {
+    "query": "conley",
+    "expected_id": 201144,
+    "expected": "Mike Conley",
+    "kind": "last_name"
+  },
+  {
+    "query": "mccollum",
+    "expected_id": 203468,
+    "expected": "CJ McCollum",
+    "kind": "last_name"
+  },
+  {
+    "query": "portis jr.",
+    "expected_id": 1626171,
+    "expected": "Bobby Portis Jr.",
+    "kind": "last_name"
+  },
+  {
+    "query": "niang",
+    "expected_id": 1627777,
+    "expected": "Georges Niang",
+    "kind": "last_name"
+  },
+  {
+    "query": "doncic",
+    "expected_id": 1629029,
+    "expected": "Luka Dončić",
+    "kind": "last_name"
+  },
+  {
+    "query": "looney",
+    "expected_id": 1626172,
+    "expected": "Kevon Looney",
+    "kind": "last_name"
+  }
+]

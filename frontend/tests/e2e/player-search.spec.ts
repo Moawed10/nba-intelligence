@@ -29,8 +29,7 @@ test("search lists players and stays accessible while open", async ({ page }) =>
   const box = await option.boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
   await option.click();
-  await expect(input).toHaveValue("Alpha Tester");
-  await expect(page.getByRole("status").filter({ hasText: "AAA · G" })).toBeVisible();
+  await expect(page).toHaveURL("/players/1");
 });
 
 test("search is fully keyboard operable", async ({ page, isMobile }) => {
@@ -38,12 +37,10 @@ test("search is fully keyboard operable", async ({ page, isMobile }) => {
   const input = page.getByRole("combobox", { name: "Search players" });
   await input.focus();
   await page.keyboard.type("tes");
-  await expect(page.getByRole("option")).toHaveCount(2);
+  await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(2);
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("option", { name: /Beta Tester/ })).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("Enter");
-  await expect(input).toHaveValue("Beta Tester");
-  await expect(input).toBeFocused();
-  await expect(page.getByRole("status").filter({ hasText: "Former player" })).toBeVisible();
+  await expect(page).toHaveURL("/players/2");
 });

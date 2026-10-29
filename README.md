@@ -5,7 +5,7 @@ Player performance prediction and analytics for the NBA. It forecasts a player's
 > **Status:** in development.
 > - Real box scores from 2018-19 through the current season are ingested, verified and kept in sync automatically.
 > - A read-only API serves players, teams, games, box scores, trends and data freshness (docs at `/api/v1/docs`).
-> - The frontend shell, design system and player search are built.
+> - Player search, a filterable directory and full player profiles (averages, trends, splits, game logs) are live.
 > - The ML models and prediction screens are next.
 >
 > Progress and verified results: [docs/implementation-status.md](docs/implementation-status.md) and [docs/test-report.md](docs/test-report.md).
@@ -65,6 +65,12 @@ npm run dev                                # http://localhost:3000, proxies /api
 ```bash
 cd backend && .venv/bin/pytest            # needs a local PostgreSQL; creates nba_intelligence_test
 cd frontend && npm run lint && npm run typecheck && npm test && npm run test:e2e
+```
+
+End-to-end tests use a synthetic stub API, so they run without a database. Live checks compare pages with the real API (backend running on port 8000):
+
+```bash
+cd frontend && npx playwright test -c playwright.live.config.ts
 ```
 
 After changing an API model, regenerate the contract and frontend types (CI checks both):

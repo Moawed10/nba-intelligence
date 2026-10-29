@@ -14,7 +14,7 @@ const eslintConfig = defineConfig([
       "jsx-a11y/no-noninteractive-tabindex": ["error", { roles: ["tabpanel", "region"], tags: [] }],
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "playwright-report/**", "test-results/**", "coverage/**"]),
+  globalIgnores([".next/**", ".next-*/**", "out/**", "build/**", "next-env.d.ts", "playwright-report/**", "test-results/**", "coverage/**"]),
 ]);
 
 export default eslintConfig;

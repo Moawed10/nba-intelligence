@@ -118,3 +118,16 @@ test.describe("reduced motion", () => {
     expect(duration).toBeLessThan(0.001);
   });
 });
+
+test("top bar keeps spare room so font differences between systems cannot overflow it", async ({ page }) => {
+  await page.goto("/about");
+  const slack = await page.locator("header > div").evaluate((row) => {
+    const children = [...row.children] as HTMLElement[];
+    const used = children.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0);
+    const style = getComputedStyle(row);
+    const gaps = parseFloat(style.columnGap || "0") * (children.length - 1);
+    const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    return row.clientWidth - padding - gaps - used;
+  });
+  expect(slack).toBeGreaterThanOrEqual(24);
+});

@@ -43,6 +43,18 @@ describe("PlayerSearch", () => {
     expect(screen.getByText("Type at least 2 characters to search.")).toBeInTheDocument();
   });
 
+  it("debounces within the 200–350 ms window", async () => {
+    const fetchMock = respond(200, RESULTS);
+    const { user, input } = setup();
+    await user.type(input, "tes");
+    const typed = performance.now();
+    await new Promise((r) => setTimeout(r, 190));
+    expect(fetchMock).not.toHaveBeenCalled();
+    await screen.findByRole("option", { name: /Alpha Tester/ });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(performance.now() - typed).toBeLessThan(350 + 150);
+  });
+
   it("queries the API once typing pauses and lists results", async () => {
     const fetchMock = respond(200, RESULTS);
     const { user, input } = setup();

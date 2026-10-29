@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { NotConnected } from "@/components/data/not-connected";
 import { PageHeader } from "@/components/data/page-header";
+import { LoadingBlock } from "@/components/data/state-view";
 
+import { Directory } from "./directory";
 import { PlayerFinder } from "./player-finder";
 
 export const metadata: Metadata = { title: "Players" };
 
-export default function PlayersPage() {
+export default function PlayersPage({ searchParams }: PageProps<"/players">) {
   return (
     <>
       <PageHeader
         title="Players"
         description="Search every player and explore season averages, trends and game logs."
       />
-      <div className="space-y-8">
+      <div className="space-y-10">
         <PlayerFinder />
-        <NotConnected
-          title="Player profiles aren't connected yet"
-          shows="the full directory with team and position filters, and each player's profile"
-        />
+        <Suspense fallback={<LoadingBlock label="Loading players" />}>
+          <Directory searchParams={searchParams} />
+        </Suspense>
       </div>
     </>
   );

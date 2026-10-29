@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 
 import { Providers } from "@/components/providers";
 import { RouteFocus } from "@/components/shell/route-focus";
@@ -47,7 +48,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </main>
           <TabBar />
-          <RouteFocus />
+          <Suspense fallback={null}>
+            <RouteFocus />
+          </Suspense>
         </Providers>
       </body>
     </html>

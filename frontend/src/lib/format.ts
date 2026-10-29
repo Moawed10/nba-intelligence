@@ -49,3 +49,25 @@ const DATE_TIME = new Intl.DateTimeFormat("en-US", {
 export function formatGameTime(iso: string): string {
   return DATE_TIME.format(new Date(iso));
 }
+
+export function formatHeight(inches: number | null | undefined): string {
+  return inches == null ? "—" : `${Math.floor(inches / 12)}′${inches % 12}″`;
+}
+
+const GAME_DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const GAME_DATE_YEAR = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** Game dates are calendar dates (YYYY-MM-DD), so they are formatted in UTC to avoid shifting. */
+export function formatGameDate(date: string, withYear = false): string {
+  return (withYear ? GAME_DATE_YEAR : GAME_DATE).format(new Date(`${date}T00:00:00Z`));
+}
+
+/** A single game's value: whole numbers for counts, one decimal for minutes. */
+export function formatGameValue(value: number | null | undefined): string {
+  return value != null && Number.isInteger(value) ? formatCount(value) : formatStat(value);
+}

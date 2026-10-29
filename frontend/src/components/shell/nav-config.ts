@@ -28,6 +28,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { href: "/about", label: "About", icon: Info },
 ];
 
-export function isActive(pathname: string, href: string): boolean {
+export function isActive(pathname: string | null, href: string): boolean {
+  if (pathname == null) return false;
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }

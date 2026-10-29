@@ -1,6 +1,6 @@
 import "server-only";
 
-import { networkError, parseResponse } from "./errors";
+import { ApiError, networkError, parseResponse } from "./errors";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -26,4 +26,16 @@ export async function serverGet<T>(path: string, query?: Query): Promise<T> {
     throw networkError(cause);
   }
   return parseResponse<T>(response);
+}
+
+export type ServerResult<T> = { data: T; error: null } | { data: null; error: ApiError };
+
+/** Like serverGet, but API errors (404, 422, 503…) come back as values so pages can render them. */
+export async function serverTry<T>(path: string, query?: Query): Promise<ServerResult<T>> {
+  try {
+    return { data: await serverGet<T>(path, query), error: null };
+  } catch (error) {
+    if (error instanceof ApiError) return { data: null, error };
+    throw error;
+  }
 }

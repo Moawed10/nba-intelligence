@@ -172,3 +172,34 @@ Defects found and fixed while writing these tests:
 - After navigating from the More menu, focus returned to the menu button instead of the new page's heading.
 - Headings got `tabindex` at runtime, which caused a React hydration mismatch.
 - Light-theme amber on the page background measured 4.50:1, so it was darkened to `#a84f00`.
+
+## Phase 5 player explorer and profile
+
+### Unit and end-to-end
+
+```bash
+cd frontend && npx vitest run --coverage && npx playwright test
+```
+
+**Result:** 38 unit tests passed (88.23% statement coverage). Playwright: 109 passed, 3 skipped (keyboard-only tests on the touch project). Server-rendered pages read from `tests/e2e/stub-api.mjs`, a synthetic API (season 2099-00, teams Alpha and Bravo) that Playwright starts next to an isolated build in `.next-e2e`.
+
+`tests/e2e/players.spec.ts` covers: server-rendered first page and pagination; team, position and former-player filters in the URL and after reload; empty state with "Clear filters"; search to profile with focus on the new heading; profile values equal to the API response; stat and season selectors; chart table view; keyboard-opened splits; game-log pagination; a player with no games; not-found; a 503 shown as plain language; axe in both themes; no overflow.
+
+### Live checks against the real dataset
+
+```bash
+cd backend && .venv/bin/uvicorn --factory app.main:build --port 8000 &
+cd frontend && npx playwright test -c playwright.live.config.ts
+```
+
+| Check | Result |
+|---|---|
+| 100 documented search queries (`tests/live/search-queries.json`) with the intended player in the top 3 | 100 / 100 |
+| Last keystroke to visible results, 25 queries typed at 40 ms per key | p50 329 ms, p95 336 ms (250 ms debounce included); 1 request per query |
+| Profile tiles equal to `GET /players/{id}/stats` for 25 active players | 175 / 175 values |
+
+The query set is regenerated with `backend/scripts/search_queries.py`: the 100 active players with the most games since 2018-19, as 40 accent-free full names, 30 full names missing one letter of the last name, and 30 unique last names.
+
+### CI
+
+The first CI runs on GitHub found two problems that local runs missed: the type-check needed Next.js route types generated first, and the top bar overflowed by 8–15 px at 768 px with Linux font metrics. Both are fixed, and an E2E check now requires at least 24 px of spare room in the top bar.

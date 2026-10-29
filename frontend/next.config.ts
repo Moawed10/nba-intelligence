@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const apiOrigin = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // Test builds point at other APIs, so they use their own output directory.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
