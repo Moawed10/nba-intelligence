@@ -113,7 +113,7 @@ async function QuickPicks() {
               href={`/predict?player=${l.player_id}`}
               className="flex items-center gap-2 rounded-full border border-border py-1 pr-3 pl-1 text-subhead transition-colors hover:border-foreground/25"
             >
-              <PlayerAvatar name={l.full_name} team={l.team} size="sm" />
+              <PlayerAvatar id={l.player_id} name={l.full_name} team={l.team} size="sm" />
               {l.full_name}
             </Link>
           </li>
@@ -184,7 +184,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
         aria-labelledby="player-name"
         className="panel flex flex-wrap items-center gap-4 p-4 sm:p-5 lg:col-span-12"
       >
-        <PlayerAvatar name={player.full_name} team={player.team} size="lg" />
+        <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="lg" />
         <div className="min-w-0 flex-1">
           <h2 id="player-name" className="text-title3 font-semibold">
             <Link href={`/players/${player.id}`} className="hover:text-primary">

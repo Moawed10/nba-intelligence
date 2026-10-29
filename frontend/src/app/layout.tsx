@@ -15,8 +15,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 export const metadata: Metadata = {
   title: { default: "NBA Intelligence", template: "%s · NBA Intelligence" },
-  description:
-    "NBA player performance predictions with calibrated uncertainty, built on real box scores.",
+  description: "NBA player performance predictions with calibrated uncertainty, built on real box scores.",
 };
 
 export const viewport: Viewport = {
@@ -42,10 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <Providers>
           <TopNav />
-          <main
-            id="main"
-            className="mx-auto w-full max-w-6xl px-4 pb-28 pt-8 sm:px-6 md:pb-16 md:pt-12"
-          >
+          <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-28 pt-8 sm:px-6 md:pb-16 md:pt-12">
             {children}
           </main>
           <TabBar />

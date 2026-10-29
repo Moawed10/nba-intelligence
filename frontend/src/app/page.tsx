@@ -55,7 +55,7 @@ function StandoutGrid({ standouts }: { standouts: Standouts }) {
                 style={{ background: p.team.primary_color ?? "var(--border)" }}
               />
               <span className="flex items-center gap-3">
-                <PlayerAvatar name={p.full_name} team={p.team} size="sm" />
+                <PlayerAvatar id={p.player_id} name={p.full_name} team={p.team} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold group-hover:text-primary">{p.full_name}</span>
                   <span className="block truncate text-footnote text-muted-foreground">

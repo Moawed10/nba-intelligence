@@ -2,9 +2,11 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
+from fastapi.responses import FileResponse
 
 from app.api.deps import Ctx
-from app.models import SeasonType
+from app.api.errors import ApiError, not_found
+from app.models import Player, SeasonType
 from app.schemas.common import Page
 from app.schemas.resources import (
     DirectoryPlayer,
@@ -17,6 +19,7 @@ from app.schemas.resources import (
 )
 from app.services import players
 from app.services.common import LIMIT_DEFAULT, LIMIT_MAX
+from app.services.photos import PhotoSourceError
 
 router = APIRouter(prefix="/players", tags=["players"])
 
@@ -58,6 +61,26 @@ def search_players(
 def get_player(ctx: Ctx, player_id: PlayerId) -> PlayerProfile:
     ctx.cache_for(300)
     return players.profile(ctx, player_id)
+
+
+@router.get(
+    "/{player_id}/photo",
+    response_class=FileResponse,
+    responses={200: {"content": {"image/png": {}}, "description": "The player's photo"}},
+)
+def get_player_photo(ctx: Ctx, player_id: PlayerId) -> FileResponse:
+    """Copied once from the NBA's image server and then served locally; 404 when none exists."""
+    if ctx.session.get(Player, player_id) is None:
+        raise not_found("player", player_id)
+    try:
+        path = ctx.state.photos.path(player_id)
+    except PhotoSourceError:
+        raise ApiError(503, "photo_unavailable", "The photo service is unavailable.") from None
+    if path is None:
+        raise ApiError(404, "photo_not_found", "No photo is available for this player.")
+    return FileResponse(
+        path, media_type="image/png", headers={"Cache-Control": "public, max-age=604800"}
+    )
 
 
 @router.get("/{player_id}/stats", response_model=PlayerSeasonStats)

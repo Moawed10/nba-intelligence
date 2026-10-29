@@ -157,6 +157,7 @@ function ProfileHero({
       <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-4 sm:gap-5">
           <PlayerAvatar
+            id={player.id}
             name={player.full_name}
             team={player.team}
             size="xl"

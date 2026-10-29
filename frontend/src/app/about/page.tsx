@@ -53,14 +53,14 @@ export default function AboutPage() {
         <h2 className="text-title2 font-semibold">
           Reading a prediction range{" "}
           <InfoHint term="80% range">
-            A range built so that, across many past games, the actual result fell inside it about
-            80% of the time. It is calibrated on a held-out season and checked on another.
+            A range built so that, across many past games, the actual result fell inside it about 80% of the
+            time. It is calibrated on a held-out season and checked on another.
           </InfoHint>
         </h2>
         <p className="mt-2 max-w-3xl text-subhead leading-relaxed text-muted-foreground">
-          A forecast of “27 · likely 21–34” means the model&apos;s best single estimate is 27, and
-          results between 21 and 34 are typical for situations like this one. Outcomes outside the
-          range still happen, roughly one game in five.
+          A forecast of “27 · likely 21–34” means the model&apos;s best single estimate is 27, and results
+          between 21 and 34 are typical for situations like this one. Outcomes outside the range still happen,
+          roughly one game in five.
         </p>
       </section>
     </>

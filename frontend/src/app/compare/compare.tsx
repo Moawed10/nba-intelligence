@@ -122,7 +122,7 @@ function Hero({
                 : "flex flex-col items-center gap-3 text-center"
             }
           >
-            <PlayerAvatar name={p.full_name} team={p.team} size="xl" />
+            <PlayerAvatar id={p.id} name={p.full_name} team={p.team} size="xl" />
             <div>
               <Link
                 href={`/players/${p.id}?season=${season}`}

@@ -58,7 +58,7 @@ function SortHeader({ state, column }: { state: DirectoryState; column: (typeof 
 function PlayerCell({ player }: { player: DirectoryPlayer }) {
   return (
     <div className="flex items-center gap-3">
-      <PlayerAvatar name={player.full_name} team={player.team} size="sm" />
+      <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="sm" />
       <div className="min-w-0">
         <Link
           href={`/players/${player.id}`}

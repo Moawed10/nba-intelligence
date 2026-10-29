@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     first_season: int = 2018
     artifacts_dir: Path = Path("artifacts")
+    photos_dir: Path = Path(".cache/photos")
     team_minutes_tolerance: int = 5
 
 

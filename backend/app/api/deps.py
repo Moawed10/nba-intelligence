@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.db import current_data_version, session_factory
 from app.schemas.common import DataFreshness, Meta
 from app.services.cache import Memo, VersionedCache
+from app.services.photos import PhotoCache
 from app.sync.freshness import DatasetFreshness, Freshness, dataset_freshness
 
 MEMO_TTL_SECONDS = 30.0
@@ -30,6 +31,7 @@ class ApiState:
     )
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
     artifacts_dir: Path = field(default_factory=lambda: get_settings().artifacts_dir)
+    photos: PhotoCache = field(default_factory=lambda: PhotoCache(get_settings().photos_dir))
 
     def __post_init__(self) -> None:
         self.sessions = session_factory(self.engine)

@@ -88,7 +88,7 @@ export function ComparePicker({
           const body =
             player && editing !== slot ? (
               <div className="flex items-center gap-3">
-                <PlayerAvatar name={player.full_name} team={player.team} size="md" />
+                <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="kicker">{label}</p>
                   <p className="truncate font-semibold">{player.full_name}</p>

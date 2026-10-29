@@ -205,7 +205,7 @@ function Matchup({ game, fullBox }: { game: GameSummary; fullBox?: boolean }) {
                 href={`/players/${top.player_id}`}
                 className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-foreground/25"
               >
-                <PlayerAvatar name={top.full_name} team={team.team} size="sm" />
+                <PlayerAvatar id={top.player_id} name={top.full_name} team={team.team} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="kicker block">{team.team.abbreviation} top scorer</span>
                   <span className="block truncate font-medium">{top.full_name}</span>
@@ -474,7 +474,7 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
                 <span className="w-4 text-right text-footnote text-muted-foreground tabular-nums">
                   {leader.rank}
                 </span>
-                <PlayerAvatar name={leader.full_name} team={leader.team} size="sm" />
+                <PlayerAvatar id={leader.player_id} name={leader.full_name} team={leader.team} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium group-hover:text-primary">
                     {leader.full_name}

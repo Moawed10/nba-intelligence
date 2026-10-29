@@ -13,6 +13,7 @@ pytestmark = pytest.mark.integration
 ENDPOINTS = {
     "/api/v1/players", "/api/v1/players/search", "/api/v1/players/{player_id}",
     "/api/v1/players/{player_id}/stats", "/api/v1/players/{player_id}/games",
+    "/api/v1/players/{player_id}/photo",
     "/api/v1/players/{player_id}/trends", "/api/v1/teams", "/api/v1/teams/{team_id}",
     "/api/v1/teams/{team_id}/stats", "/api/v1/games", "/api/v1/games/upcoming",
     "/api/v1/games/{game_id}", "/api/v1/games/{game_id}/boxscore", "/api/v1/health",
