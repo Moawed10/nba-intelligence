@@ -40,3 +40,5 @@ export type TeamRef = Schemas["TeamRef"];
 export type DatasetStatus = Schemas["DatasetStatus"];
 export type Prediction = Schemas["Prediction"];
 export type PredictedValue = Schemas["PredictedValue"];
+export type TeamHistory = Schemas["TeamHistory"];
+export type HistoricSeason = Schemas["HistoricSeason"];

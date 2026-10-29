@@ -242,6 +242,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/players/{player_id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Player Photo
+         * @description Copied once from the NBA's image server and then served locally; 404 when none exists.
+         */
+        get: operations["get_player_photo_api_v1_players__player_id__photo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/players/{player_id}/stats": {
         parameters: {
             query?: never;
@@ -375,6 +395,23 @@ export interface paths {
         };
         /** Get Team */
         get: operations["get_team_api_v1_teams__team_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teams/{team_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team History */
+        get: operations["get_team_history_api_v1_teams__team_id__history_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -646,6 +683,54 @@ export interface components {
              * @constant
              */
             status: "ok";
+        };
+        /**
+         * HistoricSeason
+         * @description One regular season of a franchise as published by the source. None means not recorded.
+         */
+        HistoricSeason: {
+            /** City */
+            city: string;
+            /** Conference Rank */
+            conference_rank: number | null;
+            /** Def Rating */
+            def_rating: number | null;
+            /** Division Rank */
+            division_rank: number | null;
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Finals */
+            finals: ("finals" | "champion") | null;
+            /** Ft Pct */
+            ft_pct: number | null;
+            /** Games */
+            games: number;
+            /** Losses */
+            losses: number;
+            /** Name */
+            name: string;
+            /** Net Rating */
+            net_rating: number | null;
+            /** Off Rating */
+            off_rating: number | null;
+            /** Pace */
+            pace: number | null;
+            /** Per Game */
+            per_game: {
+                [key: string]: number | null;
+            };
+            /** Playoff Losses */
+            playoff_losses: number | null;
+            /** Playoff Wins */
+            playoff_wins: number | null;
+            /** Season */
+            season: string;
+            /** Win Pct */
+            win_pct: number;
+            /** Wins */
+            wins: number;
         };
         /** Leader */
         Leader: {
@@ -1300,6 +1385,13 @@ export interface components {
             /** Season */
             season: string;
             team: components["schemas"]["Team"];
+        };
+        /** TeamHistory */
+        TeamHistory: {
+            meta: components["schemas"]["Meta"];
+            /** Seasons */
+            seasons: components["schemas"]["HistoricSeason"][];
+            team: components["schemas"]["TeamRef"];
         };
         /** TeamRef */
         TeamRef: {
@@ -2363,6 +2455,73 @@ export interface operations {
             };
         };
     };
+    get_player_photo_api_v1_players__player_id__photo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The player's photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     get_player_stats_api_v1_players__player_id__stats_get: {
         parameters: {
             query?: {
@@ -2925,6 +3084,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_team_history_api_v1_teams__team_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamHistory"];
                 };
             };
             /** @description Bad Request */

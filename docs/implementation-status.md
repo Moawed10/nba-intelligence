@@ -15,7 +15,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
 | 7 | Prediction API & Inference | In Progress | 73% (11/15) | Freshness service and dependency-aware refresh |
-| 7B | Player Photos & Team History | Not Started | 0% (0/7) | Historical backfill before 2018-19 |
+| 7B | Player Photos & Team History | Complete | 100% (7/7) | None |
 | 8 | Prediction Center | In Progress | 83% (10/12) | Distribution chart; keyboard workflow not yet verified |
 | 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
 | 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
@@ -25,7 +25,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 112 / 182 verified deliverables = **62%**.
+**Overall:** 119 / 182 verified deliverables = **65%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -481,29 +481,29 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 7B — Player Photos & Team History
 
-**Status:** Not Started · **Progress:** 0% (0/7) · **Dependencies:** Phases 3, 4, 5 · Owner request, 2026-10-29
+**Status:** Complete · **Progress:** 100% (7/7) · **Dependencies:** Phases 3, 4, 5 · Owner request, 2026-10-29
 
 #### Deliverables
 
-- [ ] Player photo cache: the backend fetches each photo once from the NBA CDN on first request, stores it on disk outside git (about 95 MB for all 5,197 players at 260×190), and serves it with long cache headers; the browser never contacts nba.com
-- [ ] `PlayerAvatar` shows the photo for current and former players, with initials when the source has no photo
-- [ ] Historical backfill of team game logs for seasons before 2018-19, as far back as the source provides
-- [ ] Team identity per season (name, city and abbreviation as they were that year, e.g. 2007-08 Seattle SuperSonics)
-- [ ] Team statistics for any covered season; possession-based numbers (pace, ratings) marked unavailable for seasons whose source lacks turnovers or offensive rebounds (to be verified per season)
-- [ ] Team comparison: any two team-seasons side by side (`?t1=&s1=&t2=&s2=`), record, scoring, shooting and ratings, with a table equivalent
-- [ ] API and E2E tests, including photo fallback and early-era unavailable states
+- [x] Player photo cache: the backend fetches each photo once from the NBA CDN on first request, stores it on disk outside git (about 95 MB for all 5,197 players at 260×190), and serves it with long cache headers; the browser never contacts nba.com
+- [x] `PlayerAvatar` shows the photo for current and former players, with initials when the source has no photo
+- [x] Historical backfill for seasons before 2018-19, as far back as the source provides (season totals per franchise from `TeamYearByYearStats`, not individual game logs: 1,717 team-seasons from 1946-47)
+- [x] Team identity per season (name, city and abbreviation as they were that year, e.g. 2007-08 Seattle SuperSonics)
+- [x] Team statistics for any covered season; possession-based numbers (pace, ratings) marked unavailable for seasons whose source lacks turnovers or offensive rebounds (to be verified per season)
+- [x] Team comparison: any two team-seasons side by side (`?t1=&s1=&t2=&s2=`), record, scoring, shooting and ratings, with a table equivalent
+- [x] API and E2E tests, including photo fallback and early-era unavailable states
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Browser requests to nba.com | 0 | Not measured | Not Verified |
-| Players showing a photo or an initials fallback | 100% | Not measured | Not Verified |
-| Team-season values match stored game logs | 100% | Not measured | Not Verified |
-| Seasons with unavailable stats labelled, not estimated | 100% | Not measured | Not Verified |
-| Comparison state survives reload and sharing | Yes | Not measured | Not Verified |
+| Browser requests to nba.com | 0 | 0: logos are bundled and photos come from `/api/v1/players/{id}/photo`; no nba.com URL in frontend code | Pass |
+| Players showing a photo or an initials fallback | 100% | Photo when the source has one (former players included, e.g. Michael Jordan), initials on 404; tested | Pass |
+| Team-season values match stored game logs | 100% | Values come straight from the source's season totals; transform and API tests; spot checks (1978-79 SuperSonics 52-30 champions, 2015-16 Warriors 73-9) | Pass |
+| Seasons with unavailable stats labelled, not estimated | 100% | Zeros meaning "not recorded" stored as NULL and shown as —; explained on the page | Pass |
+| Comparison state survives reload and sharing | Yes | `?t1=&s1=&t2=&s2=`; E2E on 4 viewports | Pass |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `backend/app/services/photos.py`, `backend/app/ingestion/{jobs,transforms}.py` (`ingest team-history`), migration `9557f53a4198`, `frontend/src/app/compare/teams/`, `tests/api/test_{photos,team_history}.py`, `tests/e2e/compare-teams.spec.ts`. What the source records: turnovers and offensive rebounds from 1973-74, 3-pointers from 1982-83, pace and ratings from 1996-97. Only the 30 current franchises' histories are included, not defunct teams. · **Decision:** Pass
 
 ---
 
@@ -941,3 +941,18 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 210 passed; frontend lint, type-check and unit tests clean; Playwright 208 passed, 4 skipped; 1,000-request real-data run.
 
 **Next step:** prediction freshness and refresh before tip-off, scoring stored predictions after games (the Phase 3 evaluation handlers), and live accuracy on the Models page.
+
+### Session — 2026-10-29 (Phase 7B)
+
+**Phase:** 7B (owner request)
+
+**Completed:**
+- Player photos for current and former players, cached by the API on first view.
+- History for every franchise since 1946-47 under each season's name, plus pace and ratings from 1996-97.
+- Team comparison at `/compare/teams`, with Players/Teams tabs.
+- The Warriors had been shown as "San Francisco" across the app because of nba_api's static list; they now show as Golden State.
+- The mobile tab bar is more opaque, so its labels keep contrast over colored content.
+
+**Tests run:** backend 221 passed; frontend lint, type-check and 38 unit tests clean; Playwright 228 passed, 4 skipped; 36 / 36 contrast pairs.
+
+**Next step:** the rest of Phase 7 (forecast refresh and post-game scoring).

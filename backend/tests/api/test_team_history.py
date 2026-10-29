@@ -89,3 +89,12 @@ def test_history_lists_seasons_newest_first_with_that_years_name(client, history
 
 def test_unknown_team_is_404(client, history):
     assert client.get("/api/v1/teams/99/history").json()["error"]["code"] == "team_not_found"
+
+
+def test_warriors_keep_the_league_name_golden_state():
+    from app.ingestion.transforms import transform_teams
+
+    static = [
+        {"id": 1610612744, "abbreviation": "GSW", "city": "San Francisco", "nickname": "Warriors"}
+    ]
+    assert transform_teams(static, None)[0]["city"] == "Golden State"

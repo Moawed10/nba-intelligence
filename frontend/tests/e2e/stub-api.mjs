@@ -177,6 +177,21 @@ function playerRoute(res, id, resource, q, page) {
   return send(res, 200, page(lines));
 }
 
+// Team history: Bravo were the "Old Town Owls" in 2070-71, before turnovers and ratings were recorded.
+const historic = (team, season, city, name, wins, early) => ({
+  season, city, name, games: 82, wins, losses: 82 - wins, win_pct: Math.round((wins / 82) * 10000) / 10000,
+  conference_rank: 1, division_rank: 1, playoff_wins: early ? 0 : 16, playoff_losses: early ? 0 : 4,
+  finals: early ? null : "champion",
+  per_game: { pts: 110 + team, reb: 44, oreb: early ? null : 10, ast: 25, stl: early ? null : 8, blk: early ? null : 5,
+    tov: early ? null : 14, fg3m: early ? null : 12, pf: 20 },
+  fg_pct: 0.47, fg3_pct: early ? null : 0.36, ft_pct: 0.77,
+  pace: early ? null : 99, off_rating: early ? null : 112 + team, def_rating: early ? null : 106, net_rating: early ? null : 6 + team,
+});
+const HISTORY = {
+  1: [historic(1, "2099-00", "Alpha", "Ants", 60, false), historic(1, "2098-99", "Alpha", "Ants", 50, false)],
+  2: [historic(2, "2099-00", "Bravo", "Bears", 30, false), historic(2, "2070-71", "Old Town", "Owls", 41, true)],
+};
+
 const TODAY = "2099-11-10";
 const game = (id, date, away, home, status, scores) => ({
   id, season: "2099-00", season_type: "regular", game_date: date, status,
@@ -299,6 +314,12 @@ createServer((req, res) => {
   if (boxMatch) {
     const g = GAMES.find((x) => x.id === boxMatch[1]);
     return g ? send(res, 200, boxScore(g)) : error(res, 404, "game_not_found", "No such game.");
+  }
+  const historyMatch = path.match(/^\/teams\/(\d+)\/history$/);
+  if (historyMatch) {
+    const team = TEAMS.find((t) => t.id === Number(historyMatch[1]));
+    if (!team) return error(res, 404, "team_not_found", "No team with that id.");
+    return send(res, 200, { team: ref(team), seasons: HISTORY[team.id], meta: META });
   }
   const statsMatch = path.match(/^\/teams\/(\d+)\/stats$/);
   if (statsMatch) return send(res, 200, teamStats(Number(statsMatch[1])));

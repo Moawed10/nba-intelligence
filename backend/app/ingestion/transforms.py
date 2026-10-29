@@ -316,6 +316,11 @@ TEAM_COLORS: dict[str, tuple[str, str]] = {
 }  # fmt: skip
 
 
+# nba_api's static list moved the Warriors to "San Francisco"; the league still calls them
+# Golden State (TeamYearByYearStats, schedules, broadcasts).
+CITY_OVERRIDES = {"GSW": "Golden State"}
+
+
 def transform_teams(
     static_teams: list[dict[str, Any]], standings: pd.DataFrame | None
 ) -> list[dict[str, Any]]:
@@ -327,7 +332,7 @@ def transform_teams(
         {
             "id": int(t["id"]),
             "abbreviation": t["abbreviation"],
-            "city": t["city"],
+            "city": CITY_OVERRIDES.get(t["abbreviation"], t["city"]),
             "name": t["nickname"],
             "conference": conf.get(int(t["id"]), (None, None))[0],
             "division": conf.get(int(t["id"]), (None, None))[1],
