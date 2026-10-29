@@ -85,7 +85,7 @@ export function AlgorithmComparison({
                       {algorithmLabel(row.algorithm)}
                     </span>
                     {row.selected && (
-                      <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-footnote font-medium text-primary">
+                      <span className="ml-2 rounded-full bg-primary px-2 py-0.5 text-footnote font-medium text-primary-foreground">
                         Selected
                       </span>
                     )}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { ApiErrorView } from "@/components/data/api-error";
@@ -21,6 +22,7 @@ const easternToday = () =>
 
 async function GamesView({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const requested = param(await searchParams, "date");
+  await connection();
   const date =
     requested && ISO_DATE.test(requested) && !Number.isNaN(Date.parse(requested))
       ? requested
