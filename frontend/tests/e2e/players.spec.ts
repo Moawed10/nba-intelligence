@@ -91,7 +91,9 @@ test.describe("player profile", () => {
     const averages = page.getByRole("region", { name: `${season.season} regular season` });
     for (const key of ["pts", "reb", "ast", "fg3m", "stl", "blk", "min"] as const) {
       const label = key === "fg3m" ? "3PM" : key.toUpperCase();
-      const tile = averages.locator("div").filter({ has: page.locator("dt", { hasText: new RegExp(`^${label}$`) }) });
+      const tile = averages
+        .locator("div")
+        .filter({ has: page.locator("dt", { hasText: new RegExp(`^${label}$`) }) });
       await expect(tile.locator("dd").first()).toHaveText(oneDecimal(season.per_game[key]));
     }
     const fg = averages.locator("div").filter({ has: page.locator("dt", { hasText: /^FG%$/ }) });
@@ -105,7 +107,9 @@ test.describe("player profile", () => {
     await expect(page.getByRole("heading", { name: "Rebounds by game" })).toBeVisible();
 
     await page.getByRole("radio", { name: "Table", exact: true }).click();
-    await expect(page.getByRole("region", { name: /Rebounds by game, 2099-00/ }).locator("tbody tr")).toHaveCount(30);
+    await expect(
+      page.getByRole("region", { name: /Rebounds by game, 2099-00/ }).locator("tbody tr"),
+    ).toHaveCount(30);
 
     await page.getByLabel("Season", { exact: true }).selectOption("2098-99");
     await expect(page).toHaveURL(/season=2098-99/);
@@ -125,7 +129,10 @@ test.describe("player profile", () => {
 
     const log = page.getByRole("region", { name: "Game log, 2099-00, most recent first" });
     await expect(log.locator("tbody tr")).toHaveCount(20);
-    await page.getByRole("navigation", { name: "Game log pages" }).getByRole("link", { name: "Next page" }).click();
+    await page
+      .getByRole("navigation", { name: "Game log pages" })
+      .getByRole("link", { name: "Next page" })
+      .click();
     await expect(page).toHaveURL(/log=2/);
     await expect(log.locator("tbody tr")).toHaveCount(10);
   });

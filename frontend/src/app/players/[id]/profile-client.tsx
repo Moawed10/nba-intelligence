@@ -11,7 +11,15 @@ import { formatGameDate, formatGameValue, formatPercent, formatStat } from "@/li
 
 import { TREND_STATS, type TrendStat } from "./stats";
 
-export function ProfileControls({ seasons, season, stat }: { seasons: string[]; season: string; stat: TrendStat }) {
+export function ProfileControls({
+  seasons,
+  season,
+  stat,
+}: {
+  seasons: string[];
+  season: string;
+  stat: TrendStat;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -65,7 +73,17 @@ export function ProfileControls({ seasons, season, stat }: { seasons: string[]; 
 
 const AXIS = { fontSize: 12, fill: "var(--muted-foreground)" };
 
-function LegendSwatch({ color, width, dash, dot }: { color: string; width: number; dash?: string; dot?: boolean }) {
+function LegendSwatch({
+  color,
+  width,
+  dash,
+  dot,
+}: {
+  color: string;
+  width: number;
+  dash?: string;
+  dot?: boolean;
+}) {
   return (
     <svg aria-hidden width="20" height="8">
       <line x1="0" y1="4" x2="20" y2="4" stroke={color} strokeWidth={width} strokeDasharray={dash} />
@@ -114,7 +132,13 @@ export function TrendChart({ points, statLabel }: { points: TrendPoint[]; statLa
               strokeWidth={1.5}
               dot={{ r: 2.5, fill: "var(--chart-3)" }}
             />
-            <Line name="Previous 5 average" dataKey="rolling_5" stroke="var(--chart-1)" strokeWidth={3} dot={false} />
+            <Line
+              name="Previous 5 average"
+              dataKey="rolling_5"
+              stroke="var(--chart-1)"
+              strokeWidth={3}
+              dot={false}
+            />
             <Line
               name="Previous 10 average"
               dataKey="rolling_10"
@@ -133,7 +157,13 @@ export function TrendChart({ points, statLabel }: { points: TrendPoint[]; statLa
 const TREND_COLUMNS: Column<TrendPoint>[] = [
   { key: "date", header: "Date", cell: (p) => formatGameDate(p.game_date), sortValue: (p) => p.game_date },
   { key: "opp", header: "Opponent", cell: (p) => `${p.is_home ? "vs" : "@"} ${p.opponent_abbreviation}` },
-  { key: "value", header: "Value", cell: (p) => formatGameValue(p.value), sortValue: (p) => p.value, numeric: true },
+  {
+    key: "value",
+    header: "Value",
+    cell: (p) => formatGameValue(p.value),
+    sortValue: (p) => p.value,
+    numeric: true,
+  },
   {
     key: "r5",
     header: "Prev 5",
@@ -151,7 +181,14 @@ const TREND_COLUMNS: Column<TrendPoint>[] = [
 ];
 
 export function TrendTable({ points, caption }: { points: TrendPoint[]; caption: string }) {
-  return <DataTable caption={caption} columns={TREND_COLUMNS} rows={[...points].reverse()} rowKey={(p) => p.game_id} />;
+  return (
+    <DataTable
+      caption={caption}
+      columns={TREND_COLUMNS}
+      rows={[...points].reverse()}
+      rowKey={(p) => p.game_id}
+    />
+  );
 }
 
 function result(game: PlayerGameLine): string {
@@ -188,7 +225,13 @@ const GAME_COLUMNS: Column<PlayerGameLine>[] = [
     numeric: true,
   },
   { key: "tov", header: "TOV", description: "Turnovers", cell: (g) => g.box.tov, numeric: true },
-  { key: "pm", header: "+/−", description: "Plus-minus", cell: (g) => signed(g.box.plus_minus), numeric: true },
+  {
+    key: "pm",
+    header: "+/−",
+    description: "Plus-minus",
+    cell: (g) => signed(g.box.plus_minus),
+    numeric: true,
+  },
 ];
 
 export function GameLogTable({ games, caption }: { games: PlayerGameLine[]; caption: string }) {
@@ -205,7 +248,13 @@ const perGame = (key: "pts" | "reb" | "ast" | "min", description: string): Colum
 
 const SPLIT_COLUMNS: Column<Split>[] = [
   { key: "split", header: "Split", cell: (s) => s.label },
-  { key: "gp", header: "GP", description: "Games played", cell: (s) => s.summary.games_played, numeric: true },
+  {
+    key: "gp",
+    header: "GP",
+    description: "Games played",
+    cell: (s) => s.summary.games_played,
+    numeric: true,
+  },
   perGame("pts", "Points per game"),
   perGame("reb", "Rebounds per game"),
   perGame("ast", "Assists per game"),

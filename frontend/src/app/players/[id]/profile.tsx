@@ -29,7 +29,11 @@ const PLAYER_ID = /^\d{1,10}$/;
 export const getProfile = cache((id: string) => serverTry<PlayerProfile>(`/players/${id}`));
 
 function identity({ player }: PlayerProfile): string {
-  const team = player.team ? `${player.team.city} ${player.team.name}` : player.is_active ? null : "Former player";
+  const team = player.team
+    ? `${player.team.city} ${player.team.name}`
+    : player.is_active
+      ? null
+      : "Former player";
   const body = [
     player.height_inches ? formatHeight(player.height_inches) : null,
     player.weight_lbs ? `${player.weight_lbs} lb` : null,
@@ -94,10 +98,20 @@ export async function PlayerProfileView({
             <Trends id={id} season={season} stat={stat} name={data.player.full_name} />
           </Suspense>
           <Suspense key={`splits-${season}`} fallback={<LoadingBlock label="Loading splits" />}>
-            <Splits id={id} season={season} preloaded={stats.data.splits_season === season ? stats.data : null} />
+            <Splits
+              id={id}
+              season={season}
+              preloaded={stats.data.splits_season === season ? stats.data : null}
+            />
           </Suspense>
           <Suspense key={`log-${season}-${logPage}`} fallback={<LoadingBlock label="Loading game log" />}>
-            <GameLog id={id} season={season} stat={stat} page={logPage} explicitSeason={requested === season} />
+            <GameLog
+              id={id}
+              season={season}
+              stat={stat}
+              page={logPage}
+              explicitSeason={requested === season}
+            />
           </Suspense>
         </div>
       )}
@@ -148,7 +162,17 @@ function SeasonAverages({ line }: { line: SeasonLine }) {
   );
 }
 
-async function Trends({ id, season, stat, name }: { id: string; season: string; stat: TrendStat; name: string }) {
+async function Trends({
+  id,
+  season,
+  stat,
+  name,
+}: {
+  id: string;
+  season: string;
+  stat: TrendStat;
+  name: string;
+}) {
   const result = await serverTry<PlayerTrends>(`/players/${id}/trends`, { stat, season });
   const label = TREND_STATS.find((s) => s.value === stat)!.label;
   const title = `${label} by game`;

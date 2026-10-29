@@ -23,6 +23,8 @@ class TeamRef(BaseModel):
     abbreviation: str
     city: str
     name: str
+    primary_color: str | None = None
+    secondary_color: str | None = None
 
 
 class Page[T](BaseModel):

@@ -1,0 +1,39 @@
+# Product Redesign Plan
+
+Grounded in the repository as of 2026-10-28. Status is tracked in [implementation-status.md](implementation-status.md); evidence lives in [test-report.md](test-report.md).
+
+## Audit
+
+| Area | Finding |
+|---|---|
+| Framework | Next.js 16.4 App Router with Cache Components and partial prerendering; data pages render on the server per request inside `Suspense` |
+| Styling | Tailwind 4 tokens in `globals.css` (light and dark), shadcn/Radix primitives, Inter, contrast checker in CI |
+| Motion | `motion` 14 (Motion for React) with `MotionConfig reducedMotion="user"`; one shared-layout nav indicator and an animated stat counter |
+| Charts | Recharts 3 (keyboard accessibility layer on, honors reduced motion) |
+| Data | FastAPI over PostgreSQL: 11,428 games, 219,230 player lines (2018-19 to now), schedule for 2026-27, freshness per dataset |
+| Working screens | Players directory, search and full profiles (real data, E2E and live-verified) |
+| Placeholder screens | Overview, Predictions, Compare, Models show a "not connected" card |
+| Missing endpoints | Overview aggregates (standout lines, leaders), season averages in the directory, compare, model registry, predictions (Phase 7 inference) |
+| ML | Phase 6 pipeline: 60 leakage-checked features, 4 model families per target, conformal intervals, double-double classifier, registry rows. No inference service yet |
+| Auth, preferences | None; theme choice in local storage |
+| Tests | pytest (backend), Vitest, Playwright with axe on 4 viewports against a synthetic stub API, live checks against the real API |
+
+**Design resources reviewed.** Componentry, Magic UI, Aceternity and React Bits ship copy-paste Tailwind + Framer Motion components built on the `motion` package this project already uses. Patterns are adapted with the existing dependency; no new animation library is added. Componentry's site states no license on its landing page, so its code is not copied.
+
+**Images.** NBA team logos and player headshots are NBA property, so the product uses team-color monograms and initials instead. Team colors are factual and stored in `teams.primary_color` and `secondary_color`.
+
+## Plan
+
+| Phase | Work | Data dependency |
+|---|---|---|
+| 1 | Audit (this document) | none |
+| 2 | Design system: Geist type, refined tokens and surfaces, motion scale, team monograms, sparkline, compare bar, skeletons, typed unavailable states | none |
+| 3 | Shell: navigation indicator, page transitions, mobile nav | none |
+| 4 | Players: directory with season averages and sorting, richer search, scouting-report profile, compare entry point | `/players` season averages (new) |
+| 5 | Overview: schedule strip with date navigation, matchup panel, standout performances, leaders, model snapshot, freshness | `/overview`, `/leaders` (new) |
+| 6 | Predictions: player → game → prediction workflow, interval chart, factors, history | Phase 7 inference API |
+| 7 | Compare: two selectors, versus hero, comparison bars, trend overlay, URL state | `/compare/players` (new) |
+| 8 | Models: registry, evaluation dashboard, algorithm comparison, methodology | `/models` endpoints over the Phase 6 registry |
+| 9 | Polish and verification on 4 viewports, both themes, reduced motion | all |
+
+Every number on every screen comes from an endpoint. Anything without data shows a typed state: loading, empty, no games scheduled, stale, not yet built, no trained model, backend error, rate limited, or offline.

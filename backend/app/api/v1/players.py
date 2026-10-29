@@ -7,11 +7,11 @@ from app.api.deps import Ctx
 from app.models import SeasonType
 from app.schemas.common import Page
 from app.schemas.resources import (
+    DirectoryPlayer,
     PlayerGameLine,
     PlayerProfile,
     PlayerSearchResult,
     PlayerSeasonStats,
-    PlayerSummary,
     PlayerTrends,
     TrendStat,
 )
@@ -26,7 +26,7 @@ Limit = Annotated[int, Query(ge=1, le=LIMIT_MAX)]
 Offset = Annotated[int, Query(ge=0, le=100_000)]
 
 
-@router.get("", response_model=Page[PlayerSummary])
+@router.get("", response_model=Page[DirectoryPlayer])
 def list_players(
     ctx: Ctx,
     team_id: int | None = None,
@@ -36,7 +36,7 @@ def list_players(
     sort: players.PlayerSort = "full_name",
     limit: Limit = LIMIT_DEFAULT,
     offset: Offset = 0,
-) -> Page[PlayerSummary]:
+) -> Page[DirectoryPlayer]:
     ctx.cache_for(300)
     return players.list_players(
         ctx, team_id=team_id, position=position, active=active, season=season,

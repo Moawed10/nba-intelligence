@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from sqlalchemy import Select, and_, case, desc, exists, func, select, text
+from sqlalchemy import Select, and_, case, desc, func, select, text
 from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
@@ -11,6 +11,7 @@ from app.api.errors import invalid_parameter, not_found
 from app.models import Game, Player, PlayerGameStats, Season, SeasonType, Team
 from app.schemas.common import Page, StatSummary
 from app.schemas.resources import (
+    DirectoryPlayer,
     PlayerGameLine,
     PlayerIdentity,
     PlayerProfile,
@@ -24,6 +25,7 @@ from app.schemas.resources import (
     TrendStat,
 )
 from app.services.common import box, resolve_season, shooting, stat_line, team_ref
+from app.services.insights import averages_from_row, season_totals
 from app.stats import Line, aggregate, is_double_double, rest_days_series, rolling_previous
 
 DATASET = "player_game_logs"
@@ -32,7 +34,12 @@ IDENTITY_TTL = 86400
 SEARCH_THRESHOLD = 0.6
 PROFILE_RECENT_GAMES = 5
 
-PlayerSort = Literal["full_name", "-full_name", "last_name", "-last_name", "to_year", "-to_year"]
+STAT_SORTS = ("games", "pts", "reb", "ast", "fg3m", "stl", "blk", "min")
+PlayerSort = Literal[
+    "full_name", "-full_name", "last_name", "-last_name", "to_year", "-to_year",
+    "games", "-games", "pts", "-pts", "reb", "-reb", "ast", "-ast", "fg3m", "-fg3m",
+    "stl", "-stl", "blk", "-blk", "min", "-min",
+]  # fmt: skip
 GameLogSort = Literal[
     "game_date", "-game_date", "pts", "-pts", "reb", "-reb", "ast", "-ast",
     "fg3m", "-fg3m", "stl", "-stl", "blk", "-blk", "minutes", "-minutes",
@@ -75,34 +82,41 @@ def _player_or_404(session: Session, player_id: int) -> tuple[Player, Team | Non
 def list_players(
     ctx: Context, *, team_id: int | None, position: str | None, active: bool | None,
     season: str | None, sort: PlayerSort, limit: int, offset: int,
-) -> Page[PlayerSummary]:  # fmt: skip
+) -> Page[DirectoryPlayer]:  # fmt: skip
+    """With a season, lists players with regular-season games in it, with their averages."""
+    stat_sort = sort.lstrip("-") in STAT_SORTS
+    if stat_sort and not season:
+        raise invalid_parameter("sort", "Sorting by a statistic requires a season.", "needs_season")
     stmt = select(Player, Team).outerjoin(Team, Team.id == Player.current_team_id)
+    totals = None
+    if season:
+        current = resolve_season(ctx.session, season)
+        totals = season_totals(current.id).subquery()
+        stmt = stmt.add_columns(totals).join(totals, totals.c.player_id == Player.id)
     if team_id is not None:
         stmt = stmt.where(Player.current_team_id == team_id)
     if position:
         stmt = stmt.where(Player.position.ilike(f"%{_escape_like(position)}%", escape="\\"))
     if active is not None:
         stmt = stmt.where(Player.is_active.is_(active))
-    if season:
-        season_id = resolve_season(ctx.session, season).id
-        played = (
-            select(PlayerGameStats.player_id)
-            .join(Game, Game.id == PlayerGameStats.game_id)
-            .where(PlayerGameStats.player_id == Player.id, Game.season_id == season_id)
-        )
-        stmt = stmt.where(exists(played))
     total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    column = PLAYER_SORTS[sort.lstrip("-")]
+    descending = sort.startswith("-")
+    if totals is not None and stat_sort:
+        key = sort.lstrip("-")
+        column = totals.c.games if key == "games" else getattr(totals.c, key) / totals.c.games
+    else:
+        column = PLAYER_SORTS[sort.lstrip("-")]
     rows = ctx.session.execute(
-        stmt.order_by(_order(column, sort.startswith("-")), Player.id).limit(limit).offset(offset)
-    )
-    return Page(
-        items=[_summary(p, t) for p, t in rows],
-        total=total,
-        limit=limit,
-        offset=offset,
-        meta=ctx.meta(DATASET),
-    )
+        stmt.order_by(_order(column, descending), Player.id).limit(limit).offset(offset)
+    ).all()
+    items = [
+        DirectoryPlayer(
+            **_summary(row[0], row[1]).model_dump(),
+            season_averages=averages_from_row(row, season) if season else None,
+        )
+        for row in rows
+    ]
+    return Page(items=items, total=total, limit=limit, offset=offset, meta=ctx.meta(DATASET))
 
 
 def _escape_like(value: str) -> str:

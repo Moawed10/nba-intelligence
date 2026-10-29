@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     api_cache_enabled: bool = True
 
     first_season: int = 2018
+    artifacts_dir: Path = Path("artifacts")
     team_minutes_tolerance: int = 5
 
 

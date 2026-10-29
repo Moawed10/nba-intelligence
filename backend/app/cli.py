@@ -5,6 +5,7 @@ import json
 import sys
 from datetime import UTC, datetime
 
+from app.config import get_settings
 from app.db import get_engine, session_scope
 from app.ingestion import jobs
 from app.ingestion.client import NBAStatsClient
@@ -38,6 +39,28 @@ def ingest_season(client: NBAStatsClient, season: int, types: list[SeasonType]) 
     return ok
 
 
+def train_command(args: argparse.Namespace) -> int:
+    from app.ml.features import TARGETS
+    from app.ml.models import FAST_CONFIG, TrainConfig
+    from app.ml.train import run
+
+    configure_logging()
+    targets = tuple(args.targets.split(",")) if args.targets else TARGETS
+    unknown = set(targets) - set(TARGETS)
+    if unknown:
+        print(f"Unknown targets: {sorted(unknown)}", file=sys.stderr)
+        return 2
+    summary = run(
+        get_engine(),
+        get_settings().artifacts_dir,
+        FAST_CONFIG if args.fast else TrainConfig(),
+        targets=targets,
+        register=args.targets is None,
+    )
+    print(json.dumps(summary, indent=2, default=str))
+    return 0
+
+
 def openapi_json() -> str:
     from app.main import create_app
 
@@ -67,11 +90,16 @@ def main(argv: list[str] | None = None) -> int:
     runs = sub.add_parser("runs", help="Show recent ingestion runs")
     runs.add_argument("--limit", type=int, default=20)
     sub.add_parser("openapi", help="Print the API's OpenAPI schema")
+    train = sub.add_parser("train", help="Train, evaluate and register a candidate model release")
+    train.add_argument("--targets", help="Comma-separated subset of targets (no registration)")
+    train.add_argument("--fast", action="store_true", help="Small search grids, for smoke runs")
 
     args = parser.parse_args(argv)
     if args.command == "openapi":
         sys.stdout.write(openapi_json())
         return 0
+    if args.command == "train":
+        return train_command(args)
     configure_logging()
     client = NBAStatsClient()
     all_types = list(SeasonType)

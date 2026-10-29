@@ -203,3 +203,62 @@ The query set is regenerated with `backend/scripts/search_queries.py`: the 100 a
 ### CI
 
 The first CI runs on GitHub found two problems that local runs missed: the type-check needed Next.js route types generated first, and the top bar overflowed by 8–15 px at 768 px with Linux font metrics. Both are fixed, and an E2E check now requires at least 24 px of spare room in the top bar.
+
+## Phase 6 machine learning pipeline
+
+### Tests
+
+```bash
+cd backend && NBA_LOG_LEVEL=ERROR .venv/bin/pytest -q --cov=app
+```
+
+**Result:** 197 passed, 0 failed (93% statement coverage; `app/ml` 94–100%). ML tests use a synthetic league (seasons 2090–2093) and cover:
+
+- rolling features equal independently computed means of previous games;
+- perturbing every statistic on or after a date leaves all 60 features for that date unchanged;
+- every joined history predates its target game, and a same-day source is detected;
+- eligibility, the previous-season fallback, back-to-back from schedule dates;
+- chronological splits (an overlapping plan raises) and feature-schema hashing;
+- the baseline definition, non-negative predictions, double-double calibration outputs;
+- conformal rank and near-nominal coverage;
+- retraining reproducibility (1e-6; XGBoost 1e-3);
+- artifact SHA-256 and schema refusal; registry rows written and reloadable.
+
+### Training run on real data
+
+```bash
+cd backend && .venv/bin/python -m app.cli train
+```
+
+**Result:** release `2026.10.29-1` (candidate), data_version 61, feature schema `35b40abdaf39d73f`, seed 20261028, 663 s wall time on an Apple M2 (peak 1.5 GB).
+
+Rows: 218,346 player-games.
+- Train: 154,918 (2018-10-26 to 2024-06-17).
+- Validation: 27,537 (2024-25).
+- Test: 27,999 (2025-26, regular season and playoffs).
+
+Leakage check: 0 of 218,346 rows use a source on or after their game date. The run started from commit `abf084f` plus the uncommitted Phase 6 code that was committed right after it. That is recorded as `git_dirty: true` in `backend/artifacts/2026.10.29-1/report.json`.
+
+Results are from the held-out 2025-26 test season. The selected model per target was chosen by validation MAE, and every family is scored on identical rows:
+
+| Target | Selected | Test MAE | Baseline MAE | MAE reduction | RMSE | R² | 80% interval coverage (by minutes tertile) | Test MAE by family |
+|---|---|---|---|---|---|---|---|---|
+| Points | xgboost | 4.550 | 4.685 | 2.9% | 5.939 | 0.532 | 80.1% (79.3, 80.4, 80.5) | baseline 4.685 · ridge 4.563 · forest 4.572 · xgboost 4.550 |
+| Rebounds | xgboost | 1.885 | 1.940 | 2.8% | 2.476 | 0.446 | 80.4% (80.7, 80.3, 80.2) | baseline 1.940 · ridge 1.890 · forest 1.893 · xgboost 1.885 |
+| Assists | xgboost | 1.336 | 1.372 | 2.6% | 1.809 | 0.501 | 80.0% (80.4, 79.4, 80.2) | baseline 1.372 · ridge 1.339 · forest 1.341 · xgboost 1.336 |
+| 3-pointers made | xgboost | 0.889 | 0.904 | 1.6% | 1.229 | 0.317 | 80.2% (78.5, 81.4, 80.5) | baseline 0.904 · ridge 0.893 · forest 0.891 · xgboost 0.889 |
+| Steals | ridge | 0.719 | 0.738 | 2.7% | 0.939 | 0.112 | 79.5% (79.4, 79.3, 79.8) | baseline 0.738 · ridge 0.719 · forest 0.722 · xgboost 0.721 |
+| Blocks | rolling baseline | 0.511 | 0.511 | 0.0% | 0.749 | 0.159 | 82.3% (83.6, 81.0, 82.4) | baseline 0.511 · ridge 0.520 · forest 0.522 · xgboost 0.521 |
+| Minutes | xgboost | 4.846 | 5.210 | 7.0% | 6.290 | 0.632 | 80.5% (79.5, 81.4, 80.6) | baseline 5.210 · ridge 4.928 · forest 4.895 · xgboost 4.846 |
+
+**Double-double probability:** xgboost classifier, chosen by raw validation log loss (0.1969 vs logistic 0.2012), with isotonic calibration on 2024-25.
+- Test Brier score 0.0528, against a base-rate Brier score of 0.0676.
+- Log loss 0.1859; base rate 7.3%.
+- Reliability bins are in the report file.
+
+Findings, as measured:
+- The ≥ 5% MAE-reduction research objective is met for minutes (7.0%). The other targets improve on the baseline by 1.6–2.9%. Blocks do not improve, so the baseline is the shipped blocks model.
+- Interval coverage is 79.5–82.3% for every target and 78.5–83.6% in every minutes bin, inside the 75–85% gate.
+- Registry: 1 release and 37 model versions (7 targets × 4 held-out families, 7 production refits, 2 double-double), with 16 persisted artifacts (6.0 MB) and 58 evaluation rows.
+
+A second real-data run for points, unregistered and meant to repeat the reproducibility check at full scale, was stopped before it finished. Reproducibility is verified by the automated test on the synthetic league.

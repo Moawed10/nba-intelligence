@@ -13,8 +13,6 @@ TrendStat = Literal["pts", "reb", "ast", "fg3m", "stl", "blk", "min"]
 class Team(TeamRef):
     conference: str | None
     division: str | None
-    primary_color: str | None
-    secondary_color: str | None
 
 
 class PlayerSummary(BaseModel):
@@ -219,3 +217,131 @@ class DataStatus(BaseModel):
     datasets: list[DatasetStatus]
     seasons: list[SeasonCoverage]
     row_counts: dict[str, int]
+
+
+LeaderStat = Literal["pts", "reb", "ast", "fg3m", "stl", "blk", "min"]
+
+
+class SeasonAverages(BaseModel):
+    season: str
+    games_played: int
+    min: float | None
+    pts: float | None
+    reb: float | None
+    ast: float | None
+    fg3m: float | None
+    stl: float | None
+    blk: float | None
+    fg_pct: float | None
+    fg_pct_status: str | None
+
+
+class DirectoryPlayer(PlayerSummary):
+    season_averages: SeasonAverages | None
+
+
+class Leader(BaseModel):
+    rank: int
+    player_id: int
+    full_name: str
+    team: TeamRef | None
+    games_played: int
+    value: float
+
+
+class Leaders(BaseModel):
+    stat: LeaderStat
+    season: str
+    minimum_games: int
+    qualified_players: int
+    leaders: list[Leader]
+    meta: Meta
+
+
+class Performance(BaseModel):
+    player_id: int
+    full_name: str
+    game_id: str
+    game_date: date
+    team: TeamRef
+    opponent: TeamRef
+    is_home: bool
+    result: Literal["W", "L"] | None
+    minutes: float
+    box: BoxStats
+    shooting: Shooting
+    game_score: float
+    double_double: bool
+
+
+class Standouts(BaseModel):
+    window_start: date | None
+    window_end: date | None
+    criterion: str
+    performances: list[Performance]
+    meta: Meta
+
+
+class TargetMetrics(BaseModel):
+    target: str
+    algorithm: str
+    n: int
+    mae: float | None
+    rmse: float | None
+    r2: float | None
+    baseline_mae: float | None
+    interval_coverage: float | None
+    brier: float | None
+    log_loss: float | None
+
+
+class AlgorithmMetrics(BaseModel):
+    target: str
+    algorithm: str
+    selected: bool
+    validation_mae: float | None
+    test_mae: float | None
+    test_rmse: float | None
+    test_r2: float | None
+
+
+class ModelReleaseSummary(BaseModel):
+    version: str
+    status: str
+    created_at: datetime
+    activated_at: datetime | None
+    data_version: int
+    feature_schema_version: str
+    train_start: date
+    train_end: date
+    val_start: date
+    val_end: date
+    test_start: date
+    test_end: date
+    git_sha: str | None
+    selected: dict[str, str]
+
+
+class ModelReleaseDetail(ModelReleaseSummary):
+    features: list[str]
+    test_season: str | None
+    selected_metrics: list[TargetMetrics]
+    algorithms: list[AlgorithmMetrics]
+    interval_calibration: dict[str, dict]
+
+
+class ModelSnapshot(BaseModel):
+    release: ModelReleaseSummary
+    test_season: str | None
+    metrics: list[TargetMetrics]
+
+
+class Overview(BaseModel):
+    generated_at: datetime
+    today: date
+    upcoming: list[GameSummary]
+    recent: list[GameSummary]
+    standouts: Standouts
+    leaders: Leaders | None
+    model: ModelSnapshot | None
+    datasets: list[DatasetStatus]

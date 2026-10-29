@@ -106,6 +106,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leaders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Leaders */
+        get: operations["get_leaders_api_v1_leaders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_api_v1_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/models/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Model */
+        get: operations["get_model_api_v1_models__version__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Overview */
+        get: operations["get_overview_api_v1_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/players": {
         parameters: {
             query?: never;
@@ -225,6 +293,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/standouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Standouts */
+        get: operations["get_standouts_api_v1_standouts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/teams": {
         parameters: {
             query?: never;
@@ -280,6 +365,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlgorithmMetrics */
+        AlgorithmMetrics: {
+            /** Algorithm */
+            algorithm: string;
+            /** Selected */
+            selected: boolean;
+            /** Target */
+            target: string;
+            /** Test Mae */
+            test_mae: number | null;
+            /** Test R2 */
+            test_r2: number | null;
+            /** Test Rmse */
+            test_rmse: number | null;
+            /** Validation Mae */
+            validation_mae: number | null;
+        };
         /** BoxScore */
         BoxScore: {
             game: components["schemas"]["GameSummary"];
@@ -395,6 +497,23 @@ export interface components {
             last_successful_sync: string | null;
             status: components["schemas"]["Freshness"];
         };
+        /** DirectoryPlayer */
+        DirectoryPlayer: {
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Position */
+            position: string | null;
+            season_averages: components["schemas"]["SeasonAverages"] | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
+        };
         /** ErrorBody */
         ErrorBody: {
             /** Code */
@@ -489,9 +608,204 @@ export interface components {
              */
             status: "ok";
         };
+        /** Leader */
+        Leader: {
+            /** Full Name */
+            full_name: string;
+            /** Games Played */
+            games_played: number;
+            /** Player Id */
+            player_id: number;
+            /** Rank */
+            rank: number;
+            team: components["schemas"]["TeamRef"] | null;
+            /** Value */
+            value: number;
+        };
+        /** Leaders */
+        Leaders: {
+            /** Leaders */
+            leaders: components["schemas"]["Leader"][];
+            meta: components["schemas"]["Meta"];
+            /** Minimum Games */
+            minimum_games: number;
+            /** Qualified Players */
+            qualified_players: number;
+            /** Season */
+            season: string;
+            /**
+             * Stat
+             * @enum {string}
+             */
+            stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+        };
         /** Meta */
         Meta: {
             data_freshness: components["schemas"]["DataFreshness"];
+        };
+        /** ModelReleaseDetail */
+        ModelReleaseDetail: {
+            /** Activated At */
+            activated_at: string | null;
+            /** Algorithms */
+            algorithms: components["schemas"]["AlgorithmMetrics"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Data Version */
+            data_version: number;
+            /** Feature Schema Version */
+            feature_schema_version: string;
+            /** Features */
+            features: string[];
+            /** Git Sha */
+            git_sha: string | null;
+            /** Interval Calibration */
+            interval_calibration: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Selected */
+            selected: {
+                [key: string]: string;
+            };
+            /** Selected Metrics */
+            selected_metrics: components["schemas"]["TargetMetrics"][];
+            /** Status */
+            status: string;
+            /**
+             * Test End
+             * Format: date
+             */
+            test_end: string;
+            /** Test Season */
+            test_season: string | null;
+            /**
+             * Test Start
+             * Format: date
+             */
+            test_start: string;
+            /**
+             * Train End
+             * Format: date
+             */
+            train_end: string;
+            /**
+             * Train Start
+             * Format: date
+             */
+            train_start: string;
+            /**
+             * Val End
+             * Format: date
+             */
+            val_end: string;
+            /**
+             * Val Start
+             * Format: date
+             */
+            val_start: string;
+            /** Version */
+            version: string;
+        };
+        /** ModelReleaseSummary */
+        ModelReleaseSummary: {
+            /** Activated At */
+            activated_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Data Version */
+            data_version: number;
+            /** Feature Schema Version */
+            feature_schema_version: string;
+            /** Git Sha */
+            git_sha: string | null;
+            /** Selected */
+            selected: {
+                [key: string]: string;
+            };
+            /** Status */
+            status: string;
+            /**
+             * Test End
+             * Format: date
+             */
+            test_end: string;
+            /**
+             * Test Start
+             * Format: date
+             */
+            test_start: string;
+            /**
+             * Train End
+             * Format: date
+             */
+            train_end: string;
+            /**
+             * Train Start
+             * Format: date
+             */
+            train_start: string;
+            /**
+             * Val End
+             * Format: date
+             */
+            val_end: string;
+            /**
+             * Val Start
+             * Format: date
+             */
+            val_start: string;
+            /** Version */
+            version: string;
+        };
+        /** ModelSnapshot */
+        ModelSnapshot: {
+            /** Metrics */
+            metrics: components["schemas"]["TargetMetrics"][];
+            release: components["schemas"]["ModelReleaseSummary"];
+            /** Test Season */
+            test_season: string | null;
+        };
+        /** Overview */
+        Overview: {
+            /** Datasets */
+            datasets: components["schemas"]["DatasetStatus"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            leaders: components["schemas"]["Leaders"] | null;
+            model: components["schemas"]["ModelSnapshot"] | null;
+            /** Recent */
+            recent: components["schemas"]["GameSummary"][];
+            standouts: components["schemas"]["Standouts"];
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Upcoming */
+            upcoming: components["schemas"]["GameSummary"][];
+        };
+        /** Page[DirectoryPlayer] */
+        Page_DirectoryPlayer_: {
+            /** Items */
+            items: components["schemas"]["DirectoryPlayer"][];
+            /** Limit */
+            limit: number;
+            meta: components["schemas"]["Meta"];
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
         };
         /** Page[GameSummary] */
         Page_GameSummary_: {
@@ -509,18 +823,6 @@ export interface components {
         Page_PlayerGameLine_: {
             /** Items */
             items: components["schemas"]["PlayerGameLine"][];
-            /** Limit */
-            limit: number;
-            meta: components["schemas"]["Meta"];
-            /** Offset */
-            offset: number;
-            /** Total */
-            total: number;
-        };
-        /** Page[PlayerSummary] */
-        Page_PlayerSummary_: {
-            /** Items */
-            items: components["schemas"]["PlayerSummary"][];
             /** Limit */
             limit: number;
             meta: components["schemas"]["Meta"];
@@ -547,6 +849,34 @@ export interface components {
             stl: number | null;
             /** Tov */
             tov: number | null;
+        };
+        /** Performance */
+        Performance: {
+            box: components["schemas"]["BoxStats"];
+            /** Double Double */
+            double_double: boolean;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            /** Game Id */
+            game_id: string;
+            /** Game Score */
+            game_score: number;
+            /** Is Home */
+            is_home: boolean;
+            /** Minutes */
+            minutes: number;
+            opponent: components["schemas"]["TeamRef"];
+            /** Player Id */
+            player_id: number;
+            /** Result */
+            result: ("W" | "L") | null;
+            shooting: components["schemas"]["Shooting"];
+            team: components["schemas"]["TeamRef"];
         };
         /** PlayerGameLine */
         PlayerGameLine: {
@@ -693,6 +1023,31 @@ export interface components {
             /** Wins */
             wins: number;
         };
+        /** SeasonAverages */
+        SeasonAverages: {
+            /** Ast */
+            ast: number | null;
+            /** Blk */
+            blk: number | null;
+            /** Fg3M */
+            fg3m: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Fg Pct Status */
+            fg_pct_status: string | null;
+            /** Games Played */
+            games_played: number;
+            /** Min */
+            min: number | null;
+            /** Pts */
+            pts: number | null;
+            /** Reb */
+            reb: number | null;
+            /** Season */
+            season: string;
+            /** Stl */
+            stl: number | null;
+        };
         /** SeasonCoverage */
         SeasonCoverage: {
             /** Final Games */
@@ -754,6 +1109,18 @@ export interface components {
             label: string;
             summary: components["schemas"]["StatSummary"];
         };
+        /** Standouts */
+        Standouts: {
+            /** Criterion */
+            criterion: string;
+            meta: components["schemas"]["Meta"];
+            /** Performances */
+            performances: components["schemas"]["Performance"][];
+            /** Window End */
+            window_end: string | null;
+            /** Window Start */
+            window_start: string | null;
+        };
         /** StatSummary */
         StatSummary: {
             /** Double Doubles */
@@ -770,6 +1137,29 @@ export interface components {
             /** Ts Pct */
             ts_pct: number | null;
         };
+        /** TargetMetrics */
+        TargetMetrics: {
+            /** Algorithm */
+            algorithm: string;
+            /** Baseline Mae */
+            baseline_mae: number | null;
+            /** Brier */
+            brier: number | null;
+            /** Interval Coverage */
+            interval_coverage: number | null;
+            /** Log Loss */
+            log_loss: number | null;
+            /** Mae */
+            mae: number | null;
+            /** N */
+            n: number;
+            /** R2 */
+            r2: number | null;
+            /** Rmse */
+            rmse: number | null;
+            /** Target */
+            target: string;
+        };
         /** Team */
         Team: {
             /** Abbreviation */
@@ -785,9 +1175,9 @@ export interface components {
             /** Name */
             name: string;
             /** Primary Color */
-            primary_color: string | null;
+            primary_color?: string | null;
             /** Secondary Color */
-            secondary_color: string | null;
+            secondary_color?: string | null;
         };
         /** TeamDetail */
         TeamDetail: {
@@ -809,6 +1199,10 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /** Primary Color */
+            primary_color?: string | null;
+            /** Secondary Color */
+            secondary_color?: string | null;
         };
         /** TeamSeasonStats */
         TeamSeasonStats: {
@@ -1308,6 +1702,272 @@ export interface operations {
             };
         };
     };
+    get_leaders_api_v1_leaders_get: {
+        parameters: {
+            query?: {
+                stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+                season?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Leaders"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_models_api_v1_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelReleaseSummary"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_model_api_v1_models__version__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelReleaseDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_overview_api_v1_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     list_players_api_v1_players_get: {
         parameters: {
             query?: {
@@ -1315,7 +1975,7 @@ export interface operations {
                 position?: string | null;
                 active?: boolean | null;
                 season?: string | null;
-                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year";
+                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min";
                 limit?: number;
                 offset?: number;
             };
@@ -1331,7 +1991,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_PlayerSummary_"];
+                    "application/json": components["schemas"]["Page_DirectoryPlayer_"];
                 };
             };
             /** @description Bad Request */
@@ -1748,6 +2408,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_standouts_api_v1_standouts_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Standouts"];
                 };
             };
             /** @description Bad Request */

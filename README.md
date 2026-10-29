@@ -6,7 +6,7 @@ Player performance prediction and analytics for the NBA. It forecasts a player's
 > - Real box scores from 2018-19 through the current season are ingested, verified and kept in sync automatically.
 > - A read-only API serves players, teams, games, box scores, trends and data freshness (docs at `/api/v1/docs`).
 > - Player search, a filterable directory and full player profiles (averages, trends, splits, game logs) are live.
-> - The ML models and prediction screens are next.
+> - A first candidate model release is trained and evaluated on the held-out 2025-26 season (see the test report); the prediction service and the redesigned screens are next.
 >
 > Progress and verified results: [docs/implementation-status.md](docs/implementation-status.md) and [docs/test-report.md](docs/test-report.md).
 
@@ -27,6 +27,7 @@ Next.js · TypeScript · Tailwind · shadcn/ui · Framer Motion · Recharts · T
 | [Frontend](docs/frontend.md) | Design system, accessibility, motion, components |
 | [Decisions](docs/decisions/) | Architecture decision records |
 | [Implementation status](docs/implementation-status.md) | Phase ledger, quality gates, session log |
+| [Redesign plan](docs/redesign-plan.md) | Product redesign audit and phases |
 
 ## Local development
 

@@ -1,6 +1,6 @@
 # Model Methodology
 
-How NBA Intelligence builds features, trains and selects models, quantifies uncertainty and serves predictions. All results reported anywhere in the project come from running this pipeline; none are estimated. No results exist yet: see [implementation-status.md](implementation-status.md).
+How NBA Intelligence builds features, trains and selects models, quantifies uncertainty and serves predictions. All results reported anywhere in the project come from running this pipeline; none are estimated. Implemented in `backend/app/ml/` (Phase 6); results are in [test-report.md](test-report.md#phase-6-machine-learning-pipeline).
 
 ## Prediction task
 
@@ -22,6 +22,8 @@ Predictions are **conditional on the player playing**. nba_api has no injury or 
 ## Features
 
 All features for game *g* are computed from games with `game_date < g.game_date`. Implementation: `backend/app/ml/features.py`, used unchanged by training and inference.
+
+**How leakage is prevented in code:** each history (player form, own team, opponent, player-vs-opponent) is computed per game *including* that game, then joined to the target row with `merge_asof(..., allow_exact_matches=False)`, i.e. the latest row strictly before the target date. Every feature row carries the source date of each joined history; the training run counts rows whose source date is on or after the target date and refuses to train if any exist. Rolling windows use up to *n* previous games (fewer when fewer exist) across season boundaries; `season_games` and the 5-prior-game eligibility rule guard thin histories. 60 features in total.
 
 | Group | Features | Leakage control |
 |---|---|---|
@@ -53,16 +55,16 @@ All features for game *g* are computed from games with `game_date < g.game_date`
 | Test | 2025-26 | Reported once per release; never used for any choice |
 | Live | 2026-27 | Real pregame predictions, scored after each game |
 
-After the test evaluation, the selected configuration is refit on train + validation (+ test for the production artifact, using the same hyperparameters). The reported test metrics belong to the held-out fit, and the registry records both. Evaluation rows always cite the exact model version that produced them.
+After the test evaluation, the selected configuration (same hyperparameters; XGBoost with its early-stopped round count) is refit on train + validation as the production model, and its conformal intervals and probability calibration are fitted on the test season, the most recent completed season. The reported test metrics belong to the held-out fit. The registry stores both: held-out model versions carry the validation and test evaluations, and the production version per target is the one marked `is_selected`. Live accuracy of the production models is measured on 2026-27 games after they finish (Phase 7).
 
 ## Models compared
 
 Every target is trained with each family on identical rows:
 
-1. **Rolling baseline:** last-10 mean of the target (season mean when fewer than 10 games). No fitting.
+1. **Rolling baseline:** mean of the target over the player's previous 10 games (all previous games when fewer than 10). No fitting.
 2. **Ridge regression:** standardized features, `alpha` chosen on validation.
-3. **Random forest:** `n_estimators`, `max_depth`, `min_samples_leaf` tuned on validation with a small grid.
-4. **XGBoost:** early stopping on validation; `max_depth`, `learning_rate`, `subsample`, `colsample_bytree`, `min_child_weight` from a bounded random search (fixed seed).
+3. **Random forest:** 150 trees, `max_features=0.33`, `max_samples=0.5`; `max_depth` and `min_samples_leaf` from a 3-point grid chosen on validation.
+4. **XGBoost:** `tree_method=hist`, early stopping (100 rounds) on validation; 8 random-search trials over `max_depth` 3–8, `learning_rate` 0.02–0.1, `subsample` 0.6–1, `colsample_bytree` 0.5–1, `min_child_weight` 1–50 (fixed seed).
 
 **Selection:** lowest validation MAE per target. The most complex model is not assumed to win. If the baseline wins a target, the baseline is shipped for that target and the analytics page says so.
 
@@ -87,7 +89,7 @@ Every target is trained with each family on identical rows:
 
 ## Double-double probability
 
-A direct classifier (logistic regression and XGBoost compared on validation log loss) on the same features, with `pos_weight` for the low base rate. Probabilities are calibrated with isotonic regression fitted on the validation season. The production probability comes from this classifier, not from multiplying independent regression outputs.
+A direct classifier (logistic regression and XGBoost compared on raw validation log loss) on the same features. Class weights are not used: the goal is a calibrated probability, and reweighting would only distort it before calibration. Probabilities are calibrated with isotonic regression fitted on the validation season (`CalibratedClassifierCV` over the frozen model). The production probability comes from this classifier, not from multiplying independent regression outputs.
 
 **Reported:** Brier score, log loss, and a reliability curve (10 bins) on the test season, alongside the base-rate Brier score as the baseline. As a cross-check, a Monte Carlo estimate built from the regression residuals is reported but not served.
 

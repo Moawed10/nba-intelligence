@@ -5,11 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), system-ui,
-    sans-serif;
-  --font-heading: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter),
-    system-ui, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-heading: var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
 
   --text-large-title: 2.125rem;
   --text-large-title--line-height: 2.5625rem;
@@ -28,6 +26,10 @@
   --text-footnote--line-height: 1.125rem;
   --text-stat: 2.75rem;
   --text-stat--line-height: 3rem;
+  --text-display: 3.5rem;
+  --text-display--line-height: 1;
+  --text-kicker: 0.6875rem;
+  --text-kicker--line-height: 1rem;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -40,6 +42,7 @@
   --color-secondary: var(--muted);
   --color-secondary-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-surface: var(--surface);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--primary);
   --color-accent-foreground: var(--primary-foreground);
@@ -64,12 +67,14 @@
   --radius-2xl: 1.5rem;
 
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Light theme. Contrast is verified by scripts/check-contrast.mjs. */
 :root {
   --background: #f2f2f7;
   --card: #ffffff;
+  --surface: #ffffff;
   --popover: #ffffff;
   --muted: #e8e8ed;
   --foreground: #0b0b0d;
@@ -90,24 +95,25 @@
 }
 
 .dark {
-  --background: #000000;
-  --card: #1c1c1e;
-  --popover: #2c2c2e;
-  --muted: #2c2c2e;
+  --background: #090a0c;
+  --card: #121417;
+  --surface: #121417;
+  --popover: #1b1d21;
+  --muted: #1b1d21;
   --foreground: #f5f5f7;
-  --muted-foreground: #a8a8b0;
-  --border: rgba(84, 84, 88, 0.6);
-  --primary: #ff9f0a;
-  --primary-foreground: #000000;
-  --ring: #ff9f0a;
-  --positive: #30d158;
-  --negative: #ff6961;
-  --chart-1: #ff9f0a;
-  --chart-2: #40c8e0;
-  --chart-3: #a8a8b0;
-  --chart-4: #30d158;
+  --muted-foreground: #9a9da5;
+  --border: #2a2d32;
+  --primary: #ff9500;
+  --primary-foreground: #0b0b0d;
+  --ring: #ff9500;
+  --positive: #3ecf72;
+  --negative: #ff6b63;
+  --chart-1: #ff9500;
+  --chart-2: #4cc3e0;
+  --chart-3: #9a9da5;
+  --chart-4: #3ecf72;
   --chart-5: #ff6482;
-  --nav-material: rgba(10, 10, 12, 0.72);
+  --nav-material: rgba(9, 10, 12, 0.78);
   color-scheme: dark;
 }
 
@@ -137,6 +143,21 @@
   ::selection {
     background: color-mix(in oklab, var(--primary) 35%, transparent);
   }
+}
+
+@utility kicker {
+  font-size: var(--text-kicker);
+  line-height: var(--text-kicker--line-height);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+@utility panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
 }
 
 @utility material-nav {

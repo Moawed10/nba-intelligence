@@ -11,7 +11,11 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   timeout: 180_000,
-  use: { baseURL: `http://localhost:${PORT}`, ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    ...devices["Desktop Chrome"],
+    viewport: { width: 1440, height: 900 },
+  },
   webServer: {
     command: `npm run build && npm run start -- -p ${PORT}`,
     url: `http://localhost:${PORT}/about`,

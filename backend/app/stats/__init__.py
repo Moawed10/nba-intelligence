@@ -4,10 +4,15 @@ Definitions are in docs/data-ownership.md#statistic-definitions. The API and the
 pipeline both import from here.
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from statistics import fmean, pstdev
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 COUNTING = ("pts", "reb", "ast", "fg3m", "stl", "blk", "tov", "oreb", "dreb", "pf",
             "fgm", "fga", "fg3a", "ftm", "fta")  # fmt: skip
@@ -142,3 +147,35 @@ def aggregate(lines: Sequence[Line]) -> Aggregate:
         double_doubles=sum(is_double_double(line) for line in played),
         pts_consistency=coefficient_of_variation([line.pts for line in played]),
     )
+
+
+def double_double_flags(frame: "pd.DataFrame") -> "pd.Series":
+    """Vectorized is_double_double over a frame with the DOUBLE_DOUBLE_STATS columns."""
+    return (frame[list(DOUBLE_DOUBLE_STATS)] >= 10).sum(axis=1) >= 2
+
+
+def rest_days_from_gap(days_since_previous: "pd.Series") -> "pd.Series":
+    """Vectorized rest_days: gap minus 1, clipped to [0, REST_CAP_DAYS]; no previous game -> cap."""
+    return (days_since_previous - 1).clip(lower=0, upper=REST_CAP_DAYS).fillna(REST_CAP_DAYS)
+
+
+def game_score(line: Line) -> float:
+    """John Hollinger's Game Score: a single-number summary of one box score."""
+    return round(
+        line.pts + 0.4 * line.fgm - 0.7 * line.fga - 0.4 * (line.fta - line.ftm)
+        + 0.7 * line.oreb + 0.3 * line.dreb + line.stl + 0.7 * line.ast + 0.7 * line.blk
+        - 0.4 * line.pf - line.tov,
+        1,
+    )  # fmt: skip
+
+
+def per_game(total: float, games: int) -> float | None:
+    return round(total / games, 2) if games else None
+
+
+LEADER_QUALIFYING_SHARE = 0.7
+
+
+def leader_minimum_games(max_team_games: int) -> int:
+    """Leaderboards require 70% of the most games any team has played this season."""
+    return max(1, math.ceil(LEADER_QUALIFYING_SHARE * max_team_games))

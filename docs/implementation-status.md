@@ -13,7 +13,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 3 | Database, Ingestion & Sync | In Progress | 95% (18/19) | Prediction-evaluation handlers (Phase 7) |
 | 4 | Core Backend APIs | Complete | 100% (11/11) | None |
 | 5 | Player Explorer & Profile | Complete | 100% (11/11) | None |
-| 6 | Machine Learning Pipeline | Not Started | 0% (0/13) | Phase 3 |
+| 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
 | 7 | Prediction API & Inference | Not Started | 0% (0/14) | Phases 4, 6 |
 | 8 | Prediction Center | Not Started | 0% (0/12) | Phases 2, 7 |
 | 9 | Model Analytics | Not Started | 0% (0/10) | Phases 6, 7 |
@@ -24,7 +24,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 60 / 174 verified deliverables = **34%**.
+**Overall:** 73 / 174 verified deliverables = **42%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -36,7 +36,7 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | Application Foundation | 2 | Pass |
 | Real NBA Data Available | 3–4 | Not Verified (data and read API verified; Phase 3 closes with the Phase 7 handlers) |
 | Player Analytics Functional | 5 | Pass |
-| ML Models Validated | 6 | Not Verified |
+| ML Models Validated | 6 | Pass |
 | Prediction Backend Functional | 7 | Not Verified |
 | Functional MVP | 1–8 + applicable security, accessibility, integration checks | Not Verified |
 | Analytics Features Complete | 9–11 | Not Verified |
@@ -377,41 +377,63 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 6 — Machine Learning Data Pipeline
 
-**Status:** Not Started · **Progress:** 0% (0/13) · **Dependencies:** Phase 3
+**Status:** Complete · **Progress:** 100% (13/13) · **Last Updated:** 2026-10-29
+**Dependencies:** Phase 3
 
 #### Deliverables
 
-- [ ] `app/ml/dataset.py`: training frame from PostgreSQL at a recorded `data_version`
-- [ ] `app/ml/features.py` per [model-methodology.md](model-methodology.md#features)
-- [ ] Rolling 3/5/10, season-to-date and trend features
-- [ ] Opponent, pace, home/away and history-vs-opponent features
-- [ ] Rest and back-to-back features
-- [ ] Leakage tests (fixture, perturbation, split boundary, opponent dates)
-- [ ] Chronological splits
-- [ ] Rolling baseline
-- [ ] Ridge, Random Forest, XGBoost per target
-- [ ] MAE / RMSE / R² evaluation, per target, per algorithm and per season
-- [ ] Mondrian split-conformal intervals and test coverage
-- [ ] Double-double classifier with isotonic calibration
-- [ ] Artifacts + registry rows + reproducibility test
+- [x] `app/ml/dataset.py`: training frame from PostgreSQL at a recorded `data_version`
+- [x] `app/ml/features.py`: 60 features. Every history is joined strictly before the game (`merge_asof`, no exact matches), and source dates are carried so leakage can be counted
+- [x] Rolling 3/5/10, season-to-date (with previous-season fallback) and trend features
+- [x] Opponent defense and pace, own pace, home/away, and a shrunk history against the opponent
+- [x] Rest and back-to-back features from schedule dates
+- [x] Leakage tests: fixture, perturbation, split boundary, opponent and history source dates
+- [x] Chronological splits (`app/ml/splits.py`; overlapping plans raise)
+- [x] Rolling baseline (previous 10 games)
+- [x] Ridge, Random Forest and XGBoost per target (`app/ml/models.py`)
+- [x] MAE / RMSE / R² per target, per algorithm, per season and per season type
+- [x] Mondrian split-conformal intervals and test coverage (`app/ml/conformal.py`)
+- [x] Double-double classifier with isotonic calibration (`app/ml/classifier.py`)
+- [x] Artifacts (SHA-256, feature schema, library versions), registry rows and a reproducibility test (`app/ml/artifacts.py`, `app/ml/train.py`, `python -m app.cli train`)
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Detected future-data leakage | 0 | Not measured | Not Verified |
-| Rolling features exclude target game | 100% | Not measured | Not Verified |
-| Partitions chronological | 100% | Not measured | Not Verified |
-| Model families implemented | 4 / 4 | Not measured | Not Verified |
-| Targets evaluated (pts, reb, ast minimum) | ≥ 3 | Not measured | Not Verified |
-| MAE, RMSE, R² reported for every target × model | 100% | Not measured | Not Verified |
-| Retraining reproducible within tolerance | 1e-6 / 1e-3 (XGB) | Not measured | Not Verified |
-| Artifacts with version + schema metadata | 100% | Not measured | Not Verified |
-| 80% interval empirical coverage | 75–85% | Not measured | Not Verified |
-| Advanced vs baseline on same observations | Yes | Not measured | Not Verified |
-| Research objective: test MAE reduction vs baseline | ≥ 5% on ≥ 1 target | Not measured | Not Verified |
+| Detected future-data leakage | 0 | 0 of 218,346 rows (source-date check on every row), plus perturbation and fixture tests | Pass |
+| Rolling features exclude target game | 100% | 100%: fixture test against independent means; perturbing game *k* onward changes no feature at *k* | Pass |
+| Partitions chronological | 100% | Train ends 2024-06-17; validation runs 2024-10-22 to 2025-06-22; test starts 2025-10-21 | Pass |
+| Model families implemented | 4 / 4 | Baseline, Ridge, Random Forest and XGBoost on every target | Pass |
+| Targets evaluated (pts, reb, ast minimum) | ≥ 3 | 7 regression targets plus double-double | Pass |
+| MAE, RMSE, R² reported for every target × model | 100% | 28 / 28 on validation and test, stored as `model_evaluations` | Pass |
+| Retraining reproducible within tolerance | 1e-6 / 1e-3 (XGB) | An automated test trains twice and every target and family agrees within tolerance (synthetic league). The full-scale real-data rerun was stopped before it finished | Pass |
+| Artifacts with version + schema metadata | 100% | All 16 persisted artifacts carry the release, feature schema hash, features and library versions; loading verifies the SHA-256 and the schema | Pass |
+| 80% interval empirical coverage | 75–85% | 79.5–82.3% per target; 78.5–83.6% per minutes bin (test season) | Pass |
+| Advanced vs baseline on same observations | Yes | Every family is scored on the same 27,999 test rows; `baseline_mae` is stored with each evaluation | Pass |
+| Research objective: test MAE reduction vs baseline | ≥ 5% on ≥ 1 target | Minutes 7.0%; points 2.9%, rebounds 2.8%, steals 2.7%, assists 2.6%, 3PM 1.6%, blocks 0% (baseline selected) | Pass (research objective) |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+#### Implementation evidence
+
+**Files created:**
+- `backend/app/ml/{dataset,features,splits,models,classifier,conformal,metrics,artifacts,train}.py`
+- `tests/ml_fixtures.py`, `tests/unit/test_ml_{features,training}.py`, `tests/integration/test_ml_registry.py`, `tests/api/test_ml_dataset.py`
+- the `train` CLI command
+
+**Tests added:** 21. See [test-report.md](test-report.md#phase-6-machine-learning-pipeline).
+**Commands executed:** `pytest` (197 passed); `python -m app.cli train` (release `2026.10.29-1`, 663 s).
+
+#### Issues and blockers
+
+| Issue | Severity | Impact | Resolution |
+|---|---|---|---|
+| `is_home` was both an identifier and a feature, which duplicated a column | High (fixed) | Would have broken model fitting | Identity columns now exclude features; covered by tests |
+| XGBoost needs the OpenMP runtime on macOS | Low (fixed) | Import failed | `brew install libomp`; the Linux CI wheels include it |
+| Gains over the baseline are modest except for minutes | Informational | Most box-score variance is game-to-game noise the features can't see (no injury, lineup or betting-line data) | Reported as measured |
+| The release was trained from a working tree with uncommitted Phase 6 code | Low | `git_sha` alone doesn't identify the code | Recorded as `git_dirty: true`; the code was committed immediately after; retrain from a clean tree before activation in Phase 7 |
+
+#### Completion decision
+
+**Result:** Complete. **Reason:** 13 / 13 deliverables and 11 / 11 criteria pass, with recorded evidence.
 
 ---
 
@@ -837,3 +859,20 @@ The "recent games" block from the original design was folded into the game log, 
 **Problems encountered:** see the Phase 5 issues table.
 
 **Next step:** Phase 6, the ML data pipeline.
+
+### Session — 2026-10-29 (Phase 6, redesign start)
+
+**Phase:** 6, then the product redesign ([redesign-plan.md](redesign-plan.md))
+
+**Completed:**
+- Built the ML pipeline, then trained and registered the first candidate release, `2026.10.29-1`, on real data.
+- Added read-only endpoints for the redesign:
+  - `/overview`, `/leaders`, `/standouts`, `/models` and `/models/{version}`;
+  - season averages and stat sorting in `/players`;
+  - team colors on every team reference (migration `5d2e8b1c7a90`).
+- Wrote the redesign audit and plan.
+- Switched to Geist typography and a refined dark palette (36 / 36 contrast pairs pass).
+
+**Tests run:** backend 197 passed; frontend type-check clean.
+
+**Next step:** redesign phases 2–9.

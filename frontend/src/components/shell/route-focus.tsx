@@ -23,7 +23,8 @@ export function RouteFocus() {
       const heading = document.querySelector<HTMLElement>("main h1");
       if (!heading || heading === focused) return;
       const active = document.activeElement;
-      const userMovedFocus = focused != null && active != null && active !== document.body && active !== focused;
+      const userMovedFocus =
+        focused != null && active != null && active !== document.body && active !== focused;
       if (userMovedFocus) return;
       heading.focus();
       focused = heading;

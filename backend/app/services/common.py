@@ -16,7 +16,14 @@ BoxRow = PlayerGameStats | TeamGameStats
 
 
 def team_ref(team: Team) -> TeamRef:
-    return TeamRef(id=team.id, abbreviation=team.abbreviation, city=team.city, name=team.name)
+    return TeamRef(
+        id=team.id,
+        abbreviation=team.abbreviation,
+        city=team.city,
+        name=team.name,
+        primary_color=team.primary_color,
+        secondary_color=team.secondary_color,
+    )
 
 
 def box(row: BoxRow) -> BoxStats:

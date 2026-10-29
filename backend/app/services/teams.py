@@ -21,8 +21,6 @@ def _team_schema(team: Team) -> TeamSchema:
         **team_ref(team).model_dump(),
         conference=team.conference,
         division=team.division,
-        primary_color=team.primary_color,
-        secondary_color=team.secondary_color,
     )
 
 

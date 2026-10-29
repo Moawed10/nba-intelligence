@@ -16,7 +16,8 @@ ENDPOINTS = {
     "/api/v1/players/{player_id}/trends", "/api/v1/teams", "/api/v1/teams/{team_id}",
     "/api/v1/teams/{team_id}/stats", "/api/v1/games", "/api/v1/games/upcoming",
     "/api/v1/games/{game_id}", "/api/v1/games/{game_id}/boxscore", "/api/v1/health",
-    "/api/v1/readiness", "/api/v1/data-status",
+    "/api/v1/readiness", "/api/v1/data-status", "/api/v1/overview", "/api/v1/leaders",
+    "/api/v1/standouts", "/api/v1/models", "/api/v1/models/{version}",
 }  # fmt: skip
 
 

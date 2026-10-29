@@ -1,6 +1,77 @@
 {
   "components": {
     "schemas": {
+      "AlgorithmMetrics": {
+        "properties": {
+          "algorithm": {
+            "title": "Algorithm",
+            "type": "string"
+          },
+          "selected": {
+            "title": "Selected",
+            "type": "boolean"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "test_mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Mae"
+          },
+          "test_r2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test R2"
+          },
+          "test_rmse": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Rmse"
+          },
+          "validation_mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Mae"
+          }
+        },
+        "required": [
+          "target",
+          "algorithm",
+          "selected",
+          "validation_mae",
+          "test_mae",
+          "test_rmse",
+          "test_r2"
+        ],
+        "title": "AlgorithmMetrics",
+        "type": "object"
+      },
       "BoxScore": {
         "properties": {
           "game": {
@@ -377,6 +448,87 @@
         "title": "DatasetStatus",
         "type": "object"
       },
+      "DirectoryPlayer": {
+        "properties": {
+          "from_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Year"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "season_averages": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonAverages"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Year"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "position",
+          "is_active",
+          "team",
+          "from_year",
+          "to_year",
+          "season_averages"
+        ],
+        "title": "DirectoryPlayer",
+        "type": "object"
+      },
       "ErrorBody": {
         "properties": {
           "code": {
@@ -663,6 +815,99 @@
         "title": "Health",
         "type": "object"
       },
+      "Leader": {
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "games_played": {
+            "title": "Games Played",
+            "type": "integer"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "integer"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "rank",
+          "player_id",
+          "full_name",
+          "team",
+          "games_played",
+          "value"
+        ],
+        "title": "Leader",
+        "type": "object"
+      },
+      "Leaders": {
+        "properties": {
+          "leaders": {
+            "items": {
+              "$ref": "#/components/schemas/Leader"
+            },
+            "title": "Leaders",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "minimum_games": {
+            "title": "Minimum Games",
+            "type": "integer"
+          },
+          "qualified_players": {
+            "title": "Qualified Players",
+            "type": "integer"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "stat": {
+            "enum": [
+              "pts",
+              "reb",
+              "ast",
+              "fg3m",
+              "stl",
+              "blk",
+              "min"
+            ],
+            "title": "Stat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stat",
+          "season",
+          "minimum_games",
+          "qualified_players",
+          "leaders",
+          "meta"
+        ],
+        "title": "Leaders",
+        "type": "object"
+      },
       "Meta": {
         "properties": {
           "data_freshness": {
@@ -673,6 +918,394 @@
           "data_freshness"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "ModelReleaseDetail": {
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated At"
+          },
+          "algorithms": {
+            "items": {
+              "$ref": "#/components/schemas/AlgorithmMetrics"
+            },
+            "title": "Algorithms",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_version": {
+            "title": "Data Version",
+            "type": "integer"
+          },
+          "feature_schema_version": {
+            "title": "Feature Schema Version",
+            "type": "string"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Features",
+            "type": "array"
+          },
+          "git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Sha"
+          },
+          "interval_calibration": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Interval Calibration",
+            "type": "object"
+          },
+          "selected": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Selected",
+            "type": "object"
+          },
+          "selected_metrics": {
+            "items": {
+              "$ref": "#/components/schemas/TargetMetrics"
+            },
+            "title": "Selected Metrics",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "test_end": {
+            "format": "date",
+            "title": "Test End",
+            "type": "string"
+          },
+          "test_season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Season"
+          },
+          "test_start": {
+            "format": "date",
+            "title": "Test Start",
+            "type": "string"
+          },
+          "train_end": {
+            "format": "date",
+            "title": "Train End",
+            "type": "string"
+          },
+          "train_start": {
+            "format": "date",
+            "title": "Train Start",
+            "type": "string"
+          },
+          "val_end": {
+            "format": "date",
+            "title": "Val End",
+            "type": "string"
+          },
+          "val_start": {
+            "format": "date",
+            "title": "Val Start",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "created_at",
+          "activated_at",
+          "data_version",
+          "feature_schema_version",
+          "train_start",
+          "train_end",
+          "val_start",
+          "val_end",
+          "test_start",
+          "test_end",
+          "git_sha",
+          "selected",
+          "features",
+          "test_season",
+          "selected_metrics",
+          "algorithms",
+          "interval_calibration"
+        ],
+        "title": "ModelReleaseDetail",
+        "type": "object"
+      },
+      "ModelReleaseSummary": {
+        "properties": {
+          "activated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activated At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_version": {
+            "title": "Data Version",
+            "type": "integer"
+          },
+          "feature_schema_version": {
+            "title": "Feature Schema Version",
+            "type": "string"
+          },
+          "git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Sha"
+          },
+          "selected": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Selected",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "test_end": {
+            "format": "date",
+            "title": "Test End",
+            "type": "string"
+          },
+          "test_start": {
+            "format": "date",
+            "title": "Test Start",
+            "type": "string"
+          },
+          "train_end": {
+            "format": "date",
+            "title": "Train End",
+            "type": "string"
+          },
+          "train_start": {
+            "format": "date",
+            "title": "Train Start",
+            "type": "string"
+          },
+          "val_end": {
+            "format": "date",
+            "title": "Val End",
+            "type": "string"
+          },
+          "val_start": {
+            "format": "date",
+            "title": "Val Start",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "status",
+          "created_at",
+          "activated_at",
+          "data_version",
+          "feature_schema_version",
+          "train_start",
+          "train_end",
+          "val_start",
+          "val_end",
+          "test_start",
+          "test_end",
+          "git_sha",
+          "selected"
+        ],
+        "title": "ModelReleaseSummary",
+        "type": "object"
+      },
+      "ModelSnapshot": {
+        "properties": {
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/TargetMetrics"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
+          "release": {
+            "$ref": "#/components/schemas/ModelReleaseSummary"
+          },
+          "test_season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Season"
+          }
+        },
+        "required": [
+          "release",
+          "test_season",
+          "metrics"
+        ],
+        "title": "ModelSnapshot",
+        "type": "object"
+      },
+      "Overview": {
+        "properties": {
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetStatus"
+            },
+            "title": "Datasets",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "leaders": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Leaders"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "standouts": {
+            "$ref": "#/components/schemas/Standouts"
+          },
+          "today": {
+            "format": "date",
+            "title": "Today",
+            "type": "string"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "today",
+          "upcoming",
+          "recent",
+          "standouts",
+          "leaders",
+          "model",
+          "datasets"
+        ],
+        "title": "Overview",
+        "type": "object"
+      },
+      "Page_DirectoryPlayer_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DirectoryPlayer"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "meta"
+        ],
+        "title": "Page[DirectoryPlayer]",
         "type": "object"
       },
       "Page_GameSummary_": {
@@ -743,41 +1376,6 @@
           "meta"
         ],
         "title": "Page[PlayerGameLine]",
-        "type": "object"
-      },
-      "Page_PlayerSummary_": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PlayerSummary"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "limit": {
-            "title": "Limit",
-            "type": "integer"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/Meta"
-          },
-          "offset": {
-            "title": "Offset",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "limit",
-          "offset",
-          "meta"
-        ],
-        "title": "Page[PlayerSummary]",
         "type": "object"
       },
       "PerGame": {
@@ -882,6 +1480,87 @@
           "min"
         ],
         "title": "PerGame",
+        "type": "object"
+      },
+      "Performance": {
+        "properties": {
+          "box": {
+            "$ref": "#/components/schemas/BoxStats"
+          },
+          "double_double": {
+            "title": "Double Double",
+            "type": "boolean"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "game_date": {
+            "format": "date",
+            "title": "Game Date",
+            "type": "string"
+          },
+          "game_id": {
+            "title": "Game Id",
+            "type": "string"
+          },
+          "game_score": {
+            "title": "Game Score",
+            "type": "number"
+          },
+          "is_home": {
+            "title": "Is Home",
+            "type": "boolean"
+          },
+          "minutes": {
+            "title": "Minutes",
+            "type": "number"
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "enum": [
+                  "W",
+                  "L"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "shooting": {
+            "$ref": "#/components/schemas/Shooting"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamRef"
+          }
+        },
+        "required": [
+          "player_id",
+          "full_name",
+          "game_id",
+          "game_date",
+          "team",
+          "opponent",
+          "is_home",
+          "result",
+          "minutes",
+          "box",
+          "shooting",
+          "game_score",
+          "double_double"
+        ],
+        "title": "Performance",
         "type": "object"
       },
       "PlayerGameLine": {
@@ -1431,6 +2110,132 @@
         "title": "Record",
         "type": "object"
       },
+      "SeasonAverages": {
+        "properties": {
+          "ast": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ast"
+          },
+          "blk": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blk"
+          },
+          "fg3m": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3M"
+          },
+          "fg_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg Pct"
+          },
+          "fg_pct_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg Pct Status"
+          },
+          "games_played": {
+            "title": "Games Played",
+            "type": "integer"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "pts": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pts"
+          },
+          "reb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reb"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "stl": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stl"
+          }
+        },
+        "required": [
+          "season",
+          "games_played",
+          "min",
+          "pts",
+          "reb",
+          "ast",
+          "fg3m",
+          "stl",
+          "blk",
+          "fg_pct",
+          "fg_pct_status"
+        ],
+        "title": "SeasonAverages",
+        "type": "object"
+      },
       "SeasonCoverage": {
         "properties": {
           "final_games": {
@@ -1652,6 +2457,57 @@
         "title": "Split",
         "type": "object"
       },
+      "Standouts": {
+        "properties": {
+          "criterion": {
+            "title": "Criterion",
+            "type": "string"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "performances": {
+            "items": {
+              "$ref": "#/components/schemas/Performance"
+            },
+            "title": "Performances",
+            "type": "array"
+          },
+          "window_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window End"
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Start"
+          }
+        },
+        "required": [
+          "window_start",
+          "window_end",
+          "criterion",
+          "performances",
+          "meta"
+        ],
+        "title": "Standouts",
+        "type": "object"
+      },
       "StatSummary": {
         "properties": {
           "double_doubles": {
@@ -1716,6 +2572,113 @@
           "pts_consistency"
         ],
         "title": "StatSummary",
+        "type": "object"
+      },
+      "TargetMetrics": {
+        "properties": {
+          "algorithm": {
+            "title": "Algorithm",
+            "type": "string"
+          },
+          "baseline_mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Mae"
+          },
+          "brier": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brier"
+          },
+          "interval_coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Coverage"
+          },
+          "log_loss": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Loss"
+          },
+          "mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mae"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "r2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "R2"
+          },
+          "rmse": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rmse"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "algorithm",
+          "n",
+          "mae",
+          "rmse",
+          "r2",
+          "baseline_mae",
+          "interval_coverage",
+          "brier",
+          "log_loss"
+        ],
+        "title": "TargetMetrics",
         "type": "object"
       },
       "Team": {
@@ -1787,9 +2750,7 @@
           "city",
           "name",
           "conference",
-          "division",
-          "primary_color",
-          "secondary_color"
+          "division"
         ],
         "title": "Team",
         "type": "object"
@@ -1844,6 +2805,28 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "primary_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Color"
+          },
+          "secondary_color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secondary Color"
           }
         },
         "required": [
@@ -2738,6 +3721,356 @@
         ]
       }
     },
+    "/api/v1/leaders": {
+      "get": {
+        "operationId": "get_leaders_api_v1_leaders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "stat",
+            "required": false,
+            "schema": {
+              "default": "pts",
+              "enum": [
+                "pts",
+                "reb",
+                "ast",
+                "fg3m",
+                "stl",
+                "blk",
+                "min"
+              ],
+              "title": "Stat",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 25,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Leaders"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Leaders",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "operationId": "list_models_api_v1_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModelReleaseSummary"
+                  },
+                  "title": "Response List Models Api V1 Models Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Models",
+        "tags": [
+          "models"
+        ]
+      }
+    },
+    "/api/v1/models/{version}": {
+      "get": {
+        "operationId": "get_model_api_v1_models__version__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-\\d{1,3}$",
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelReleaseDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Model",
+        "tags": [
+          "models"
+        ]
+      }
+    },
+    "/api/v1/overview": {
+      "get": {
+        "operationId": "get_overview_api_v1_overview_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Overview",
+        "tags": [
+          "insights"
+        ]
+      }
+    },
     "/api/v1/players": {
       "get": {
         "operationId": "list_players_api_v1_players_get",
@@ -2820,7 +4153,23 @@
                 "last_name",
                 "-last_name",
                 "to_year",
-                "-to_year"
+                "-to_year",
+                "games",
+                "-games",
+                "pts",
+                "-pts",
+                "reb",
+                "-reb",
+                "ast",
+                "-ast",
+                "fg3m",
+                "-fg3m",
+                "stl",
+                "-stl",
+                "blk",
+                "-blk",
+                "min",
+                "-min"
               ],
               "title": "Sort",
               "type": "string"
@@ -2856,7 +4205,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_PlayerSummary_"
+                  "$ref": "#/components/schemas/Page_DirectoryPlayer_"
                 }
               }
             },
@@ -3620,6 +4969,91 @@
         "summary": "Readiness",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/standouts": {
+      "get": {
+        "operationId": "get_standouts_api_v1_standouts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "maximum": 25,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Standouts"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Standouts",
+        "tags": [
+          "insights"
         ]
       }
     },
