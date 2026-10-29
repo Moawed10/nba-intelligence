@@ -27,6 +27,7 @@ from app.ml.dataset import load_dataset
 from app.ml.features import FEATURES, TARGETS, feature_schema_version
 from app.ml.models import ALGORITHMS, Fitted, TrainConfig, fit_select, refit
 from app.ml.splits import DEFAULT_PLAN, SplitPlan, Splits, split
+from app.ml.team_model import TEAM_FEATURES, TeamOutcome, load_team_games, team_frame, train_team
 from app.models import (
     Algorithm,
     EvaluationSplit,
@@ -68,6 +69,7 @@ class TrainingResult:
     config: TrainConfig
     targets: dict[str, TargetOutcome] = field(default_factory=dict)
     double_double: ClassifierOutcome | None = None
+    team: TeamOutcome | None = None
     seconds: float = 0.0
 
 
@@ -284,6 +286,7 @@ def write_release(
             persist: bool,
             conformal: dict | None,
             selected: bool,
+            features: tuple[str, ...] = FEATURES,
         ) -> ModelVersion:
             path, digest = NOT_PERSISTED, ""
             if persist:
@@ -305,7 +308,7 @@ def write_release(
                 algorithm=Algorithm(algorithm),
                 is_selected=selected,
                 hyperparameters={**params, "fit": fit},
-                features=list(FEATURES),
+                features=list(features),
                 interval_calibration=conformal,
                 artifact_path=path,
                 artifact_sha256=digest,
@@ -396,6 +399,30 @@ def write_release(
                 True,
             )
 
+        if result.team:
+            team = result.team
+            for algorithm, fitted in team.evaluated.items():
+                chosen = algorithm == team.selected
+                row = add_version(
+                    "team_pts", algorithm, fitted.model, fitted.params, "held_out", chosen,
+                    team.conformal.to_dict() if chosen else None, False, TEAM_FEATURES,
+                )  # fmt: skip
+                scores = team.scores[algorithm]
+                add_evaluation(row, EvaluationSplit.validation, result.plan.validation,
+                               scores["validation"])  # fmt: skip
+                cover = team.test_coverage["overall"] if chosen else None
+                add_evaluation(row, EvaluationSplit.test, result.plan.test, scores["test"], cover)
+            add_version(
+                "team_pts", team.selected, team.production.model, team.production.params,
+                "production", True, team.production_conformal.to_dict(), True, TEAM_FEATURES,
+            )  # fmt: skip
+            row = add_version(
+                "home_win", "logistic", team.production_win_model, {"input": "predicted_margin"},
+                "production", True, None, True, ("predicted_margin",),
+            )  # fmt: skip
+            add_evaluation(row, EvaluationSplit.test, result.plan.test,
+                           {"n": team.win["games"], "brier": team.win["brier"]})  # fmt: skip
+
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "report.json").write_text(json.dumps(summary, indent=2, default=str))
     return version
@@ -415,6 +442,14 @@ def run(
         )
     result = train_release(dataset.frame, config, targets=targets, classify=register)
     summary = report(result, dataset.data_version, dataset.leakage_violations, len(dataset.frame))
+    if register:
+        result.team = train_team(team_frame(load_team_games(engine)), config, result.plan)
+        summary["team"] = {
+            "selected": result.team.selected,
+            "scores": result.team.scores,
+            "test_interval_coverage": result.team.test_coverage,
+            "win": result.team.win,
+        }
     if register:
         write_release(result, summary, engine, artifacts_dir, dataset.data_version)
     return summary

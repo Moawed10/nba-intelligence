@@ -126,3 +126,40 @@ class PredictionEvaluation(Base):
     abs_error: Mapped[float] = mapped_column(Float)
     within_interval: Mapped[bool | None] = mapped_column(Boolean)
     evaluated_at: Mapped[datetime] = utcnow_column()
+
+
+class GamePrediction(Base):
+    """A stored pregame score forecast for one game. Append-only like player predictions: changed
+    inputs add a row that supersedes the previous one."""
+
+    __tablename__ = "game_predictions"
+    __table_args__ = (
+        UniqueConstraint(
+            "game_id", "release_id", "feature_snapshot_sha256", name="uq_game_predictions_snapshot"
+        ),
+        CheckConstraint(
+            "home_win_probability >= 0 AND home_win_probability <= 1",
+            name="game_probability_range",
+        ),
+        Index("ix_game_predictions_game", "game_id", "created_at"),
+    )  # fmt: skip
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    game_id: Mapped[str] = mapped_column(ForeignKey("games.id", ondelete="RESTRICT"))
+    release_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("model_releases.id", ondelete="RESTRICT")
+    )
+    home_pts: Mapped[float] = mapped_column(Float)
+    home_lower: Mapped[float] = mapped_column(Float)
+    home_upper: Mapped[float] = mapped_column(Float)
+    away_pts: Mapped[float] = mapped_column(Float)
+    away_lower: Mapped[float] = mapped_column(Float)
+    away_upper: Mapped[float] = mapped_column(Float)
+    home_win_probability: Mapped[float] = mapped_column(Float)
+    feature_snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    feature_snapshot_sha256: Mapped[str] = mapped_column(String(64))
+    data_cutoff_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = utcnow_column()
+    supersedes_prediction_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("game_predictions.id", ondelete="RESTRICT")
+    )

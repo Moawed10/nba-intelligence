@@ -38,6 +38,8 @@ class ModelTarget(enum.StrEnum):
     blk = "blk"
     min = "min"
     double_double = "double_double"
+    team_pts = "team_pts"
+    home_win = "home_win"
 
 
 class Algorithm(enum.StrEnum):

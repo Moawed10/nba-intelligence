@@ -9,7 +9,7 @@ import json
 import math
 import threading
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -37,6 +37,8 @@ TEAMS_SQL = (
 )
 
 # Inputs shown next to a forecast: the statistic's own recent form plus the shared context.
+TEAM_TARGETS = ("team_pts", "home_win")
+
 CONTEXT_INPUTS = (
     "season_games",
     "rest_days",
@@ -61,6 +63,8 @@ class ActiveRelease:
     feature_schema_version: str
     regressors: dict[str, RegressionModel]
     double_double: Any
+    # Game score models ("team_pts" payload with conformal, "home_win" margin calibrator), if any.
+    team: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -99,10 +103,13 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
         ).all()
         regressors: dict[str, RegressionModel] = {}
         double_double = None
+        team: dict[str, Any] = {}
         for v in versions:
             payload = load_artifact(artifacts_dir / v.artifact_path, v.artifact_sha256)
             if v.target.value == "double_double":
                 double_double = payload["model"]
+            elif v.target.value in TEAM_TARGETS:
+                team[v.target.value] = payload
             else:
                 conformal = MondrianConformal.from_dict(
                     v.interval_calibration or payload["conformal"]
@@ -114,7 +121,12 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
                 f"release {release.version} has no selected model for {sorted(missing)}"
             )
         loaded = ActiveRelease(
-            release.id, release.version, release.feature_schema_version, regressors, double_double
+            release.id,
+            release.version,
+            release.feature_schema_version,
+            regressors,
+            double_double,
+            team,
         )
         _cache[release.id] = loaded
         return loaded
