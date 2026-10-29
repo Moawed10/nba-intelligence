@@ -7,6 +7,8 @@ row that supersedes the last one, and scoring writes `prediction_evaluations` on
 import enum
 import threading
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -56,6 +58,16 @@ class FreshnessState:
     reason: str | None = None
 
 
+@contextmanager
+def inference_slot() -> Iterator[None]:
+    if not _inference_slots.acquire(timeout=INFERENCE_WAIT_SECONDS):
+        raise ApiError(503, "inference_busy", "Forecasting is busy. Try again in a moment.")
+    try:
+        yield
+    finally:
+        _inference_slots.release()
+
+
 def model_unavailable(message: str) -> ApiError:
     return ApiError(503, "model_unavailable", message)
 
@@ -84,7 +96,7 @@ def _features(session: Session, player: Player, game: Game):
     )
 
 
-def _started(game: Game, now: datetime) -> bool:
+def started(game: Game, now: datetime) -> bool:
     return game.status != GameStatus.scheduled or (
         game.tipoff_at is not None and game.tipoff_at <= now
     )
@@ -105,17 +117,13 @@ def forecast(
     game = session.get(Game, game_id)
     if game is None:
         raise not_found("game", game_id)
-    if _started(game, now):
+    if started(game, now):
         raise ApiError(409, "game_already_started", "Pregame predictions close at tip-off.")
     if player.current_team_id not in (game.home_team_id, game.away_team_id):
         raise ApiError(422, "invalid_matchup", "This player's current team is not in this game.")
 
-    if not _inference_slots.acquire(timeout=INFERENCE_WAIT_SECONDS):
-        raise ApiError(503, "inference_busy", "Forecasting is busy. Try again in a moment.")
-    try:
+    with inference_slot():
         result = predict(release, _features(session, player, game))
-    finally:
-        _inference_slots.release()
     if not result.eligible:
         raise ApiError(
             422,
@@ -190,7 +198,7 @@ def freshness(
     game = session.get(Game, row.game_id)
     if game.status in (GameStatus.postponed, GameStatus.cancelled):
         return FreshnessState(Freshness.invalid, f"The game was {game.status.value}.")
-    if _started(game, now):
+    if started(game, now):
         return FreshnessState(Freshness.final_pregame, "Last forecast made before tip-off.")
     player = session.get(Player, row.player_id)
     if player.current_team_id not in (game.home_team_id, game.away_team_id):

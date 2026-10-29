@@ -1,8 +1,9 @@
+import re
 import uuid
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.resources import GameSummary
 
@@ -64,4 +65,45 @@ class UpcomingForecast(BaseModel):
 
     game: GameSummary
     prediction: Prediction | None
+    unavailable: Unavailable | None
+
+
+class GameForecastRequest(BaseModel):
+    game_ids: list[str] = Field(min_length=1, max_length=30)
+
+    @field_validator("game_ids")
+    @classmethod
+    def _ids(cls, value: list[str]) -> list[str]:
+        if any(not re.fullmatch(r"\d{10}", v) for v in value):
+            raise ValueError("game ids are 10 digits")
+        return list(dict.fromkeys(value))
+
+
+class TeamScore(BaseModel):
+    team_id: int
+    points: float
+    lower: float
+    upper: float
+
+
+class GameForecast(BaseModel):
+    """Both teams' expected points and the home side's win chance before tip-off."""
+
+    id: uuid.UUID
+    game_id: str
+    release_version: str
+    home: TeamScore
+    away: TeamScore
+    home_win_probability: float
+    interval_level: float
+    created_at: datetime
+    data_cutoff_at: datetime
+    supersedes_prediction_id: uuid.UUID | None
+
+
+class GameForecastResult(BaseModel):
+    """One requested game with its stored score forecast, or the reason there is none."""
+
+    game_id: str
+    forecast: GameForecast | None
     unavailable: Unavailable | None

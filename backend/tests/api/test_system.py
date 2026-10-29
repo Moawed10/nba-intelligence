@@ -20,12 +20,16 @@ ENDPOINTS = {
     "/api/v1/games/{game_id}", "/api/v1/games/{game_id}/boxscore", "/api/v1/health",
     "/api/v1/readiness", "/api/v1/data-status", "/api/v1/overview", "/api/v1/leaders",
     "/api/v1/standouts", "/api/v1/models", "/api/v1/models/{version}", "/api/v1/predictions",
-    "/api/v1/predictions/upcoming",
+    "/api/v1/predictions/upcoming", "/api/v1/predictions/games",
     "/api/v1/predictions/{prediction_id}", "/api/v1/predictions/{prediction_id}/explanation",
     "/api/v1/models/{version}/live",
 }  # fmt: skip
 # The only write: an append-only pregame forecast. Ingestion, training and activation stay offline.
-WRITES = {("/api/v1/predictions", "post"), ("/api/v1/predictions/upcoming", "post")}
+WRITES = {
+    ("/api/v1/predictions", "post"),
+    ("/api/v1/predictions/upcoming", "post"),
+    ("/api/v1/predictions/games", "post"),
+}
 
 
 def test_every_endpoint_is_documented_and_only_predictions_write(client):

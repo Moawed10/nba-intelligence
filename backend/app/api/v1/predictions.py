@@ -5,13 +5,15 @@ from fastapi import APIRouter, Query, Response
 
 from app.api.deps import Ctx
 from app.schemas.predictions import (
+    GameForecastRequest,
+    GameForecastResult,
     Prediction,
     PredictionExplanation,
     PredictionRequest,
     UpcomingForecast,
     UpcomingRequest,
 )
-from app.services import predictions
+from app.services import game_forecasts, predictions
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -29,6 +31,13 @@ def create_prediction(ctx: Ctx, body: PredictionRequest, response: Response) -> 
 def upcoming_forecasts(ctx: Ctx, body: UpcomingRequest) -> list[UpcomingForecast]:
     """Forecast every game a player has in the next `days` days (stored, reused while current)."""
     return predictions.upcoming(ctx, body.player_id, body.days)
+
+
+@router.post("/games", response_model=list[GameForecastResult])
+def game_forecasts_(ctx: Ctx, body: GameForecastRequest) -> list[GameForecastResult]:
+    """Predicted final score and home win chance for scheduled games (stored, reused while the
+    inputs are unchanged); a game that can't be forecast says why."""
+    return game_forecasts.forecasts(ctx, body.game_ids)
 
 
 @router.get("", response_model=list[Prediction])

@@ -4,3782 +4,3893 @@
  */
 
 export interface paths {
-  "/api/v1/data-status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/data-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Data Status */
+        get: operations["data_status_api_v1_data_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Data Status */
-    get: operations["data_status_api_v1_data_status_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/games": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Games */
+        get: operations["list_games_api_v1_games_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Games */
-    get: operations["list_games_api_v1_games_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/games/upcoming": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/games/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Upcoming Games */
+        get: operations["upcoming_games_api_v1_games_upcoming_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Upcoming Games */
-    get: operations["upcoming_games_api_v1_games_upcoming_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/games/{game_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/games/{game_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Game */
+        get: operations["get_game_api_v1_games__game_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Game */
-    get: operations["get_game_api_v1_games__game_id__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/games/{game_id}/boxscore": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/games/{game_id}/boxscore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Boxscore */
+        get: operations["get_boxscore_api_v1_games__game_id__boxscore_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Boxscore */
-    get: operations["get_boxscore_api_v1_games__game_id__boxscore_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/health": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health */
+        get: operations["health_api_v1_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Health */
-    get: operations["health_api_v1_health_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/leaders": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/leaders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Leaders */
+        get: operations["get_leaders_api_v1_leaders_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Leaders */
-    get: operations["get_leaders_api_v1_leaders_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/models": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_api_v1_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Models */
-    get: operations["list_models_api_v1_models_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/models/{version}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/models/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Model */
+        get: operations["get_model_api_v1_models__version__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Model */
-    get: operations["get_model_api_v1_models__version__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/models/{version}/live": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/models/{version}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Live Accuracy */
+        get: operations["get_live_accuracy_api_v1_models__version__live_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Live Accuracy */
-    get: operations["get_live_accuracy_api_v1_models__version__live_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/overview": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Overview */
+        get: operations["get_overview_api_v1_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Overview */
-    get: operations["get_overview_api_v1_overview_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Players */
+        get: operations["list_players_api_v1_players_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Players */
-    get: operations["list_players_api_v1_players_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/search": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Players */
+        get: operations["search_players_api_v1_players_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Search Players */
-    get: operations["search_players_api_v1_players_search_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Player */
+        get: operations["get_player_api_v1_players__player_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Player */
-    get: operations["get_player_api_v1_players__player_id__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}/games": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Player Games */
+        get: operations["get_player_games_api_v1_players__player_id__games_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Player Games */
-    get: operations["get_player_games_api_v1_players__player_id__games_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}/matchups/{team_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}/matchups/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Matchup
+         * @description How the player has done against one team, every stored season.
+         */
+        get: operations["get_matchup_api_v1_players__player_id__matchups__team_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Matchup
-     * @description How the player has done against one team, every stored season.
-     */
-    get: operations["get_matchup_api_v1_players__player_id__matchups__team_id__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}/photo": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Player Photo
+         * @description Copied once from the NBA's image server and then served locally; 404 when none exists.
+         */
+        get: operations["get_player_photo_api_v1_players__player_id__photo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Get Player Photo
-     * @description Copied once from the NBA's image server and then served locally; 404 when none exists.
-     */
-    get: operations["get_player_photo_api_v1_players__player_id__photo_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}/stats": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Player Stats */
+        get: operations["get_player_stats_api_v1_players__player_id__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Player Stats */
-    get: operations["get_player_stats_api_v1_players__player_id__stats_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/players/{player_id}/trends": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/players/{player_id}/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Player Trends */
+        get: operations["get_player_trends_api_v1_players__player_id__trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Player Trends */
-    get: operations["get_player_trends_api_v1_players__player_id__trends_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/predictions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Predictions */
+        get: operations["list_predictions_api_v1_predictions_get"];
+        put?: never;
+        /**
+         * Create Prediction
+         * @description Pregame forecast for a player in a scheduled game; repeating it with unchanged data returns
+         *     the stored prediction (200) instead of creating another.
+         */
+        post: operations["create_prediction_api_v1_predictions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Predictions */
-    get: operations["list_predictions_api_v1_predictions_get"];
-    put?: never;
-    /**
-     * Create Prediction
-     * @description Pregame forecast for a player in a scheduled game; repeating it with unchanged data returns
-     *     the stored prediction (200) instead of creating another.
-     */
-    post: operations["create_prediction_api_v1_predictions_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/predictions/upcoming": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/predictions/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Game Forecasts
+         * @description Predicted final score and home win chance for scheduled games (stored, reused while the
+         *     inputs are unchanged); a game that can't be forecast says why.
+         */
+        post: operations["game_forecasts__api_v1_predictions_games_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /**
-     * Upcoming Forecasts
-     * @description Forecast every game a player has in the next `days` days (stored, reused while current).
-     */
-    post: operations["upcoming_forecasts_api_v1_predictions_upcoming_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/predictions/{prediction_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/predictions/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upcoming Forecasts
+         * @description Forecast every game a player has in the next `days` days (stored, reused while current).
+         */
+        post: operations["upcoming_forecasts_api_v1_predictions_upcoming_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Prediction */
-    get: operations["get_prediction_api_v1_predictions__prediction_id__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/predictions/{prediction_id}/explanation": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/predictions/{prediction_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Prediction */
+        get: operations["get_prediction_api_v1_predictions__prediction_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Explanation */
-    get: operations["get_explanation_api_v1_predictions__prediction_id__explanation_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/readiness": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/predictions/{prediction_id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Explanation */
+        get: operations["get_explanation_api_v1_predictions__prediction_id__explanation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Readiness */
-    get: operations["readiness_api_v1_readiness_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/standouts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness */
+        get: operations["readiness_api_v1_readiness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Standouts */
-    get: operations["get_standouts_api_v1_standouts_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/teams": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/standouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Standouts */
+        get: operations["get_standouts_api_v1_standouts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Teams */
-    get: operations["list_teams_api_v1_teams_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/teams/{team_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/teams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Teams */
+        get: operations["list_teams_api_v1_teams_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Team */
-    get: operations["get_team_api_v1_teams__team_id__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/teams/{team_id}/history": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/teams/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team */
+        get: operations["get_team_api_v1_teams__team_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Team History */
-    get: operations["get_team_history_api_v1_teams__team_id__history_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/teams/{team_id}/stats": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/teams/{team_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team History */
+        get: operations["get_team_history_api_v1_teams__team_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Team Stats */
-    get: operations["get_team_stats_api_v1_teams__team_id__stats_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/api/v1/teams/{team_id}/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team Stats */
+        get: operations["get_team_stats_api_v1_teams__team_id__stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** AlgorithmMetrics */
-    AlgorithmMetrics: {
-      /** Algorithm */
-      algorithm: string;
-      /** Selected */
-      selected: boolean;
-      /** Target */
-      target: string;
-      /** Test Mae */
-      test_mae: number | null;
-      /** Test R2 */
-      test_r2: number | null;
-      /** Test Rmse */
-      test_rmse: number | null;
-      /** Validation Mae */
-      validation_mae: number | null;
-    };
-    /** BoxScore */
-    BoxScore: {
-      game: components["schemas"]["GameSummary"];
-      meta: components["schemas"]["Meta"];
-      /** Stats Finalized */
-      stats_finalized: boolean;
-      /** Teams */
-      teams: components["schemas"]["BoxScoreTeam"][];
-    };
-    /** BoxScorePlayer */
-    BoxScorePlayer: {
-      box: components["schemas"]["BoxStats"];
-      /** Double Double */
-      double_double: boolean;
-      /** Full Name */
-      full_name: string;
-      /** Minutes */
-      minutes: number;
-      /** Player Id */
-      player_id: number;
-      shooting: components["schemas"]["Shooting"];
-    };
-    /** BoxScoreTeam */
-    BoxScoreTeam: {
-      /** Is Home */
-      is_home: boolean;
-      /** Minutes */
-      minutes: number;
-      /** Players */
-      players: components["schemas"]["BoxScorePlayer"][];
-      shooting: components["schemas"]["Shooting"];
-      team: components["schemas"]["TeamRef"];
-      totals: components["schemas"]["BoxStats"];
-    };
-    /** BoxStats */
-    BoxStats: {
-      /** Ast */
-      ast: number;
-      /** Blk */
-      blk: number;
-      /** Dreb */
-      dreb: number;
-      /** Fg3A */
-      fg3a: number;
-      /** Fg3M */
-      fg3m: number;
-      /** Fga */
-      fga: number;
-      /** Fgm */
-      fgm: number;
-      /** Fta */
-      fta: number;
-      /** Ftm */
-      ftm: number;
-      /** Oreb */
-      oreb: number;
-      /** Pf */
-      pf: number;
-      /** Plus Minus */
-      plus_minus: number | null;
-      /** Pts */
-      pts: number;
-      /** Reb */
-      reb: number;
-      /** Stl */
-      stl: number;
-      /** Tov */
-      tov: number;
-    };
-    /** DataFreshness */
-    DataFreshness: {
-      /** Data Version */
-      data_version: number | null;
-      /** Dataset */
-      dataset: string;
-      /** Is Stale */
-      is_stale: boolean;
-      /** Last Successful Sync */
-      last_successful_sync: string | null;
-      status: components["schemas"]["Freshness"];
-    };
-    /** DataStatus */
-    DataStatus: {
-      /** Data Version */
-      data_version: number | null;
-      /** Datasets */
-      datasets: components["schemas"]["DatasetStatus"][];
-      /**
-       * Generated At
-       * Format: date-time
-       */
-      generated_at: string;
-      /** Row Counts */
-      row_counts: {
-        [key: string]: number;
-      };
-      /** Seasons */
-      seasons: components["schemas"]["SeasonCoverage"][];
-    };
-    /** DatasetStatus */
-    DatasetStatus: {
-      /** Coverage End */
-      coverage_end: string | null;
-      /** Coverage Start */
-      coverage_start: string | null;
-      /** Dataset */
-      dataset: string;
-      /** Last Attempted Sync */
-      last_attempted_sync: string | null;
-      /** Last Error */
-      last_error: string | null;
-      /** Last Successful Sync */
-      last_successful_sync: string | null;
-      status: components["schemas"]["Freshness"];
-    };
-    /** DirectoryPlayer */
-    DirectoryPlayer: {
-      /** From Year */
-      from_year: number | null;
-      /** Full Name */
-      full_name: string;
-      /** Id */
-      id: number;
-      /** Is Active */
-      is_active: boolean;
-      /** Position */
-      position: string | null;
-      season_averages: components["schemas"]["SeasonAverages"] | null;
-      team: components["schemas"]["TeamRef"] | null;
-      /** To Year */
-      to_year: number | null;
-    };
-    /** ErrorBody */
-    ErrorBody: {
-      /** Code */
-      code: string;
-      /**
-       * Details
-       * @default []
-       */
-      details: components["schemas"]["ErrorDetail"][];
-      /** Message */
-      message: string;
-      /** Request Id */
-      request_id: string | null;
-    };
-    /** ErrorDetail */
-    ErrorDetail: {
-      /** Field */
-      field?: string | null;
-      /** Issue */
-      issue: string;
-    };
-    /** ErrorResponse */
-    ErrorResponse: {
-      error: components["schemas"]["ErrorBody"];
-    };
-    /**
-     * Freshness
-     * @enum {string}
-     */
-    Freshness: "fresh" | "aging" | "stale" | "unavailable";
-    /** GameDetail */
-    GameDetail: {
-      /** Arena */
-      arena: string | null;
-      away: components["schemas"]["GameTeam"];
-      /**
-       * Game Date
-       * Format: date
-       */
-      game_date: string;
-      home: components["schemas"]["GameTeam"];
-      /** Id */
-      id: string;
-      meta: components["schemas"]["Meta"];
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"];
-      /** Stats Finalized */
-      stats_finalized: boolean;
-      status: components["schemas"]["GameStatus"];
-      /** Status Observed At */
-      status_observed_at: string | null;
-      /** Tipoff At */
-      tipoff_at: string | null;
-    };
-    /**
-     * GameStatus
-     * @enum {string}
-     */
-    GameStatus: "scheduled" | "delayed" | "in_progress" | "final" | "postponed" | "cancelled";
-    /** GameSummary */
-    GameSummary: {
-      /** Arena */
-      arena: string | null;
-      away: components["schemas"]["GameTeam"];
-      /**
-       * Game Date
-       * Format: date
-       */
-      game_date: string;
-      home: components["schemas"]["GameTeam"];
-      /** Id */
-      id: string;
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"];
-      status: components["schemas"]["GameStatus"];
-      /** Tipoff At */
-      tipoff_at: string | null;
-    };
-    /** GameTeam */
-    GameTeam: {
-      /** Score */
-      score: number | null;
-      team: components["schemas"]["TeamRef"];
-    };
-    /** Health */
-    Health: {
-      /**
-       * Status
-       * @constant
-       */
-      status: "ok";
-    };
-    /**
-     * HistoricSeason
-     * @description One regular season of a franchise as published by the source. None means not recorded.
-     */
-    HistoricSeason: {
-      /** City */
-      city: string;
-      /** Conference Rank */
-      conference_rank: number | null;
-      /** Def Rating */
-      def_rating: number | null;
-      /** Division Rank */
-      division_rank: number | null;
-      /** Fg3 Pct */
-      fg3_pct: number | null;
-      /** Fg Pct */
-      fg_pct: number | null;
-      /** Finals */
-      finals: ("finals" | "champion") | null;
-      /** Ft Pct */
-      ft_pct: number | null;
-      /** Games */
-      games: number;
-      /** Losses */
-      losses: number;
-      /** Name */
-      name: string;
-      /** Net Rating */
-      net_rating: number | null;
-      /** Off Rating */
-      off_rating: number | null;
-      /** Pace */
-      pace: number | null;
-      /** Per Game */
-      per_game: {
-        [key: string]: number | null;
-      };
-      /** Playoff Losses */
-      playoff_losses: number | null;
-      /** Playoff Wins */
-      playoff_wins: number | null;
-      /** Season */
-      season: string;
-      /** Win Pct */
-      win_pct: number;
-      /** Wins */
-      wins: number;
-    };
-    /** Leader */
-    Leader: {
-      /** Full Name */
-      full_name: string;
-      /** Games Played */
-      games_played: number;
-      /** Player Id */
-      player_id: number;
-      /** Rank */
-      rank: number;
-      team: components["schemas"]["TeamRef"] | null;
-      /** Value */
-      value: number;
-    };
-    /** Leaders */
-    Leaders: {
-      /** Leaders */
-      leaders: components["schemas"]["Leader"][];
-      meta: components["schemas"]["Meta"];
-      /** Minimum Games */
-      minimum_games: number;
-      /** Qualified Players */
-      qualified_players: number;
-      /** Season */
-      season: string;
-      /**
-       * Stat
-       * @enum {string}
-       */
-      stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
-    };
-    /**
-     * LiveAccuracy
-     * @description Final pregame forecasts of this release scored against box scores after the games.
-     */
-    LiveAccuracy: {
-      /** Activated At */
-      activated_at: string | null;
-      double_double: components["schemas"]["LiveDoubleDouble"] | null;
-      /** Games */
-      games: number;
-      /** Stats */
-      stats: components["schemas"]["LiveStat"][];
-      /** Status */
-      status: string;
-      /** Version */
-      version: string;
-    };
-    /** LiveDoubleDouble */
-    LiveDoubleDouble: {
-      /** Brier */
-      brier: number | null;
-      /** N */
-      n: number;
-    };
-    /** LiveStat */
-    LiveStat: {
-      /** Interval Coverage */
-      interval_coverage: number | null;
-      /** Mae */
-      mae: number | null;
-      /** N */
-      n: number;
-      /** Stat */
-      stat: string;
-    };
-    /**
-     * MatchupHistory
-     * @description A player's games against one opponent, every season stored (2018-19 onward).
-     */
-    MatchupHistory: {
-      /** Averages */
-      averages: {
-        [key: string]: number | null;
-      };
-      /** Fg3 Pct */
-      fg3_pct: number | null;
-      /** Fg Pct */
-      fg_pct: number | null;
-      /** First Season */
-      first_season: string | null;
-      /** Games */
-      games: number;
-      /** Last Season */
-      last_season: string | null;
-      /** Losses */
-      losses: number;
-      /** Meetings */
-      meetings: components["schemas"]["PlayerGameLine"][];
-      meta: components["schemas"]["Meta"];
-      opponent: components["schemas"]["TeamRef"];
-      /** Player Id */
-      player_id: number;
-      /** Wins */
-      wins: number;
-    };
-    /** Meta */
-    Meta: {
-      data_freshness: components["schemas"]["DataFreshness"];
-    };
-    /** ModelReleaseDetail */
-    ModelReleaseDetail: {
-      /** Activated At */
-      activated_at: string | null;
-      /** Algorithms */
-      algorithms: components["schemas"]["AlgorithmMetrics"][];
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /** Data Version */
-      data_version: number;
-      /** Feature Schema Version */
-      feature_schema_version: string;
-      /** Features */
-      features: string[];
-      /** Git Sha */
-      git_sha: string | null;
-      /** Interval Calibration */
-      interval_calibration: {
-        [key: string]: {
-          [key: string]: unknown;
+    schemas: {
+        /** AlgorithmMetrics */
+        AlgorithmMetrics: {
+            /** Algorithm */
+            algorithm: string;
+            /** Selected */
+            selected: boolean;
+            /** Target */
+            target: string;
+            /** Test Mae */
+            test_mae: number | null;
+            /** Test R2 */
+            test_r2: number | null;
+            /** Test Rmse */
+            test_rmse: number | null;
+            /** Validation Mae */
+            validation_mae: number | null;
         };
-      };
-      /** Selected */
-      selected: {
-        [key: string]: string;
-      };
-      /** Selected Metrics */
-      selected_metrics: components["schemas"]["TargetMetrics"][];
-      /** Status */
-      status: string;
-      /**
-       * Test End
-       * Format: date
-       */
-      test_end: string;
-      /** Test Season */
-      test_season: string | null;
-      /**
-       * Test Start
-       * Format: date
-       */
-      test_start: string;
-      /**
-       * Train End
-       * Format: date
-       */
-      train_end: string;
-      /**
-       * Train Start
-       * Format: date
-       */
-      train_start: string;
-      /**
-       * Val End
-       * Format: date
-       */
-      val_end: string;
-      /**
-       * Val Start
-       * Format: date
-       */
-      val_start: string;
-      /** Version */
-      version: string;
+        /** BoxScore */
+        BoxScore: {
+            game: components["schemas"]["GameSummary"];
+            meta: components["schemas"]["Meta"];
+            /** Stats Finalized */
+            stats_finalized: boolean;
+            /** Teams */
+            teams: components["schemas"]["BoxScoreTeam"][];
+        };
+        /** BoxScorePlayer */
+        BoxScorePlayer: {
+            box: components["schemas"]["BoxStats"];
+            /** Double Double */
+            double_double: boolean;
+            /** Full Name */
+            full_name: string;
+            /** Minutes */
+            minutes: number;
+            /** Player Id */
+            player_id: number;
+            shooting: components["schemas"]["Shooting"];
+        };
+        /** BoxScoreTeam */
+        BoxScoreTeam: {
+            /** Is Home */
+            is_home: boolean;
+            /** Minutes */
+            minutes: number;
+            /** Players */
+            players: components["schemas"]["BoxScorePlayer"][];
+            shooting: components["schemas"]["Shooting"];
+            team: components["schemas"]["TeamRef"];
+            totals: components["schemas"]["BoxStats"];
+        };
+        /** BoxStats */
+        BoxStats: {
+            /** Ast */
+            ast: number;
+            /** Blk */
+            blk: number;
+            /** Dreb */
+            dreb: number;
+            /** Fg3A */
+            fg3a: number;
+            /** Fg3M */
+            fg3m: number;
+            /** Fga */
+            fga: number;
+            /** Fgm */
+            fgm: number;
+            /** Fta */
+            fta: number;
+            /** Ftm */
+            ftm: number;
+            /** Oreb */
+            oreb: number;
+            /** Pf */
+            pf: number;
+            /** Plus Minus */
+            plus_minus: number | null;
+            /** Pts */
+            pts: number;
+            /** Reb */
+            reb: number;
+            /** Stl */
+            stl: number;
+            /** Tov */
+            tov: number;
+        };
+        /** DataFreshness */
+        DataFreshness: {
+            /** Data Version */
+            data_version: number | null;
+            /** Dataset */
+            dataset: string;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Last Successful Sync */
+            last_successful_sync: string | null;
+            status: components["schemas"]["Freshness"];
+        };
+        /** DataStatus */
+        DataStatus: {
+            /** Data Version */
+            data_version: number | null;
+            /** Datasets */
+            datasets: components["schemas"]["DatasetStatus"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Row Counts */
+            row_counts: {
+                [key: string]: number;
+            };
+            /** Seasons */
+            seasons: components["schemas"]["SeasonCoverage"][];
+        };
+        /** DatasetStatus */
+        DatasetStatus: {
+            /** Coverage End */
+            coverage_end: string | null;
+            /** Coverage Start */
+            coverage_start: string | null;
+            /** Dataset */
+            dataset: string;
+            /** Last Attempted Sync */
+            last_attempted_sync: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /** Last Successful Sync */
+            last_successful_sync: string | null;
+            status: components["schemas"]["Freshness"];
+        };
+        /** DirectoryPlayer */
+        DirectoryPlayer: {
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Position */
+            position: string | null;
+            season_averages: components["schemas"]["SeasonAverages"] | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
+        };
+        /** ErrorBody */
+        ErrorBody: {
+            /** Code */
+            code: string;
+            /**
+             * Details
+             * @default []
+             */
+            details: components["schemas"]["ErrorDetail"][];
+            /** Message */
+            message: string;
+            /** Request Id */
+            request_id: string | null;
+        };
+        /** ErrorDetail */
+        ErrorDetail: {
+            /** Field */
+            field?: string | null;
+            /** Issue */
+            issue: string;
+        };
+        /** ErrorResponse */
+        ErrorResponse: {
+            error: components["schemas"]["ErrorBody"];
+        };
+        /**
+         * Freshness
+         * @enum {string}
+         */
+        Freshness: "fresh" | "aging" | "stale" | "unavailable";
+        /** GameDetail */
+        GameDetail: {
+            /** Arena */
+            arena: string | null;
+            away: components["schemas"]["GameTeam"];
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            home: components["schemas"]["GameTeam"];
+            /** Id */
+            id: string;
+            meta: components["schemas"]["Meta"];
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"];
+            /** Stats Finalized */
+            stats_finalized: boolean;
+            status: components["schemas"]["GameStatus"];
+            /** Status Observed At */
+            status_observed_at: string | null;
+            /** Tipoff At */
+            tipoff_at: string | null;
+        };
+        /**
+         * GameForecast
+         * @description Both teams' expected points and the home side's win chance before tip-off.
+         */
+        GameForecast: {
+            away: components["schemas"]["TeamScore"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Data Cutoff At
+             * Format: date-time
+             */
+            data_cutoff_at: string;
+            /** Game Id */
+            game_id: string;
+            home: components["schemas"]["TeamScore"];
+            /** Home Win Probability */
+            home_win_probability: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Interval Level */
+            interval_level: number;
+            /** Release Version */
+            release_version: string;
+            /** Supersedes Prediction Id */
+            supersedes_prediction_id: string | null;
+        };
+        /** GameForecastRequest */
+        GameForecastRequest: {
+            /** Game Ids */
+            game_ids: string[];
+        };
+        /**
+         * GameForecastResult
+         * @description One requested game with its stored score forecast, or the reason there is none.
+         */
+        GameForecastResult: {
+            forecast: components["schemas"]["GameForecast"] | null;
+            /** Game Id */
+            game_id: string;
+            unavailable: components["schemas"]["Unavailable"] | null;
+        };
+        /**
+         * GameStatus
+         * @enum {string}
+         */
+        GameStatus: "scheduled" | "delayed" | "in_progress" | "final" | "postponed" | "cancelled";
+        /** GameSummary */
+        GameSummary: {
+            /** Arena */
+            arena: string | null;
+            away: components["schemas"]["GameTeam"];
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            home: components["schemas"]["GameTeam"];
+            /** Id */
+            id: string;
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"];
+            status: components["schemas"]["GameStatus"];
+            /** Tipoff At */
+            tipoff_at: string | null;
+        };
+        /** GameTeam */
+        GameTeam: {
+            /** Score */
+            score: number | null;
+            team: components["schemas"]["TeamRef"];
+        };
+        /** Health */
+        Health: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "ok";
+        };
+        /**
+         * HistoricSeason
+         * @description One regular season of a franchise as published by the source. None means not recorded.
+         */
+        HistoricSeason: {
+            /** City */
+            city: string;
+            /** Conference Rank */
+            conference_rank: number | null;
+            /** Def Rating */
+            def_rating: number | null;
+            /** Division Rank */
+            division_rank: number | null;
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Finals */
+            finals: ("finals" | "champion") | null;
+            /** Ft Pct */
+            ft_pct: number | null;
+            /** Games */
+            games: number;
+            /** Losses */
+            losses: number;
+            /** Name */
+            name: string;
+            /** Net Rating */
+            net_rating: number | null;
+            /** Off Rating */
+            off_rating: number | null;
+            /** Pace */
+            pace: number | null;
+            /** Per Game */
+            per_game: {
+                [key: string]: number | null;
+            };
+            /** Playoff Losses */
+            playoff_losses: number | null;
+            /** Playoff Wins */
+            playoff_wins: number | null;
+            /** Season */
+            season: string;
+            /** Win Pct */
+            win_pct: number;
+            /** Wins */
+            wins: number;
+        };
+        /** Leader */
+        Leader: {
+            /** Full Name */
+            full_name: string;
+            /** Games Played */
+            games_played: number;
+            /** Player Id */
+            player_id: number;
+            /** Rank */
+            rank: number;
+            team: components["schemas"]["TeamRef"] | null;
+            /** Value */
+            value: number;
+        };
+        /** Leaders */
+        Leaders: {
+            /** Leaders */
+            leaders: components["schemas"]["Leader"][];
+            meta: components["schemas"]["Meta"];
+            /** Minimum Games */
+            minimum_games: number;
+            /** Qualified Players */
+            qualified_players: number;
+            /** Season */
+            season: string;
+            /**
+             * Stat
+             * @enum {string}
+             */
+            stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+        };
+        /**
+         * LiveAccuracy
+         * @description Final pregame forecasts of this release scored against box scores after the games.
+         */
+        LiveAccuracy: {
+            /** Activated At */
+            activated_at: string | null;
+            double_double: components["schemas"]["LiveDoubleDouble"] | null;
+            /** Games */
+            games: number;
+            /** Stats */
+            stats: components["schemas"]["LiveStat"][];
+            /** Status */
+            status: string;
+            /** Version */
+            version: string;
+        };
+        /** LiveDoubleDouble */
+        LiveDoubleDouble: {
+            /** Brier */
+            brier: number | null;
+            /** N */
+            n: number;
+        };
+        /** LiveStat */
+        LiveStat: {
+            /** Interval Coverage */
+            interval_coverage: number | null;
+            /** Mae */
+            mae: number | null;
+            /** N */
+            n: number;
+            /** Stat */
+            stat: string;
+        };
+        /**
+         * MatchupHistory
+         * @description A player's games against one opponent, every season stored (2018-19 onward).
+         */
+        MatchupHistory: {
+            /** Averages */
+            averages: {
+                [key: string]: number | null;
+            };
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** First Season */
+            first_season: string | null;
+            /** Games */
+            games: number;
+            /** Last Season */
+            last_season: string | null;
+            /** Losses */
+            losses: number;
+            /** Meetings */
+            meetings: components["schemas"]["PlayerGameLine"][];
+            meta: components["schemas"]["Meta"];
+            opponent: components["schemas"]["TeamRef"];
+            /** Player Id */
+            player_id: number;
+            /** Wins */
+            wins: number;
+        };
+        /** Meta */
+        Meta: {
+            data_freshness: components["schemas"]["DataFreshness"];
+        };
+        /** ModelReleaseDetail */
+        ModelReleaseDetail: {
+            /** Activated At */
+            activated_at: string | null;
+            /** Algorithms */
+            algorithms: components["schemas"]["AlgorithmMetrics"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Data Version */
+            data_version: number;
+            /** Feature Schema Version */
+            feature_schema_version: string;
+            /** Features */
+            features: string[];
+            /** Git Sha */
+            git_sha: string | null;
+            /** Interval Calibration */
+            interval_calibration: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Selected */
+            selected: {
+                [key: string]: string;
+            };
+            /** Selected Metrics */
+            selected_metrics: components["schemas"]["TargetMetrics"][];
+            /** Status */
+            status: string;
+            /**
+             * Test End
+             * Format: date
+             */
+            test_end: string;
+            /** Test Season */
+            test_season: string | null;
+            /**
+             * Test Start
+             * Format: date
+             */
+            test_start: string;
+            /**
+             * Train End
+             * Format: date
+             */
+            train_end: string;
+            /**
+             * Train Start
+             * Format: date
+             */
+            train_start: string;
+            /**
+             * Val End
+             * Format: date
+             */
+            val_end: string;
+            /**
+             * Val Start
+             * Format: date
+             */
+            val_start: string;
+            /** Version */
+            version: string;
+        };
+        /** ModelReleaseSummary */
+        ModelReleaseSummary: {
+            /** Activated At */
+            activated_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Data Version */
+            data_version: number;
+            /** Feature Schema Version */
+            feature_schema_version: string;
+            /** Git Sha */
+            git_sha: string | null;
+            /** Selected */
+            selected: {
+                [key: string]: string;
+            };
+            /** Status */
+            status: string;
+            /**
+             * Test End
+             * Format: date
+             */
+            test_end: string;
+            /**
+             * Test Start
+             * Format: date
+             */
+            test_start: string;
+            /**
+             * Train End
+             * Format: date
+             */
+            train_end: string;
+            /**
+             * Train Start
+             * Format: date
+             */
+            train_start: string;
+            /**
+             * Val End
+             * Format: date
+             */
+            val_end: string;
+            /**
+             * Val Start
+             * Format: date
+             */
+            val_start: string;
+            /** Version */
+            version: string;
+        };
+        /** ModelSnapshot */
+        ModelSnapshot: {
+            /** Metrics */
+            metrics: components["schemas"]["TargetMetrics"][];
+            release: components["schemas"]["ModelReleaseSummary"];
+            /** Test Season */
+            test_season: string | null;
+        };
+        /** Overview */
+        Overview: {
+            /** Datasets */
+            datasets: components["schemas"]["DatasetStatus"][];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            leaders: components["schemas"]["Leaders"] | null;
+            model: components["schemas"]["ModelSnapshot"] | null;
+            /** Recent */
+            recent: components["schemas"]["GameSummary"][];
+            standouts: components["schemas"]["Standouts"];
+            /**
+             * Today
+             * Format: date
+             */
+            today: string;
+            /** Upcoming */
+            upcoming: components["schemas"]["GameSummary"][];
+        };
+        /** Page[DirectoryPlayer] */
+        Page_DirectoryPlayer_: {
+            /** Items */
+            items: components["schemas"]["DirectoryPlayer"][];
+            /** Limit */
+            limit: number;
+            meta: components["schemas"]["Meta"];
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[GameSummary] */
+        Page_GameSummary_: {
+            /** Items */
+            items: components["schemas"]["GameSummary"][];
+            /** Limit */
+            limit: number;
+            meta: components["schemas"]["Meta"];
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[PlayerGameLine] */
+        Page_PlayerGameLine_: {
+            /** Items */
+            items: components["schemas"]["PlayerGameLine"][];
+            /** Limit */
+            limit: number;
+            meta: components["schemas"]["Meta"];
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** PerGame */
+        PerGame: {
+            /** Ast */
+            ast: number | null;
+            /** Blk */
+            blk: number | null;
+            /** Fg3M */
+            fg3m: number | null;
+            /** Min */
+            min: number | null;
+            /** Pts */
+            pts: number | null;
+            /** Reb */
+            reb: number | null;
+            /** Stl */
+            stl: number | null;
+            /** Tov */
+            tov: number | null;
+        };
+        /** Performance */
+        Performance: {
+            box: components["schemas"]["BoxStats"];
+            /** Double Double */
+            double_double: boolean;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            /** Game Id */
+            game_id: string;
+            /** Game Score */
+            game_score: number;
+            /** Is Home */
+            is_home: boolean;
+            /** Minutes */
+            minutes: number;
+            opponent: components["schemas"]["TeamRef"];
+            /** Player Id */
+            player_id: number;
+            /** Result */
+            result: ("W" | "L") | null;
+            shooting: components["schemas"]["Shooting"];
+            team: components["schemas"]["TeamRef"];
+        };
+        /** PlayerGameLine */
+        PlayerGameLine: {
+            box: components["schemas"]["BoxStats"];
+            /** Double Double */
+            double_double: boolean;
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            /** Game Id */
+            game_id: string;
+            /** Is Home */
+            is_home: boolean;
+            /** Minutes */
+            minutes: number;
+            opponent: components["schemas"]["TeamRef"];
+            /** Opponent Score */
+            opponent_score: number | null;
+            /** Result */
+            result: ("W" | "L") | null;
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"];
+            shooting: components["schemas"]["Shooting"];
+            /** Team Abbreviation */
+            team_abbreviation: string;
+            /** Team Score */
+            team_score: number | null;
+        };
+        /** PlayerIdentity */
+        PlayerIdentity: {
+            /** Birthdate */
+            birthdate: string | null;
+            /** First Name */
+            first_name: string | null;
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Height Inches */
+            height_inches: number | null;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Name */
+            last_name: string | null;
+            /** Position */
+            position: string | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
+            /** Weight Lbs */
+            weight_lbs: number | null;
+        };
+        /** PlayerProfile */
+        PlayerProfile: {
+            current_season: components["schemas"]["SeasonLine"] | null;
+            /** Last Games */
+            last_games: components["schemas"]["PlayerGameLine"][];
+            meta: components["schemas"]["Meta"];
+            player: components["schemas"]["PlayerIdentity"];
+        };
+        /** PlayerSearchResult */
+        PlayerSearchResult: {
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Position */
+            position: string | null;
+            /** Team Abbreviation */
+            team_abbreviation: string | null;
+            /** Team Id */
+            team_id?: number | null;
+            /** Team Primary Color */
+            team_primary_color?: string | null;
+        };
+        /** PlayerSeasonStats */
+        PlayerSeasonStats: {
+            meta: components["schemas"]["Meta"];
+            /** Player Id */
+            player_id: number;
+            season_type: components["schemas"]["SeasonType"];
+            /** Seasons */
+            seasons: components["schemas"]["SeasonLine"][];
+            /** Splits */
+            splits: components["schemas"]["Split"][];
+            /** Splits Season */
+            splits_season: string | null;
+        };
+        /** PlayerSummary */
+        PlayerSummary: {
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Position */
+            position: string | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
+        };
+        /** PlayerTrends */
+        PlayerTrends: {
+            /** Average */
+            average: number | null;
+            /** Games Played */
+            games_played: number;
+            meta: components["schemas"]["Meta"];
+            /** Player Id */
+            player_id: number;
+            /** Points */
+            points: components["schemas"]["TrendPoint"][];
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"] | null;
+            /**
+             * Stat
+             * @enum {string}
+             */
+            stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+        };
+        /** PredictedValue */
+        PredictedValue: {
+            /** Interval Level */
+            interval_level: number;
+            /** Lower */
+            lower: number;
+            /** Point */
+            point: number;
+            /**
+             * Stat
+             * @enum {string}
+             */
+            stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+            /** Upper */
+            upper: number;
+        };
+        /** Prediction */
+        Prediction: {
+            /** Actuals */
+            actuals: {
+                [key: string]: number;
+            } | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Data Cutoff At
+             * Format: date-time
+             */
+            data_cutoff_at: string;
+            /** Double Double Probability */
+            double_double_probability: number | null;
+            /** Explanation */
+            explanation: {
+                [key: string]: unknown;
+            } | null;
+            /** Feature Schema Version */
+            feature_schema_version: string;
+            /**
+             * Freshness
+             * @enum {string}
+             */
+            freshness: "current" | "stale" | "invalid" | "superseded" | "final_pregame";
+            /** Freshness Reason */
+            freshness_reason: string | null;
+            /** Game Id */
+            game_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "pregame" | "backtest";
+            /** Player Id */
+            player_id: number;
+            /** Release Version */
+            release_version: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "insufficient_data" | "model_unavailable";
+            /** Supersedes Prediction Id */
+            supersedes_prediction_id: string | null;
+            /** Values */
+            values: components["schemas"]["PredictedValue"][];
+        };
+        /**
+         * PredictionExplanation
+         * @description What the model received. These are inputs, not attributions of the model's reasoning.
+         */
+        PredictionExplanation: {
+            /** Context */
+            context: {
+                [key: string]: unknown;
+            };
+            /** Features */
+            features: {
+                [key: string]: number | null;
+            };
+            /** Inputs */
+            inputs: {
+                [key: string]: unknown;
+            };
+            /** Method */
+            method: string;
+            /**
+             * Prediction Id
+             * Format: uuid
+             */
+            prediction_id: string;
+        };
+        /** PredictionRequest */
+        PredictionRequest: {
+            /** Game Id */
+            game_id: string;
+            /** Player Id */
+            player_id: number;
+        };
+        /** Readiness */
+        Readiness: {
+            /** Checks */
+            checks: {
+                [key: string]: string;
+            };
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "not_ready";
+        };
+        /** Record */
+        Record: {
+            /** Losses */
+            losses: number;
+            /** Wins */
+            wins: number;
+        };
+        /** SeasonAverages */
+        SeasonAverages: {
+            /** Ast */
+            ast: number | null;
+            /** Blk */
+            blk: number | null;
+            /** Fg3M */
+            fg3m: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Fg Pct Status */
+            fg_pct_status: string | null;
+            /** Games Played */
+            games_played: number;
+            /** Min */
+            min: number | null;
+            /** Pts */
+            pts: number | null;
+            /** Reb */
+            reb: number | null;
+            /** Season */
+            season: string;
+            /** Stl */
+            stl: number | null;
+        };
+        /** SeasonCoverage */
+        SeasonCoverage: {
+            /** Final Games */
+            final_games: number;
+            /** Player Lines */
+            player_lines: number;
+            /** Remaining Games */
+            remaining_games: number;
+            /** Season */
+            season: string;
+        };
+        /** SeasonLine */
+        SeasonLine: {
+            /** Double Doubles */
+            double_doubles: number;
+            /** Efg Pct */
+            efg_pct: number | null;
+            /** Games Played */
+            games_played: number;
+            per_game: components["schemas"]["PerGame"];
+            /** Pts Consistency */
+            pts_consistency: number | null;
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"];
+            shooting: components["schemas"]["Shooting"];
+            totals: components["schemas"]["Totals"];
+            /** Ts Pct */
+            ts_pct: number | null;
+        };
+        /**
+         * SeasonType
+         * @enum {string}
+         */
+        SeasonType: "regular" | "playin" | "playoffs";
+        /** Shooting */
+        Shooting: {
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg3 Pct Status */
+            fg3_pct_status: string | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Fg Pct Status */
+            fg_pct_status: string | null;
+            /** Ft Pct */
+            ft_pct: number | null;
+            /** Ft Pct Status */
+            ft_pct_status: string | null;
+        };
+        /** Split */
+        Split: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "home" | "away" | "rest_0" | "rest_1" | "rest_2_plus";
+            /** Label */
+            label: string;
+            summary: components["schemas"]["StatSummary"];
+        };
+        /** Standouts */
+        Standouts: {
+            /** Criterion */
+            criterion: string;
+            meta: components["schemas"]["Meta"];
+            /** Performances */
+            performances: components["schemas"]["Performance"][];
+            /** Window End */
+            window_end: string | null;
+            /** Window Start */
+            window_start: string | null;
+        };
+        /** StatSummary */
+        StatSummary: {
+            /** Double Doubles */
+            double_doubles: number;
+            /** Efg Pct */
+            efg_pct: number | null;
+            /** Games Played */
+            games_played: number;
+            per_game: components["schemas"]["PerGame"];
+            /** Pts Consistency */
+            pts_consistency: number | null;
+            shooting: components["schemas"]["Shooting"];
+            totals: components["schemas"]["Totals"];
+            /** Ts Pct */
+            ts_pct: number | null;
+        };
+        /** TargetMetrics */
+        TargetMetrics: {
+            /** Algorithm */
+            algorithm: string;
+            /** Baseline Mae */
+            baseline_mae: number | null;
+            /** Brier */
+            brier: number | null;
+            /** Interval Coverage */
+            interval_coverage: number | null;
+            /** Log Loss */
+            log_loss: number | null;
+            /** Mae */
+            mae: number | null;
+            /** N */
+            n: number;
+            /** R2 */
+            r2: number | null;
+            /** Rmse */
+            rmse: number | null;
+            /** Target */
+            target: string;
+        };
+        /** Team */
+        Team: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** City */
+            city: string;
+            /** Conference */
+            conference: string | null;
+            /** Division */
+            division: string | null;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Primary Color */
+            primary_color?: string | null;
+            /** Secondary Color */
+            secondary_color?: string | null;
+        };
+        /** TeamDetail */
+        TeamDetail: {
+            meta: components["schemas"]["Meta"];
+            record: components["schemas"]["Record"];
+            /** Roster */
+            roster: components["schemas"]["PlayerSummary"][];
+            /** Season */
+            season: string;
+            team: components["schemas"]["Team"];
+        };
+        /** TeamHistory */
+        TeamHistory: {
+            meta: components["schemas"]["Meta"];
+            /** Seasons */
+            seasons: components["schemas"]["HistoricSeason"][];
+            team: components["schemas"]["TeamRef"];
+        };
+        /** TeamRef */
+        TeamRef: {
+            /** Abbreviation */
+            abbreviation: string;
+            /** City */
+            city: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Primary Color */
+            primary_color?: string | null;
+            /** Secondary Color */
+            secondary_color?: string | null;
+        };
+        /** TeamScore */
+        TeamScore: {
+            /** Lower */
+            lower: number;
+            /** Points */
+            points: number;
+            /** Team Id */
+            team_id: number;
+            /** Upper */
+            upper: number;
+        };
+        /** TeamSeasonStats */
+        TeamSeasonStats: {
+            /** Defensive Rating */
+            defensive_rating: number | null;
+            /** Games */
+            games: number;
+            meta: components["schemas"]["Meta"];
+            /** Net Rating */
+            net_rating: number | null;
+            /** Offensive Rating */
+            offensive_rating: number | null;
+            /** Opp Pts Per Game */
+            opp_pts_per_game: number | null;
+            /** Pace */
+            pace: number | null;
+            /** Possessions Per Game */
+            possessions_per_game: number | null;
+            /** Pts Per Game */
+            pts_per_game: number | null;
+            record: components["schemas"]["Record"];
+            /** Season */
+            season: string;
+            season_type: components["schemas"]["SeasonType"];
+            shooting: components["schemas"]["Shooting"];
+            /** Team Id */
+            team_id: number;
+        };
+        /** Totals */
+        Totals: {
+            /** Ast */
+            ast: number;
+            /** Blk */
+            blk: number;
+            /** Dreb */
+            dreb: number;
+            /** Fg3A */
+            fg3a: number;
+            /** Fg3M */
+            fg3m: number;
+            /** Fga */
+            fga: number;
+            /** Fgm */
+            fgm: number;
+            /** Fta */
+            fta: number;
+            /** Ftm */
+            ftm: number;
+            /** Min */
+            min: number;
+            /** Oreb */
+            oreb: number;
+            /** Pf */
+            pf: number;
+            /** Pts */
+            pts: number;
+            /** Reb */
+            reb: number;
+            /** Stl */
+            stl: number;
+            /** Tov */
+            tov: number;
+        };
+        /** TrendPoint */
+        TrendPoint: {
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            /** Game Id */
+            game_id: string;
+            /** Is Home */
+            is_home: boolean;
+            /** Opponent Abbreviation */
+            opponent_abbreviation: string;
+            /** Rolling 10 */
+            rolling_10: number | null;
+            /** Rolling 3 */
+            rolling_3: number | null;
+            /** Rolling 5 */
+            rolling_5: number | null;
+            /** Value */
+            value: number;
+        };
+        /** Unavailable */
+        Unavailable: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
+        /**
+         * UpcomingForecast
+         * @description One scheduled game with its stored forecast, or the reason there is none.
+         */
+        UpcomingForecast: {
+            game: components["schemas"]["GameSummary"];
+            prediction: components["schemas"]["Prediction"] | null;
+            unavailable: components["schemas"]["Unavailable"] | null;
+        };
+        /** UpcomingRequest */
+        UpcomingRequest: {
+            /**
+             * Days
+             * @default 14
+             */
+            days: number;
+            /** Player Id */
+            player_id: number;
+        };
     };
-    /** ModelReleaseSummary */
-    ModelReleaseSummary: {
-      /** Activated At */
-      activated_at: string | null;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /** Data Version */
-      data_version: number;
-      /** Feature Schema Version */
-      feature_schema_version: string;
-      /** Git Sha */
-      git_sha: string | null;
-      /** Selected */
-      selected: {
-        [key: string]: string;
-      };
-      /** Status */
-      status: string;
-      /**
-       * Test End
-       * Format: date
-       */
-      test_end: string;
-      /**
-       * Test Start
-       * Format: date
-       */
-      test_start: string;
-      /**
-       * Train End
-       * Format: date
-       */
-      train_end: string;
-      /**
-       * Train Start
-       * Format: date
-       */
-      train_start: string;
-      /**
-       * Val End
-       * Format: date
-       */
-      val_end: string;
-      /**
-       * Val Start
-       * Format: date
-       */
-      val_start: string;
-      /** Version */
-      version: string;
-    };
-    /** ModelSnapshot */
-    ModelSnapshot: {
-      /** Metrics */
-      metrics: components["schemas"]["TargetMetrics"][];
-      release: components["schemas"]["ModelReleaseSummary"];
-      /** Test Season */
-      test_season: string | null;
-    };
-    /** Overview */
-    Overview: {
-      /** Datasets */
-      datasets: components["schemas"]["DatasetStatus"][];
-      /**
-       * Generated At
-       * Format: date-time
-       */
-      generated_at: string;
-      leaders: components["schemas"]["Leaders"] | null;
-      model: components["schemas"]["ModelSnapshot"] | null;
-      /** Recent */
-      recent: components["schemas"]["GameSummary"][];
-      standouts: components["schemas"]["Standouts"];
-      /**
-       * Today
-       * Format: date
-       */
-      today: string;
-      /** Upcoming */
-      upcoming: components["schemas"]["GameSummary"][];
-    };
-    /** Page[DirectoryPlayer] */
-    Page_DirectoryPlayer_: {
-      /** Items */
-      items: components["schemas"]["DirectoryPlayer"][];
-      /** Limit */
-      limit: number;
-      meta: components["schemas"]["Meta"];
-      /** Offset */
-      offset: number;
-      /** Total */
-      total: number;
-    };
-    /** Page[GameSummary] */
-    Page_GameSummary_: {
-      /** Items */
-      items: components["schemas"]["GameSummary"][];
-      /** Limit */
-      limit: number;
-      meta: components["schemas"]["Meta"];
-      /** Offset */
-      offset: number;
-      /** Total */
-      total: number;
-    };
-    /** Page[PlayerGameLine] */
-    Page_PlayerGameLine_: {
-      /** Items */
-      items: components["schemas"]["PlayerGameLine"][];
-      /** Limit */
-      limit: number;
-      meta: components["schemas"]["Meta"];
-      /** Offset */
-      offset: number;
-      /** Total */
-      total: number;
-    };
-    /** PerGame */
-    PerGame: {
-      /** Ast */
-      ast: number | null;
-      /** Blk */
-      blk: number | null;
-      /** Fg3M */
-      fg3m: number | null;
-      /** Min */
-      min: number | null;
-      /** Pts */
-      pts: number | null;
-      /** Reb */
-      reb: number | null;
-      /** Stl */
-      stl: number | null;
-      /** Tov */
-      tov: number | null;
-    };
-    /** Performance */
-    Performance: {
-      box: components["schemas"]["BoxStats"];
-      /** Double Double */
-      double_double: boolean;
-      /** Full Name */
-      full_name: string;
-      /**
-       * Game Date
-       * Format: date
-       */
-      game_date: string;
-      /** Game Id */
-      game_id: string;
-      /** Game Score */
-      game_score: number;
-      /** Is Home */
-      is_home: boolean;
-      /** Minutes */
-      minutes: number;
-      opponent: components["schemas"]["TeamRef"];
-      /** Player Id */
-      player_id: number;
-      /** Result */
-      result: ("W" | "L") | null;
-      shooting: components["schemas"]["Shooting"];
-      team: components["schemas"]["TeamRef"];
-    };
-    /** PlayerGameLine */
-    PlayerGameLine: {
-      box: components["schemas"]["BoxStats"];
-      /** Double Double */
-      double_double: boolean;
-      /**
-       * Game Date
-       * Format: date
-       */
-      game_date: string;
-      /** Game Id */
-      game_id: string;
-      /** Is Home */
-      is_home: boolean;
-      /** Minutes */
-      minutes: number;
-      opponent: components["schemas"]["TeamRef"];
-      /** Opponent Score */
-      opponent_score: number | null;
-      /** Result */
-      result: ("W" | "L") | null;
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"];
-      shooting: components["schemas"]["Shooting"];
-      /** Team Abbreviation */
-      team_abbreviation: string;
-      /** Team Score */
-      team_score: number | null;
-    };
-    /** PlayerIdentity */
-    PlayerIdentity: {
-      /** Birthdate */
-      birthdate: string | null;
-      /** First Name */
-      first_name: string | null;
-      /** From Year */
-      from_year: number | null;
-      /** Full Name */
-      full_name: string;
-      /** Height Inches */
-      height_inches: number | null;
-      /** Id */
-      id: number;
-      /** Is Active */
-      is_active: boolean;
-      /** Last Name */
-      last_name: string | null;
-      /** Position */
-      position: string | null;
-      team: components["schemas"]["TeamRef"] | null;
-      /** To Year */
-      to_year: number | null;
-      /** Weight Lbs */
-      weight_lbs: number | null;
-    };
-    /** PlayerProfile */
-    PlayerProfile: {
-      current_season: components["schemas"]["SeasonLine"] | null;
-      /** Last Games */
-      last_games: components["schemas"]["PlayerGameLine"][];
-      meta: components["schemas"]["Meta"];
-      player: components["schemas"]["PlayerIdentity"];
-    };
-    /** PlayerSearchResult */
-    PlayerSearchResult: {
-      /** Full Name */
-      full_name: string;
-      /** Id */
-      id: number;
-      /** Is Active */
-      is_active: boolean;
-      /** Position */
-      position: string | null;
-      /** Team Abbreviation */
-      team_abbreviation: string | null;
-      /** Team Id */
-      team_id?: number | null;
-      /** Team Primary Color */
-      team_primary_color?: string | null;
-    };
-    /** PlayerSeasonStats */
-    PlayerSeasonStats: {
-      meta: components["schemas"]["Meta"];
-      /** Player Id */
-      player_id: number;
-      season_type: components["schemas"]["SeasonType"];
-      /** Seasons */
-      seasons: components["schemas"]["SeasonLine"][];
-      /** Splits */
-      splits: components["schemas"]["Split"][];
-      /** Splits Season */
-      splits_season: string | null;
-    };
-    /** PlayerSummary */
-    PlayerSummary: {
-      /** From Year */
-      from_year: number | null;
-      /** Full Name */
-      full_name: string;
-      /** Id */
-      id: number;
-      /** Is Active */
-      is_active: boolean;
-      /** Position */
-      position: string | null;
-      team: components["schemas"]["TeamRef"] | null;
-      /** To Year */
-      to_year: number | null;
-    };
-    /** PlayerTrends */
-    PlayerTrends: {
-      /** Average */
-      average: number | null;
-      /** Games Played */
-      games_played: number;
-      meta: components["schemas"]["Meta"];
-      /** Player Id */
-      player_id: number;
-      /** Points */
-      points: components["schemas"]["TrendPoint"][];
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"] | null;
-      /**
-       * Stat
-       * @enum {string}
-       */
-      stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
-    };
-    /** PredictedValue */
-    PredictedValue: {
-      /** Interval Level */
-      interval_level: number;
-      /** Lower */
-      lower: number;
-      /** Point */
-      point: number;
-      /**
-       * Stat
-       * @enum {string}
-       */
-      stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
-      /** Upper */
-      upper: number;
-    };
-    /** Prediction */
-    Prediction: {
-      /** Actuals */
-      actuals: {
-        [key: string]: number;
-      } | null;
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string;
-      /**
-       * Data Cutoff At
-       * Format: date-time
-       */
-      data_cutoff_at: string;
-      /** Double Double Probability */
-      double_double_probability: number | null;
-      /** Explanation */
-      explanation: {
-        [key: string]: unknown;
-      } | null;
-      /** Feature Schema Version */
-      feature_schema_version: string;
-      /**
-       * Freshness
-       * @enum {string}
-       */
-      freshness: "current" | "stale" | "invalid" | "superseded" | "final_pregame";
-      /** Freshness Reason */
-      freshness_reason: string | null;
-      /** Game Id */
-      game_id: string;
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Kind
-       * @enum {string}
-       */
-      kind: "pregame" | "backtest";
-      /** Player Id */
-      player_id: number;
-      /** Release Version */
-      release_version: string;
-      /**
-       * Status
-       * @enum {string}
-       */
-      status: "ok" | "insufficient_data" | "model_unavailable";
-      /** Supersedes Prediction Id */
-      supersedes_prediction_id: string | null;
-      /** Values */
-      values: components["schemas"]["PredictedValue"][];
-    };
-    /**
-     * PredictionExplanation
-     * @description What the model received. These are inputs, not attributions of the model's reasoning.
-     */
-    PredictionExplanation: {
-      /** Context */
-      context: {
-        [key: string]: unknown;
-      };
-      /** Features */
-      features: {
-        [key: string]: number | null;
-      };
-      /** Inputs */
-      inputs: {
-        [key: string]: unknown;
-      };
-      /** Method */
-      method: string;
-      /**
-       * Prediction Id
-       * Format: uuid
-       */
-      prediction_id: string;
-    };
-    /** PredictionRequest */
-    PredictionRequest: {
-      /** Game Id */
-      game_id: string;
-      /** Player Id */
-      player_id: number;
-    };
-    /** Readiness */
-    Readiness: {
-      /** Checks */
-      checks: {
-        [key: string]: string;
-      };
-      /**
-       * Status
-       * @enum {string}
-       */
-      status: "ready" | "not_ready";
-    };
-    /** Record */
-    Record: {
-      /** Losses */
-      losses: number;
-      /** Wins */
-      wins: number;
-    };
-    /** SeasonAverages */
-    SeasonAverages: {
-      /** Ast */
-      ast: number | null;
-      /** Blk */
-      blk: number | null;
-      /** Fg3M */
-      fg3m: number | null;
-      /** Fg Pct */
-      fg_pct: number | null;
-      /** Fg Pct Status */
-      fg_pct_status: string | null;
-      /** Games Played */
-      games_played: number;
-      /** Min */
-      min: number | null;
-      /** Pts */
-      pts: number | null;
-      /** Reb */
-      reb: number | null;
-      /** Season */
-      season: string;
-      /** Stl */
-      stl: number | null;
-    };
-    /** SeasonCoverage */
-    SeasonCoverage: {
-      /** Final Games */
-      final_games: number;
-      /** Player Lines */
-      player_lines: number;
-      /** Remaining Games */
-      remaining_games: number;
-      /** Season */
-      season: string;
-    };
-    /** SeasonLine */
-    SeasonLine: {
-      /** Double Doubles */
-      double_doubles: number;
-      /** Efg Pct */
-      efg_pct: number | null;
-      /** Games Played */
-      games_played: number;
-      per_game: components["schemas"]["PerGame"];
-      /** Pts Consistency */
-      pts_consistency: number | null;
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"];
-      shooting: components["schemas"]["Shooting"];
-      totals: components["schemas"]["Totals"];
-      /** Ts Pct */
-      ts_pct: number | null;
-    };
-    /**
-     * SeasonType
-     * @enum {string}
-     */
-    SeasonType: "regular" | "playin" | "playoffs";
-    /** Shooting */
-    Shooting: {
-      /** Fg3 Pct */
-      fg3_pct: number | null;
-      /** Fg3 Pct Status */
-      fg3_pct_status: string | null;
-      /** Fg Pct */
-      fg_pct: number | null;
-      /** Fg Pct Status */
-      fg_pct_status: string | null;
-      /** Ft Pct */
-      ft_pct: number | null;
-      /** Ft Pct Status */
-      ft_pct_status: string | null;
-    };
-    /** Split */
-    Split: {
-      /**
-       * Key
-       * @enum {string}
-       */
-      key: "home" | "away" | "rest_0" | "rest_1" | "rest_2_plus";
-      /** Label */
-      label: string;
-      summary: components["schemas"]["StatSummary"];
-    };
-    /** Standouts */
-    Standouts: {
-      /** Criterion */
-      criterion: string;
-      meta: components["schemas"]["Meta"];
-      /** Performances */
-      performances: components["schemas"]["Performance"][];
-      /** Window End */
-      window_end: string | null;
-      /** Window Start */
-      window_start: string | null;
-    };
-    /** StatSummary */
-    StatSummary: {
-      /** Double Doubles */
-      double_doubles: number;
-      /** Efg Pct */
-      efg_pct: number | null;
-      /** Games Played */
-      games_played: number;
-      per_game: components["schemas"]["PerGame"];
-      /** Pts Consistency */
-      pts_consistency: number | null;
-      shooting: components["schemas"]["Shooting"];
-      totals: components["schemas"]["Totals"];
-      /** Ts Pct */
-      ts_pct: number | null;
-    };
-    /** TargetMetrics */
-    TargetMetrics: {
-      /** Algorithm */
-      algorithm: string;
-      /** Baseline Mae */
-      baseline_mae: number | null;
-      /** Brier */
-      brier: number | null;
-      /** Interval Coverage */
-      interval_coverage: number | null;
-      /** Log Loss */
-      log_loss: number | null;
-      /** Mae */
-      mae: number | null;
-      /** N */
-      n: number;
-      /** R2 */
-      r2: number | null;
-      /** Rmse */
-      rmse: number | null;
-      /** Target */
-      target: string;
-    };
-    /** Team */
-    Team: {
-      /** Abbreviation */
-      abbreviation: string;
-      /** City */
-      city: string;
-      /** Conference */
-      conference: string | null;
-      /** Division */
-      division: string | null;
-      /** Id */
-      id: number;
-      /** Name */
-      name: string;
-      /** Primary Color */
-      primary_color?: string | null;
-      /** Secondary Color */
-      secondary_color?: string | null;
-    };
-    /** TeamDetail */
-    TeamDetail: {
-      meta: components["schemas"]["Meta"];
-      record: components["schemas"]["Record"];
-      /** Roster */
-      roster: components["schemas"]["PlayerSummary"][];
-      /** Season */
-      season: string;
-      team: components["schemas"]["Team"];
-    };
-    /** TeamHistory */
-    TeamHistory: {
-      meta: components["schemas"]["Meta"];
-      /** Seasons */
-      seasons: components["schemas"]["HistoricSeason"][];
-      team: components["schemas"]["TeamRef"];
-    };
-    /** TeamRef */
-    TeamRef: {
-      /** Abbreviation */
-      abbreviation: string;
-      /** City */
-      city: string;
-      /** Id */
-      id: number;
-      /** Name */
-      name: string;
-      /** Primary Color */
-      primary_color?: string | null;
-      /** Secondary Color */
-      secondary_color?: string | null;
-    };
-    /** TeamSeasonStats */
-    TeamSeasonStats: {
-      /** Defensive Rating */
-      defensive_rating: number | null;
-      /** Games */
-      games: number;
-      meta: components["schemas"]["Meta"];
-      /** Net Rating */
-      net_rating: number | null;
-      /** Offensive Rating */
-      offensive_rating: number | null;
-      /** Opp Pts Per Game */
-      opp_pts_per_game: number | null;
-      /** Pace */
-      pace: number | null;
-      /** Possessions Per Game */
-      possessions_per_game: number | null;
-      /** Pts Per Game */
-      pts_per_game: number | null;
-      record: components["schemas"]["Record"];
-      /** Season */
-      season: string;
-      season_type: components["schemas"]["SeasonType"];
-      shooting: components["schemas"]["Shooting"];
-      /** Team Id */
-      team_id: number;
-    };
-    /** Totals */
-    Totals: {
-      /** Ast */
-      ast: number;
-      /** Blk */
-      blk: number;
-      /** Dreb */
-      dreb: number;
-      /** Fg3A */
-      fg3a: number;
-      /** Fg3M */
-      fg3m: number;
-      /** Fga */
-      fga: number;
-      /** Fgm */
-      fgm: number;
-      /** Fta */
-      fta: number;
-      /** Ftm */
-      ftm: number;
-      /** Min */
-      min: number;
-      /** Oreb */
-      oreb: number;
-      /** Pf */
-      pf: number;
-      /** Pts */
-      pts: number;
-      /** Reb */
-      reb: number;
-      /** Stl */
-      stl: number;
-      /** Tov */
-      tov: number;
-    };
-    /** TrendPoint */
-    TrendPoint: {
-      /**
-       * Game Date
-       * Format: date
-       */
-      game_date: string;
-      /** Game Id */
-      game_id: string;
-      /** Is Home */
-      is_home: boolean;
-      /** Opponent Abbreviation */
-      opponent_abbreviation: string;
-      /** Rolling 10 */
-      rolling_10: number | null;
-      /** Rolling 3 */
-      rolling_3: number | null;
-      /** Rolling 5 */
-      rolling_5: number | null;
-      /** Value */
-      value: number;
-    };
-    /** Unavailable */
-    Unavailable: {
-      /** Code */
-      code: string;
-      /** Message */
-      message: string;
-    };
-    /**
-     * UpcomingForecast
-     * @description One scheduled game with its stored forecast, or the reason there is none.
-     */
-    UpcomingForecast: {
-      game: components["schemas"]["GameSummary"];
-      prediction: components["schemas"]["Prediction"] | null;
-      unavailable: components["schemas"]["Unavailable"] | null;
-    };
-    /** UpcomingRequest */
-    UpcomingRequest: {
-      /**
-       * Days
-       * @default 14
-       */
-      days: number;
-      /** Player Id */
-      player_id: number;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  data_status_api_v1_data_status_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    data_status_api_v1_data_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataStatus"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    list_games_api_v1_games_get: {
+        parameters: {
+            query?: {
+                date_from?: string | null;
+                date_to?: string | null;
+                team_id?: number | null;
+                status?: components["schemas"]["GameStatus"] | null;
+                season_type?: components["schemas"]["SeasonType"] | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["DataStatus"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_GameSummary_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  list_games_api_v1_games_get: {
-    parameters: {
-      query?: {
-        date_from?: string | null;
-        date_to?: string | null;
-        team_id?: number | null;
-        status?: components["schemas"]["GameStatus"] | null;
-        season_type?: components["schemas"]["SeasonType"] | null;
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    upcoming_games_api_v1_games_upcoming_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                player_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameSummary"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_game_api_v1_games__game_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                game_id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Page_GameSummary_"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  upcoming_games_api_v1_games_upcoming_get: {
-    parameters: {
-      query?: {
-        days?: number;
-        player_id?: number | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    get_boxscore_api_v1_games__game_id__boxscore_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoxScore"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    health_api_v1_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["GameSummary"][];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_game_api_v1_games__game_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        game_id: string;
-      };
-      cookie?: never;
+    get_leaders_api_v1_leaders_get: {
+        parameters: {
+            query?: {
+                stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+                season?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Leaders"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    list_models_api_v1_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["GameDetail"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelReleaseSummary"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_boxscore_api_v1_games__game_id__boxscore_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        game_id: string;
-      };
-      cookie?: never;
+    get_model_api_v1_models__version__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelReleaseDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_live_accuracy_api_v1_models__version__live_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["BoxScore"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveAccuracy"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  health_api_v1_health_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    get_overview_api_v1_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    list_players_api_v1_players_get: {
+        parameters: {
+            query?: {
+                team_id?: number | null;
+                position?: string | null;
+                active?: boolean | null;
+                season?: string | null;
+                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Health"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_DirectoryPlayer_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_leaders_api_v1_leaders_get: {
-    parameters: {
-      query?: {
-        stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
-        season?: string | null;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    search_players_api_v1_players_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerSearchResult"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_player_api_v1_players__player_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Leaders"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerProfile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  list_models_api_v1_models_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    get_player_games_api_v1_players__player_id__games_get: {
+        parameters: {
+            query?: {
+                season?: string | null;
+                season_type?: components["schemas"]["SeasonType"] | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                sort?: "game_date" | "-game_date" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "minutes" | "-minutes";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_PlayerGameLine_"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_matchup_api_v1_players__player_id__matchups__team_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                player_id: number;
+                team_id: number;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["ModelReleaseSummary"][];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchupHistory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_model_api_v1_models__version__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        version: string;
-      };
-      cookie?: never;
+    get_player_photo_api_v1_players__player_id__photo_get: {
+        parameters: {
+            query?: {
+                size?: "small" | "large";
+            };
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The player's photo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_player_stats_api_v1_players__player_id__stats_get: {
+        parameters: {
+            query?: {
+                season_type?: components["schemas"]["SeasonType"];
+                season?: string | null;
+            };
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["ModelReleaseDetail"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerSeasonStats"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_live_accuracy_api_v1_models__version__live_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        version: string;
-      };
-      cookie?: never;
+    get_player_trends_api_v1_players__player_id__trends_get: {
+        parameters: {
+            query?: {
+                stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+                season?: string | null;
+                season_type?: components["schemas"]["SeasonType"] | null;
+            };
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerTrends"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    list_predictions_api_v1_predictions_get: {
+        parameters: {
+            query: {
+                player_id: number;
+                game_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["LiveAccuracy"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prediction"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_overview_api_v1_overview_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    create_prediction_api_v1_predictions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PredictionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prediction"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    game_forecasts__api_v1_predictions_games_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Overview"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GameForecastRequest"];
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameForecastResult"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  list_players_api_v1_players_get: {
-    parameters: {
-      query?: {
-        team_id?: number | null;
-        position?: string | null;
-        active?: boolean | null;
-        season?: string | null;
-        sort?:
-          | "full_name"
-          | "-full_name"
-          | "last_name"
-          | "-last_name"
-          | "to_year"
-          | "-to_year"
-          | "games"
-          | "-games"
-          | "pts"
-          | "-pts"
-          | "reb"
-          | "-reb"
-          | "ast"
-          | "-ast"
-          | "fg3m"
-          | "-fg3m"
-          | "stl"
-          | "-stl"
-          | "blk"
-          | "-blk"
-          | "min"
-          | "-min";
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    upcoming_forecasts_api_v1_predictions_upcoming_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpcomingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpcomingForecast"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_prediction_api_v1_predictions__prediction_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prediction_id: string;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Page_DirectoryPlayer_"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Prediction"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  search_players_api_v1_players_search_get: {
-    parameters: {
-      query: {
-        q: string;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    get_explanation_api_v1_predictions__prediction_id__explanation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prediction_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionExplanation"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    readiness_api_v1_readiness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["PlayerSearchResult"][];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_player_api_v1_players__player_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        player_id: number;
-      };
-      cookie?: never;
+    get_standouts_api_v1_standouts_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Standouts"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    list_teams_api_v1_teams_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["PlayerProfile"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_player_games_api_v1_players__player_id__games_get: {
-    parameters: {
-      query?: {
-        season?: string | null;
-        season_type?: components["schemas"]["SeasonType"] | null;
-        date_from?: string | null;
-        date_to?: string | null;
-        sort?:
-          | "game_date"
-          | "-game_date"
-          | "pts"
-          | "-pts"
-          | "reb"
-          | "-reb"
-          | "ast"
-          | "-ast"
-          | "fg3m"
-          | "-fg3m"
-          | "stl"
-          | "-stl"
-          | "blk"
-          | "-blk"
-          | "minutes"
-          | "-minutes";
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path: {
-        player_id: number;
-      };
-      cookie?: never;
+    get_team_api_v1_teams__team_id__get: {
+        parameters: {
+            query?: {
+                season?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_team_history_api_v1_teams__team_id__history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["Page_PlayerGameLine_"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamHistory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
     };
-  };
-  get_matchup_api_v1_players__player_id__matchups__team_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        player_id: number;
-        team_id: number;
-      };
-      cookie?: never;
+    get_team_stats_api_v1_teams__team_id__stats_get: {
+        parameters: {
+            query?: {
+                season?: string | null;
+                season_type?: components["schemas"]["SeasonType"];
+            };
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamSeasonStats"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MatchupHistory"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_player_photo_api_v1_players__player_id__photo_get: {
-    parameters: {
-      query?: {
-        size?: "small" | "large";
-      };
-      header?: never;
-      path: {
-        player_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description The player's photo */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "image/png": unknown;
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_player_stats_api_v1_players__player_id__stats_get: {
-    parameters: {
-      query?: {
-        season_type?: components["schemas"]["SeasonType"];
-        season?: string | null;
-      };
-      header?: never;
-      path: {
-        player_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PlayerSeasonStats"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_player_trends_api_v1_players__player_id__trends_get: {
-    parameters: {
-      query?: {
-        stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
-        season?: string | null;
-        season_type?: components["schemas"]["SeasonType"] | null;
-      };
-      header?: never;
-      path: {
-        player_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PlayerTrends"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  list_predictions_api_v1_predictions_get: {
-    parameters: {
-      query: {
-        player_id: number;
-        game_id?: string | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Prediction"][];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  create_prediction_api_v1_predictions_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PredictionRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Prediction"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  upcoming_forecasts_api_v1_predictions_upcoming_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpcomingRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["UpcomingForecast"][];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_prediction_api_v1_predictions__prediction_id__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        prediction_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Prediction"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_explanation_api_v1_predictions__prediction_id__explanation_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        prediction_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PredictionExplanation"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  readiness_api_v1_readiness_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Readiness"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_standouts_api_v1_standouts_get: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Standouts"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  list_teams_api_v1_teams_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Team"][];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_team_api_v1_teams__team_id__get: {
-    parameters: {
-      query?: {
-        season?: string | null;
-      };
-      header?: never;
-      path: {
-        team_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TeamDetail"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_team_history_api_v1_teams__team_id__history_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        team_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TeamHistory"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  get_team_stats_api_v1_teams__team_id__stats_get: {
-    parameters: {
-      query?: {
-        season?: string | null;
-        season_type?: components["schemas"]["SeasonType"];
-      };
-      header?: never;
-      path: {
-        team_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TeamSeasonStats"];
-        };
-      };
-      /** @description Bad Request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Service Unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
 }

@@ -700,6 +700,128 @@
         "title": "GameDetail",
         "type": "object"
       },
+      "GameForecast": {
+        "description": "Both teams' expected points and the home side's win chance before tip-off.",
+        "properties": {
+          "away": {
+            "$ref": "#/components/schemas/TeamScore"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_cutoff_at": {
+            "format": "date-time",
+            "title": "Data Cutoff At",
+            "type": "string"
+          },
+          "game_id": {
+            "title": "Game Id",
+            "type": "string"
+          },
+          "home": {
+            "$ref": "#/components/schemas/TeamScore"
+          },
+          "home_win_probability": {
+            "title": "Home Win Probability",
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "interval_level": {
+            "title": "Interval Level",
+            "type": "number"
+          },
+          "release_version": {
+            "title": "Release Version",
+            "type": "string"
+          },
+          "supersedes_prediction_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Prediction Id"
+          }
+        },
+        "required": [
+          "id",
+          "game_id",
+          "release_version",
+          "home",
+          "away",
+          "home_win_probability",
+          "interval_level",
+          "created_at",
+          "data_cutoff_at",
+          "supersedes_prediction_id"
+        ],
+        "title": "GameForecast",
+        "type": "object"
+      },
+      "GameForecastRequest": {
+        "properties": {
+          "game_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 30,
+            "minItems": 1,
+            "title": "Game Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "game_ids"
+        ],
+        "title": "GameForecastRequest",
+        "type": "object"
+      },
+      "GameForecastResult": {
+        "description": "One requested game with its stored score forecast, or the reason there is none.",
+        "properties": {
+          "forecast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GameForecast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "game_id": {
+            "title": "Game Id",
+            "type": "string"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Unavailable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "game_id",
+          "forecast",
+          "unavailable"
+        ],
+        "title": "GameForecastResult",
+        "type": "object"
+      },
       "GameStatus": {
         "enum": [
           "scheduled",
@@ -3581,6 +3703,34 @@
         "title": "TeamRef",
         "type": "object"
       },
+      "TeamScore": {
+        "properties": {
+          "lower": {
+            "title": "Lower",
+            "type": "number"
+          },
+          "points": {
+            "title": "Points",
+            "type": "number"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          },
+          "upper": {
+            "title": "Upper",
+            "type": "number"
+          }
+        },
+        "required": [
+          "team_id",
+          "points",
+          "lower",
+          "upper"
+        ],
+        "title": "TeamScore",
+        "type": "object"
+      },
       "TeamSeasonStats": {
         "properties": {
           "defensive_rating": {
@@ -6171,6 +6321,92 @@
           }
         },
         "summary": "Create Prediction",
+        "tags": [
+          "predictions"
+        ]
+      }
+    },
+    "/api/v1/predictions/games": {
+      "post": {
+        "description": "Predicted final score and home win chance for scheduled games (stored, reused while the\ninputs are unchanged); a game that can't be forecast says why.",
+        "operationId": "game_forecasts__api_v1_predictions_games_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameForecastRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GameForecastResult"
+                  },
+                  "title": "Response Game Forecasts  Api V1 Predictions Games Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Game Forecasts ",
         "tags": [
           "predictions"
         ]
