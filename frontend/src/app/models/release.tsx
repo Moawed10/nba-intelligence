@@ -42,10 +42,11 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <span
       className={cn(
-        "rounded-full px-2.5 py-0.5 text-footnote font-medium",
-        active ? "bg-positive/15 text-positive" : "bg-muted text-muted-foreground",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-footnote font-medium",
+        active ? "bg-muted text-foreground" : "bg-muted text-muted-foreground",
       )}
     >
+      {active && <span aria-hidden className="size-1.5 rounded-full bg-positive" />}
       {active
         ? "Serving predictions"
         : status === "candidate"

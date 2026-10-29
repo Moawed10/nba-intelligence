@@ -5,16 +5,16 @@ import { expectAccessible } from "./helpers";
 // Release 2099.11.10-1 in tests/e2e/stub-api.mjs: pts (XGBoost), reb (Ridge) and a double-double classifier.
 
 test.describe("models", () => {
-  test("shows the release, its held-out accuracy and that it is not serving", async ({ page }) => {
+  test("shows the release, its held-out accuracy and that it is serving", async ({ page }) => {
     await page.goto("/models");
     const release = page.getByRole("region", { name: "2099.11.10-1" });
-    await expect(release.getByText("Candidate · not serving predictions yet")).toBeVisible();
+    await expect(release.getByText("Serving predictions")).toBeVisible();
     await expect(release.getByText("Test · 2096-97")).toBeVisible();
     const accuracy = page.getByRole("region", { name: "Accuracy against the baseline" });
     await expect(accuracy.getByRole("row", { name: /Points XGBoost 4\.50 4\.70 4\.3%/ })).toBeVisible();
     await expect(accuracy.getByRole("row", { name: /Rebounds Ridge regression 1\.90 1\.95/ })).toBeVisible();
     await expect(page.getByRole("region", { name: "Live accuracy" })).toContainText(
-      "Starts when a release is activated",
+      "No scored predictions yet",
     );
   });
 

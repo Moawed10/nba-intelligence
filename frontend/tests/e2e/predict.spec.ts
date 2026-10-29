@@ -23,13 +23,24 @@ test.describe("predictions", () => {
     await expect(games.getByRole("link")).toHaveCount(2);
     await expect(games.getByRole("link", { name: /vs Bravo Bears/ })).toHaveAttribute("aria-current", "true");
     const forecast = page.getByRole("region", { name: "Forecast vs BBB" });
-    await expect(forecast.getByText("No model is serving predictions yet")).toBeVisible();
-    await expect(forecast.getByText(/2099\.11\.10-1, is a candidate/)).toBeVisible();
+    await forecast.getByRole("button", { name: "Make forecast" }).click();
+    await expect(
+      forecast.getByRole("img", { name: /^Points: predicted 24\.0, likely range 16\.0 to 32\.0/ }),
+    ).toBeVisible();
+    await expect(forecast.getByText("25%")).toBeVisible();
+    await expect(forecast.getByText(/Inputs: last 5 23\.0 · last 10 22\.0/)).toBeVisible();
     await expect(forecast.getByText("111.9")).toBeVisible();
 
     await games.getByRole("link", { name: /@ Bravo Bears/ }).click();
     await expect(page).toHaveURL(/game=0099000103/);
     await expect(page.getByRole("region", { name: "Forecast @ BBB" })).toBeVisible();
+  });
+
+  test("explains when a player has too few games for a forecast", async ({ page }) => {
+    await page.goto("/predict?player=1001");
+    const forecast = page.getByRole("region", { name: /^Forecast/ });
+    await forecast.getByRole("button", { name: "Make forecast" }).click();
+    await expect(forecast.getByText("Not enough recent games for a forecast")).toBeVisible();
   });
 
   test("explains players without games and unknown ids", async ({ page }) => {

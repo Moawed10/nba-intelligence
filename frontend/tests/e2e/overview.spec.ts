@@ -43,7 +43,7 @@ test.describe("overview", () => {
       page.getByRole("region", { name: "Standout performances" }).getByRole("listitem"),
     ).toHaveCount(3);
     const model = page.getByRole("region", { name: "Model accuracy" });
-    await expect(model.getByText("Candidate · not serving predictions yet")).toBeVisible();
+    await expect(model.getByText("Serving predictions")).toBeVisible();
     await expect(model.getByRole("row", { name: /Points 4\.50 4\.70 80%/ })).toBeVisible();
     await expect(model.getByRole("link", { name: "Full evaluation" })).toHaveAttribute("href", "/models");
     await expect(page.getByRole("region", { name: "Freshness" }).getByRole("listitem")).toHaveCount(3);

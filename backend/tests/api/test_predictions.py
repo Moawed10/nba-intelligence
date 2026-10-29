@@ -4,6 +4,7 @@ The release uses the 10-game rolling baseline for every statistic, so expected v
 computed by hand, and a prior-only classifier for the double-double probability.
 """
 
+import uuid
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
 
@@ -255,3 +256,18 @@ def test_activation_verifies_artifacts_and_retires_the_previous_release(league, 
     (tmp_path / "2099.11.10-1" / "reb.joblib").write_bytes(b"broken")
     with Session(league) as s, pytest.raises(ArtifactMismatch):
         inference.activate(s, "2099.11.10-1", tmp_path, NOW)
+
+
+def test_stored_snapshot_reproduces_the_stored_values_exactly(league, tmp_path, serving):
+    body = _post(serving).json()
+    with Session(league) as s:
+        row = s.get(Prediction, uuid.UUID(body["id"]))
+        snapshot = dict(row.feature_snapshot)
+        release = inference.active_release(s, tmp_path)
+    assert inference.snapshot_hash(snapshot) == row.feature_snapshot_sha256
+    values = {n: float("nan") if snapshot[n] is None else snapshot[n] for n in FEATURES}
+    features = pd.Series(values, dtype=object)
+    features["prior_games"], features["eligible"] = 6, True
+    again = inference.predict(release, features)
+    stored = {v["stat"]: (v["point"], v["lower"], v["upper"]) for v in body["values"]}
+    assert again.values == stored

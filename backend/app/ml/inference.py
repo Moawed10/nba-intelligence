@@ -121,8 +121,9 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
 
 
 def _value(x: Any) -> float | None:
+    """Full precision: JSON floats round-trip exactly, so a snapshot reproduces its input."""
     v = float(x)
-    return None if math.isnan(v) else round(v, 6)
+    return None if math.isnan(v) else v
 
 
 def snapshot_hash(snapshot: dict[str, float | None]) -> str:
@@ -178,7 +179,10 @@ def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
     if not bool(features["eligible"]):
         return Forecast(False, prior, snapshot, digest, {}, 0.0, None, {})
 
-    X = pd.DataFrame([features[list(FEATURES)].astype(float).to_numpy()], columns=list(FEATURES))
+    # The model reads the snapshot itself, so a stored snapshot always reproduces its prediction.
+    X = pd.DataFrame(
+        [[np.nan if snapshot[n] is None else snapshot[n] for n in FEATURES]], columns=list(FEATURES)
+    )
     minutes = np.maximum(0, release.regressors["min"].model.predict(X))
     values: dict[str, tuple[float, float, float]] = {}
     level = 0.0

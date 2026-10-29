@@ -240,7 +240,7 @@ const STANDOUTS = {
 };
 
 const RELEASE = {
-  version: "2099.11.10-1", status: "candidate", created_at: "2099-11-10T12:00:00Z", activated_at: null,
+  version: "2099.11.10-1", status: "active", created_at: "2099-11-10T12:00:00Z", activated_at: "2099-11-10T12:30:00Z",
   data_version: 1, feature_schema_version: "stub", git_sha: "0000000",
   train_start: "2090-10-01", train_end: "2095-06-30", val_start: "2095-10-01", val_end: "2096-06-30",
   test_start: "2096-10-01", test_end: "2097-06-30",
@@ -319,6 +319,28 @@ createServer((req, res) => {
     });
   }
   if (path.startsWith("/models/")) return error(res, 404, "model_not_found", "No such model version.");
+  // Predictions are stateless here: GET lists none, POST returns a fixed synthetic forecast.
+  if (path === "/predictions" && req.method === "GET") return send(res, 200, []);
+  if (path === "/predictions" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      const { player_id, game_id } = JSON.parse(raw || "{}");
+      if (player_id === 1001) {
+        return error(res, 422, "insufficient_data", "Forecasts need at least 5 games this season or last; this player has 2.");
+      }
+      const value = (stat, point, half) => ({ stat, point, lower: Math.max(0, point - half), upper: point + half, interval_level: 0.8 });
+      send(res, 201, {
+        id: "00000000-0000-4000-8000-000000000001", player_id, game_id, release_version: RELEASE.version,
+        kind: "pregame", status: "ok", created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
+        feature_schema_version: "stub", double_double_probability: 0.25, supersedes_prediction_id: null,
+        values: [value("pts", 24, 8), value("reb", 7, 3), value("ast", 5, 2.5), value("fg3m", 2, 1.5),
+          value("stl", 1, 1), value("blk", 0.5, 0.5), value("min", 33, 6)],
+        explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: {} },
+      });
+    });
+    return;
+  }
   if (path === "/players") {
     let items = PLAYERS;
     const season = q.get("season");

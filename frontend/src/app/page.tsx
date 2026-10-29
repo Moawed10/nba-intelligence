@@ -114,10 +114,11 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
         <span className="font-mono text-subhead">{model.release.version}</span>
         <span
           className={cn(
-            "rounded-full px-2 py-0.5 font-medium",
-            serving ? "bg-positive/15 text-positive" : "bg-muted text-muted-foreground",
+            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium",
+            serving ? "bg-muted text-foreground" : "bg-muted text-muted-foreground",
           )}
         >
+          {serving && <span aria-hidden className="size-1.5 rounded-full bg-positive" />}
           {serving ? "Serving predictions" : "Candidate · not serving predictions yet"}
         </span>
         <span className="text-muted-foreground">Scored on {model.test_season} games it never saw</span>
