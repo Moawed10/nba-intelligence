@@ -46,3 +46,5 @@ export type LiveAccuracy = Schemas["LiveAccuracy"];
 export type PredictionExplanation = Schemas["PredictionExplanation"];
 export type UpcomingForecast = Schemas["UpcomingForecast"];
 export type MatchupHistory = Schemas["MatchupHistory"];
+export type GameForecast = Schemas["GameForecast"];
+export type GameForecastResult = Schemas["GameForecastResult"];

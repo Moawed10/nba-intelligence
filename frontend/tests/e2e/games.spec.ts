@@ -23,6 +23,24 @@ test.describe("games", () => {
     await expect(schedule.getByRole("table")).toHaveCount(0);
   });
 
+  test("predicts the score of an upcoming game in plain language", async ({ page }) => {
+    await page.goto("/games?date=2099-11-10");
+    const schedule = page.getByRole("region", { name: "Games by date" });
+    await expect(schedule.getByRole("button", { name: /Bravo at Alpha/ })).toContainText("115");
+    const forecast = schedule.getByRole("region", { name: "Our prediction" });
+    await expect(forecast).toContainText("Ants favored by about 6");
+    await expect(forecast).toContainText("Bears 32%");
+    await expect(forecast).toContainText("Ants 68%");
+    await expect(forecast).toContainText("About 8 in 10 games finish inside these ranges");
+    await expectAccessible(page);
+  });
+
+  test("explains when an upcoming game has no prediction", async ({ page }) => {
+    await page.goto("/games?date=2099-11-12");
+    await expect(page.getByText("No score prediction for this game")).toBeVisible();
+    await expect(page.getByText(/need 10 earlier games/)).toBeVisible();
+  });
+
   test("ignores a malformed date", async ({ page }) => {
     await page.goto("/games?date=not-a-date");
     await expect(page.getByRole("region", { name: "Games by date" })).toBeVisible();

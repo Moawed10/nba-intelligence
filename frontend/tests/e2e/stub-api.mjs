@@ -363,6 +363,30 @@ createServer((req, res) => {
     };
   };
   const tooFew = { code: "insufficient_data", message: "Forecasts need at least 5 games this season or last; this player has 2." };
+  if (path === "/predictions/games" && req.method === "POST") {
+    let raw = "";
+    req.on("data", (chunk) => (raw += chunk));
+    req.on("end", () => {
+      const { game_ids = [] } = JSON.parse(raw || "{}");
+      send(res, 200, game_ids.map((id) => {
+        const g = GAMES.find((x) => x.id === id);
+        if (!g || g.id === "0099000103") {
+          return { game_id: id, forecast: null, unavailable: { code: "insufficient_data", message: "Score forecasts need 10 earlier games for each team; one team has 4." } };
+        }
+        const side = (team, points) => ({ team_id: team.id, points, lower: points - 15, upper: points + 15 });
+        return {
+          game_id: id, unavailable: null,
+          forecast: {
+            id: "00000000-0000-4000-8000-0000000000aa", game_id: id, release_version: "2099.11.01-1",
+            home: side(g.home.team, 114.6), away: side(g.away.team, 108.2), home_win_probability: 0.68,
+            interval_level: 0.8, created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
+            supersedes_prediction_id: null,
+          },
+        };
+      }));
+    });
+    return;
+  }
   if (path === "/predictions" && req.method === "GET") return send(res, 200, []);
   if ((path === "/predictions" || path === "/predictions/upcoming") && req.method === "POST") {
     let raw = "";

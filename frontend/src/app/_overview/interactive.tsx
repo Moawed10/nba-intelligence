@@ -11,11 +11,13 @@ import { TeamMark } from "@/components/brand/team-mark";
 import { CompareBar } from "@/components/data/compare-bar";
 import { SegmentedControl } from "@/components/data/segmented-control";
 import { Unavailable } from "@/components/data/unavailable";
-import { clientGet } from "@/lib/api/client";
+import { clientGet, clientPost } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
 import type {
   BoxScore,
   BoxScorePlayer,
+  GameForecast,
+  GameForecastResult,
   GamePage,
   GameSummary,
   Leaders,
@@ -44,10 +46,12 @@ const ROUND_BUTTON =
 
 function GameChip({
   game,
+  forecast,
   selected,
   onSelect,
 }: {
   game: GameSummary;
+  forecast: GameForecast | null;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -65,6 +69,12 @@ function GameChip({
             {entry.score}
           </span>
         )}
+        {!final && forecast && (
+          <span className="numeral text-headline text-muted-foreground">
+            <span className="sr-only">predicted </span>
+            {Math.round(forecast[side].points)}
+          </span>
+        )}
       </span>
     );
   };
@@ -74,7 +84,7 @@ function GameChip({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "flex w-40 shrink-0 snap-start flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-subhead transition-colors",
+        "relative flex w-40 shrink-0 snap-start flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-subhead transition-colors",
         selected ? "border-primary/70 bg-primary/10" : "border-border bg-card hover:border-foreground/25",
       )}
     >
@@ -112,7 +122,15 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
   );
 }
 
-function Matchup({ game, fullBox }: { game: GameSummary; fullBox?: boolean }) {
+function Matchup({
+  game,
+  fullBox,
+  forecast,
+}: {
+  game: GameSummary;
+  fullBox?: boolean;
+  forecast?: { result: GameForecastResult | undefined; pending: boolean; error: unknown };
+}) {
   const stats = useQuery({
     queryKey: ["matchup-stats", game.away.team.id, game.home.team.id, game.season],
     queryFn: ({ signal }) =>
@@ -151,6 +169,8 @@ function Matchup({ game, fullBox }: { game: GameSummary; fullBox?: boolean }) {
         </div>
         <TeamColumn game={game} side="home" />
       </div>
+
+      {game.status === "scheduled" && forecast && <ScoreForecast game={game} {...forecast} />}
 
       {stats.error ? (
         <Unavailable kind="error" title="Team statistics couldn't load">
@@ -226,6 +246,123 @@ function Matchup({ game, fullBox }: { game: GameSummary; fullBox?: boolean }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** The pregame score prediction in plain language: expected score, win chance and a typical range. */
+function ScoreForecast({
+  game,
+  result,
+  pending,
+  error,
+}: {
+  game: GameSummary;
+  result: GameForecastResult | undefined;
+  pending: boolean;
+  error: unknown;
+}) {
+  if (error) {
+    return (
+      <Unavailable kind="error" title="The score prediction couldn't load">
+        {describeError(error).message}
+      </Unavailable>
+    );
+  }
+  if (pending || !result) {
+    return (
+      <div aria-busy className="h-56 animate-pulse rounded-xl border border-border">
+        <span className="sr-only">Loading the score prediction</span>
+      </div>
+    );
+  }
+  if (!result.forecast) {
+    return (
+      <Unavailable kind="empty" title="No score prediction for this game">
+        {result.unavailable?.message}
+      </Unavailable>
+    );
+  }
+  const f = result.forecast;
+  const away = { team: game.away.team, ...f.away, chance: 1 - f.home_win_probability };
+  const home = { team: game.home.team, ...f.home, chance: f.home_win_probability };
+  const [favorite, underdog] = home.chance >= 0.5 ? [home, away] : [away, home];
+  const margin = Math.round(favorite.points - underdog.points);
+  const pct = (p: number) => `${Math.round(p * 100)}%`;
+  const headline =
+    favorite.chance < 0.55
+      ? "Close to a coin flip"
+      : `${favorite.team.name} favored${margin > 0 ? ` by about ${margin}` : ""}`;
+
+  return (
+    <section
+      aria-labelledby={`forecast-${game.id}`}
+      className="space-y-4 rounded-xl border border-border p-5"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id={`forecast-${game.id}`} className="kicker text-primary">
+          Our prediction
+        </h3>
+        <p className="text-footnote text-muted-foreground">Made before tip-off</p>
+      </div>
+      <p className="font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase">
+        {headline}
+      </p>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        {[away, home].map((side, i) => (
+          <div
+            key={side.team.id}
+            className={cn(
+              "flex min-w-0 items-center gap-3",
+              i === 1 && "order-3 flex-row-reverse text-right",
+            )}
+          >
+            <TeamMark team={side.team} size="md" />
+            <div className="min-w-0">
+              <p className="truncate text-subhead text-muted-foreground">{side.team.name}</p>
+              <p className="numeral text-[clamp(2.25rem,5vw,3rem)]">{Math.round(side.points)}</p>
+            </div>
+          </div>
+        ))}
+        <span aria-hidden className="order-2 text-title3 text-muted-foreground">
+          –
+        </span>
+      </div>
+      <div>
+        <div className="flex items-baseline justify-between gap-2 text-subhead font-medium tabular-nums">
+          <span>
+            {away.team.name} {pct(away.chance)}
+          </span>
+          <span className="text-footnote text-muted-foreground">Chance to win</span>
+          <span>
+            {home.team.name} {pct(home.chance)}
+          </span>
+        </div>
+        <div
+          role="img"
+          aria-label={`Chance to win: ${away.team.name} ${pct(away.chance)}, ${home.team.name} ${pct(home.chance)}`}
+          className="mt-2 flex h-2.5 gap-0.5"
+        >
+          <motion.span
+            className="h-full rounded-l-full"
+            style={{ background: away.team.primary_color ?? "var(--muted-foreground)" }}
+            initial={{ width: "50%" }}
+            animate={{ width: pct(away.chance) }}
+            transition={SPRING}
+          />
+          <span
+            className="h-full flex-1"
+            style={{ background: home.team.primary_color ?? "var(--primary)" }}
+          />
+        </div>
+      </div>
+      <p className="text-subhead text-muted-foreground">
+        Typical range: {away.team.name} {Math.round(away.lower)}–{Math.round(away.upper)}, {home.team.name}{" "}
+        {Math.round(home.lower)}–{Math.round(home.upper)}. About {Math.round(f.interval_level * 10)} in 10
+        games finish inside these ranges. The prediction looks at each team&apos;s last 10 games (points
+        scored and allowed, efficiency, pace), its record this season, days of rest and home court, and only
+        at games played before this one.
+      </p>
+    </section>
   );
 }
 
@@ -369,6 +506,14 @@ export function ScheduleBoard({
   });
   const list = games.data ?? [];
   const selected = list.find((g) => g.id === selectedId) ?? list[0] ?? null;
+  const upcoming = list.filter((g) => g.status === "scheduled").map((g) => g.id);
+  const forecasts = useQuery({
+    queryKey: ["game-forecasts", upcoming],
+    queryFn: () => clientPost<GameForecastResult[]>("/predictions/games", { game_ids: upcoming }),
+    enabled: upcoming.length > 0,
+    staleTime: 5 * 60_000,
+    select: (rows) => new Map(rows.map((r) => [r.game_id, r])),
+  });
 
   function move(days: number) {
     const next = shiftDate(date, days);
@@ -414,13 +559,30 @@ export function ScheduleBoard({
             <GameChip
               key={game.id}
               game={game}
+              forecast={forecasts.data?.get(game.id)?.forecast ?? null}
               selected={selected?.id === game.id}
               onSelect={() => setSelectedId(game.id)}
             />
           ))}
         </div>
       )}
-      {selected && <Matchup key={selected.id} game={selected} fullBox={fullBox} />}
+      {forecasts.data && forecasts.data.size > 0 && (
+        <p className="text-footnote text-muted-foreground">
+          Grey scores on upcoming games are our predictions. Pick a game to see who&apos;s favored and why.
+        </p>
+      )}
+      {selected && (
+        <Matchup
+          key={selected.id}
+          game={selected}
+          fullBox={fullBox}
+          forecast={{
+            result: forecasts.data?.get(selected.id),
+            pending: forecasts.isPending,
+            error: forecasts.error,
+          }}
+        />
+      )}
     </div>
   );
 }
