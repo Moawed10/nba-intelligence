@@ -82,11 +82,12 @@ export function DirectoryFilterBar({
           ))}
         </select>
       </div>
-      <div>
+      <div className="min-w-0">
         <span className="kicker mb-1.5 block" aria-hidden>
           Position
         </span>
         <SegmentedControl
+          className="max-w-full overflow-x-auto"
           label="Position"
           value={shown.position ?? "all"}
           onChange={(value) => update({ position: value === "all" ? undefined : value })}

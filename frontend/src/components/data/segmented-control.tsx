@@ -33,9 +33,13 @@ export function SegmentedControl<T extends string>({
     const last = segments.length - 1;
     const target =
       event.key === "ArrowRight" || event.key === "ArrowDown"
-        ? index === last ? 0 : index + 1
+        ? index === last
+          ? 0
+          : index + 1
         : event.key === "ArrowLeft" || event.key === "ArrowUp"
-          ? index === 0 ? last : index - 1
+          ? index === 0
+            ? last
+            : index - 1
           : event.key === "Home"
             ? 0
             : event.key === "End"
@@ -68,7 +72,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(segment.value)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              "relative min-h-9 rounded-full px-3.5 text-subhead transition-colors pointer-coarse:min-h-11",
+              "relative min-h-9 shrink-0 rounded-full px-3.5 text-subhead whitespace-nowrap transition-colors pointer-coarse:min-h-11",
               selected ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >

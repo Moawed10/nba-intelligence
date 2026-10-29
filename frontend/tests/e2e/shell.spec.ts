@@ -22,7 +22,9 @@ for (const route of ROUTES) {
     expect(response?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(route.title);
     await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page).toHaveTitle(route.path === "/" ? "NBA Intelligence" : `${route.title} · NBA Intelligence`);
+    await expect(page).toHaveTitle(
+      route.path === "/" ? "NBA Intelligence" : `${route.title} · NBA Intelligence`,
+    );
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 
     for (const theme of ["dark", "light"] as const) {
@@ -34,7 +36,9 @@ for (const route of ROUTES) {
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
         .analyze();
       const blocking = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
-      expect(blocking.map((v) => `${theme}: ${v.id} — ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
+      expect(blocking.map((v) => `${theme}: ${v.id} — ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual(
+        [],
+      );
     }
   });
 }
@@ -46,7 +50,10 @@ test("every primary destination is reachable from the navigation", async ({ page
     await nav.getByRole("link", { name: route.title, exact: true }).click();
     await expect(page).toHaveURL(route.path);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(route.title);
-    await expect(nav.getByRole("link", { name: route.title, exact: true })).toHaveAttribute("aria-current", "page");
+    await expect(nav.getByRole("link", { name: route.title, exact: true })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
   }
   if (isMobile) {
     for (const link of await nav.getByRole("link").all()) {
@@ -122,7 +129,7 @@ test.describe("reduced motion", () => {
 test("top bar keeps spare room so font differences between systems cannot overflow it", async ({ page }) => {
   await page.goto("/about");
   const slack = await page.locator("header > div").evaluate((row) => {
-    const children = [...row.children] as HTMLElement[];
+    const children = ([...row.children] as HTMLElement[]).filter((el) => el.getClientRects().length > 0);
     const used = children.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0);
     const style = getComputedStyle(row);
     const gaps = parseFloat(style.columnGap || "0") * (children.length - 1);
