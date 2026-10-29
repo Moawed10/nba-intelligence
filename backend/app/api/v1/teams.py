@@ -1,0 +1,36 @@
+from typing import Annotated
+
+from fastapi import APIRouter, Path, Query
+
+from app.api.deps import Ctx
+from app.models import SeasonType
+from app.schemas.resources import Team, TeamDetail, TeamSeasonStats
+from app.services import teams
+
+router = APIRouter(prefix="/teams", tags=["teams"])
+
+TeamId = Annotated[int, Path(ge=1, le=2_147_483_647)]
+SeasonLabel = Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}$")]
+
+
+@router.get("", response_model=list[Team])
+def list_teams(ctx: Ctx) -> list[Team]:
+    ctx.cache_for(3600)
+    return teams.list_teams(ctx)
+
+
+@router.get("/{team_id}", response_model=TeamDetail)
+def get_team(ctx: Ctx, team_id: TeamId, season: SeasonLabel = None) -> TeamDetail:
+    ctx.cache_for(300)
+    return teams.team_detail(ctx, team_id, season)
+
+
+@router.get("/{team_id}/stats", response_model=TeamSeasonStats)
+def get_team_stats(
+    ctx: Ctx,
+    team_id: TeamId,
+    season: SeasonLabel = None,
+    season_type: SeasonType = SeasonType.regular,
+) -> TeamSeasonStats:
+    ctx.cache_for(300)
+    return teams.team_stats(ctx, team_id, season, season_type)

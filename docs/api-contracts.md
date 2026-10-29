@@ -1,15 +1,17 @@
 # API Contracts
 
-FastAPI, versioned under `/api/v1`. OpenAPI is served at `/api/v1/openapi.json`, with interactive docs at `/api/v1/docs`. Frontend TypeScript types are generated from that schema with `openapi-typescript`, so the contract has one source of truth.
+FastAPI, versioned under `/api/v1`. OpenAPI is served at `/api/v1/openapi.json`, with interactive docs at `/api/v1/docs` (both can be switched off with `NBA_API_DOCS_ENABLED=false`). The schema is also committed as `backend/openapi.json` (`python -m app.cli openapi`), and frontend TypeScript types are generated from that file with `openapi-typescript`. Tests fail if either drifts, so the contract has one source of truth.
+
+**Implemented (Phase 4):** players, teams, games, health, readiness and data-status. Predictions, compare, models and overview arrive in Phases 7–11.
 
 ## Conventions
 
 - **Timestamps:** ISO 8601 with explicit offset (`2026-10-28T23:30:00Z`). Game dates (no time) are `YYYY-MM-DD`.
 - **Missing values** are `null` and accompanied by a status field, never `0`. Example: `"fg3_pct": null, "fg3_pct_status": "no_attempts"`.
-- **Pagination:** `limit` (default 25, max 100) and `cursor`, or `offset` for directory pages. List responses include `{ items, total, limit, next_cursor }`. Every list query is bounded.
+- **Pagination:** `limit` (default 25, max 100) and `offset`. List responses are `{ items, total, limit, offset, meta }`. Every list query is bounded. Offsets were chosen over cursors because every list is small (at most a few thousand rows) and needs page numbers.
 - **Sorting:** `sort=field` or `sort=-field`, validated against an allow-list per endpoint.
 - **Seasons** are accepted as labels (`2025-26`) and validated against the `seasons` table.
-- **Freshness:** responses built from NBA data include `meta.data_freshness = { last_successful_sync, data_version, is_stale }`. `is_stale` is true when the relevant job has not succeeded within its expected interval.
+- **Freshness:** responses built from NBA data include `meta.data_freshness = { dataset, status, last_successful_sync, data_version, is_stale }`. `is_stale` is true when the dataset's status is `stale` or `unavailable` ([data-synchronization.md](data-synchronization.md#freshness-tracking)). Freshness is recomputed at most every 30 seconds and is never cached with the payload.
 - **Request id:** every response carries an `X-Request-ID` header (generated if the client did not send one), which is also logged.
 
 ### Error envelope
@@ -28,7 +30,9 @@ FastAPI, versioned under `/api/v1`. OpenAPI is served at `/api/v1/openapi.json`,
 | HTTP | `code` examples | When |
 |---|---|---|
 | 400 | `invalid_parameter` | Semantically invalid input (e.g. `date_from > date_to`) |
-| 404 | `player_not_found`, `game_not_found`, `prediction_not_found` | Missing resource |
+| 404 | `player_not_found`, `team_not_found`, `game_not_found`, `prediction_not_found`, `not_found` | Missing resource or unknown route |
+| 405 | `method_not_allowed` | Wrong HTTP method |
+| 409 | `game_not_final` | Box score requested before the game is final |
 | 409 | `game_already_started` | Pregame prediction requested after tip-off |
 | 413 | `payload_too_large` | Body over 16 KB |
 | 422 | `validation_error` | Pydantic validation failure, with field-level `details` |
@@ -44,7 +48,7 @@ Module = file under `backend/app/api/v1/`. Response models live in `backend/app/
 | Method | Path | Module | Response model | Purpose | Cache |
 |---|---|---|---|---|---|
 | GET | `/players` | players.py | `Page[PlayerSummary]` | Directory; filters `team_id`, `position`, `active`, `season`; sort | 24 h identity · data_version |
-| GET | `/players/search?q=` | players.py | `list[PlayerSearchResult]` | Trigram fuzzy search, `q` 2–64 chars, `limit` ≤ 20 | 24 h · data_version |
+| GET | `/players/search?q=` | players.py | `list[PlayerSearchResult]` | Accent-insensitive trigram search (`search_normalize` = `lower(unaccent())`, word similarity ≥ 0.6 or substring), `q` 2–64 chars, `limit` ≤ 20. Ranked by word-prefix match, active players, similarity | 24 h · data_version |
 | GET | `/players/{player_id}` | players.py | `PlayerProfile` | Identity, current team, season summary, last 5 games | 15–60 min |
 | GET | `/players/{player_id}/stats` | players.py | `PlayerSeasonStats` | Per-season averages and totals, splits (home/away, rest) | 15–60 min |
 | GET | `/players/{player_id}/games` | players.py | `Page[PlayerGameLine]` | Game log; `season`, `date_from`, `date_to`, `limit` | Completed games: long-lived |
@@ -67,7 +71,7 @@ Module = file under `backend/app/api/v1/`. Response models live in `backend/app/
 | GET | `/models/evaluations` | models.py | `Page[EvaluationPoint]` | Actual-vs-predicted points and residuals; `target`, `release`, `season`, `limit` ≤ 5000 | Per release |
 | GET | `/overview` | overview.py | `Overview` | Featured players, recent standout lines, upcoming games, model summary in one call | 5 min · data_version |
 | GET | `/health` | system.py | `Health` | Liveness only, no dependencies | none |
-| GET | `/readiness` | system.py | `Readiness` | DB reachable, active model artifact loaded and hash-verified | none |
+| GET | `/readiness` | system.py | `Readiness` | DB reachable (503 if not). The model check reports `not_configured` until Phase 7 makes an active, hash-verified model required | none |
 | GET | `/data-status` | system.py | `DataStatus` | Last successful sync per job, seasons covered, row counts | 1 min |
 
 `/overview` is the one aggregate endpoint. The home page would otherwise make four requests.
@@ -156,3 +160,5 @@ Rules:
 | CORS | Disabled in production (same-origin through the Next.js proxy); `localhost:3000` in development |
 
 Rate limiting uses `slowapi` keyed by client IP behind the trusted proxy header. Inference runs in a bounded thread pool (default 2 workers), so concurrent predictions cannot exhaust CPU.
+
+**Status:** rate limits and the body-size limit are not implemented yet. Phase 4 exposes only `GET` endpoints; both land with `POST /predictions` (Phase 7) and are verified in Phase 13. CORS is implemented: off unless `NBA_CORS_ORIGINS` lists origins.

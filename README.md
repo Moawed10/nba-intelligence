@@ -4,8 +4,9 @@ Player performance prediction and analytics for the NBA. It forecasts a player's
 
 > **Status:** in development.
 > - Real box scores from 2018-19 through the current season are ingested, verified and kept in sync automatically.
-> - The frontend shell and design system are built.
-> - The API, ML models and prediction screens are next.
+> - A read-only API serves players, teams, games, box scores, trends and data freshness (docs at `/api/v1/docs`).
+> - The frontend shell, design system and player search are built.
+> - The ML models and prediction screens are next.
 >
 > Progress and verified results: [docs/implementation-status.md](docs/implementation-status.md) and [docs/test-report.md](docs/test-report.md).
 
@@ -50,10 +51,13 @@ cp .env.example .env
 # Keep data current (runs until stopped)
 .venv/bin/python -m app.cli sync-worker
 
+# API on http://localhost:8000 (interactive docs at /api/v1/docs)
+.venv/bin/uvicorn --factory app.main:build --port 8000
+
 # Frontend
 cd ../frontend
 npm install && cp .env.example .env.local
-npm run dev                                # http://localhost:3000
+npm run dev                                # http://localhost:3000, proxies /api/v1 to :8000
 ```
 
 ## Tests
@@ -61,6 +65,13 @@ npm run dev                                # http://localhost:3000
 ```bash
 cd backend && .venv/bin/pytest            # needs a local PostgreSQL; creates nba_intelligence_test
 cd frontend && npm run lint && npm run typecheck && npm test && npm run test:e2e
+```
+
+After changing an API model, regenerate the contract and frontend types (CI checks both):
+
+```bash
+cd backend && .venv/bin/python -m app.cli openapi > openapi.json
+cd ../frontend && npm run api:types
 ```
 
 Model accuracy results will be added here once they are produced and verified.

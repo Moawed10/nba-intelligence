@@ -65,7 +65,7 @@ Reconciliation rules, applied per row:
 
 ## Statistic definitions
 
-One implementation per derived statistic, in `backend/app/stats/`. API services and the ML feature pipeline both import from it, and consistency tests check both against independent fixtures.
+One implementation per derived statistic, in `backend/app/stats/` (implemented in Phase 4, tested in `tests/unit/test_stats.py`). API services and the ML feature pipeline both import from it, and consistency tests check both against independent fixtures.
 
 | Statistic | Definition |
 |---|---|
@@ -78,7 +78,11 @@ One implementation per derived statistic, in `backend/app/stats/`. API services 
 | Back-to-back | The team played on the previous calendar day |
 | Home/away | From `games.home_team_id` vs. the player's team for that game |
 | Possessions | FGA − OREB + TOV + 0.44·FTA (team) |
+| Offensive rating | Team points ÷ possessions × 100 |
 | Defensive rating | Opponent points ÷ possessions × 100 |
+| Net rating | Offensive rating − defensive rating |
+| Pace | 48 × possessions ÷ (team minutes ÷ 5) |
+| Rest splits | Rest days 0 (back-to-back), 1, and 2+ |
 | Consistency | Coefficient of variation (std ÷ mean) of points over the window |
 | Double-double | ≥ 10 in at least two of PTS, REB, AST, STL, BLK |
 

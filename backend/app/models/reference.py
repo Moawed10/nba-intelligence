@@ -14,6 +14,8 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
+    func,
+    literal_column,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -63,10 +65,10 @@ class Player(Provenance, Base):
     __tablename__ = "players"
     __table_args__ = (
         Index(
-            "ix_players_full_name_trgm",
-            "full_name",
+            "ix_players_search_name_trgm",
+            func.search_normalize(literal_column("full_name")).label("search_name"),
             postgresql_using="gin",
-            postgresql_ops={"full_name": "gin_trgm_ops"},
+            postgresql_ops={"search_name": "gin_trgm_ops"},
         ),
         Index("ix_players_current_team_id", "current_team_id"),
     )

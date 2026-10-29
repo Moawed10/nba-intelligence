@@ -1,0 +1,398 @@
+from collections import defaultdict
+from dataclasses import dataclass
+from datetime import date
+from typing import Literal
+
+from sqlalchemy import Select, and_, case, desc, exists, func, select, text
+from sqlalchemy.orm import Session, aliased
+
+from app.api.deps import Context
+from app.api.errors import invalid_parameter, not_found
+from app.models import Game, Player, PlayerGameStats, Season, SeasonType, Team
+from app.schemas.common import Page, StatSummary
+from app.schemas.resources import (
+    PlayerGameLine,
+    PlayerIdentity,
+    PlayerProfile,
+    PlayerSearchResult,
+    PlayerSeasonStats,
+    PlayerSummary,
+    PlayerTrends,
+    SeasonLine,
+    Split,
+    TrendPoint,
+    TrendStat,
+)
+from app.services.common import box, resolve_season, shooting, stat_line, team_ref
+from app.stats import Line, aggregate, is_double_double, rest_days_series, rolling_previous
+
+DATASET = "player_game_logs"
+PROFILE_TTL = 1800
+IDENTITY_TTL = 86400
+SEARCH_THRESHOLD = 0.6
+PROFILE_RECENT_GAMES = 5
+
+PlayerSort = Literal["full_name", "-full_name", "last_name", "-last_name", "to_year", "-to_year"]
+GameLogSort = Literal[
+    "game_date", "-game_date", "pts", "-pts", "reb", "-reb", "ast", "-ast",
+    "fg3m", "-fg3m", "stl", "-stl", "blk", "-blk", "minutes", "-minutes",
+]  # fmt: skip
+
+PLAYER_SORTS = {
+    "full_name": Player.full_name,
+    "last_name": Player.last_name,
+    "to_year": Player.to_year,
+}
+
+
+def _order(column, descending: bool):
+    return column.desc().nulls_last() if descending else column.asc().nulls_last()
+
+
+def _summary(player: Player, team: Team | None) -> PlayerSummary:
+    return PlayerSummary(
+        id=player.id,
+        full_name=player.full_name,
+        position=player.position,
+        is_active=player.is_active,
+        team=team_ref(team) if team else None,
+        from_year=player.from_year,
+        to_year=player.to_year,
+    )
+
+
+def _player_or_404(session: Session, player_id: int) -> tuple[Player, Team | None]:
+    row = session.execute(
+        select(Player, Team)
+        .outerjoin(Team, Team.id == Player.current_team_id)
+        .where(Player.id == player_id)
+    ).first()
+    if row is None:
+        raise not_found("player", player_id)
+    return tuple(row)
+
+
+def list_players(
+    ctx: Context, *, team_id: int | None, position: str | None, active: bool | None,
+    season: str | None, sort: PlayerSort, limit: int, offset: int,
+) -> Page[PlayerSummary]:  # fmt: skip
+    stmt = select(Player, Team).outerjoin(Team, Team.id == Player.current_team_id)
+    if team_id is not None:
+        stmt = stmt.where(Player.current_team_id == team_id)
+    if position:
+        stmt = stmt.where(Player.position.ilike(f"%{_escape_like(position)}%", escape="\\"))
+    if active is not None:
+        stmt = stmt.where(Player.is_active.is_(active))
+    if season:
+        season_id = resolve_season(ctx.session, season).id
+        played = (
+            select(PlayerGameStats.player_id)
+            .join(Game, Game.id == PlayerGameStats.game_id)
+            .where(PlayerGameStats.player_id == Player.id, Game.season_id == season_id)
+        )
+        stmt = stmt.where(exists(played))
+    total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    column = PLAYER_SORTS[sort.lstrip("-")]
+    rows = ctx.session.execute(
+        stmt.order_by(_order(column, sort.startswith("-")), Player.id).limit(limit).offset(offset)
+    )
+    return Page(
+        items=[_summary(p, t) for p, t in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+        meta=ctx.meta(DATASET),
+    )
+
+
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+SEARCH_SQL = text("""
+    SELECT p.id, p.full_name, p.position, p.is_active, t.abbreviation AS team_abbreviation
+    FROM players p
+    LEFT JOIN teams t ON t.id = p.current_team_id
+    CROSS JOIN LATERAL (SELECT search_normalize(:q) AS q) n
+    WHERE n.q <% search_normalize(p.full_name)
+       OR search_normalize(p.full_name) LIKE '%' || search_normalize(:q_like) || '%' ESCAPE '\\'
+    ORDER BY
+      (search_normalize(p.full_name) LIKE search_normalize(:q_like) || '%' ESCAPE '\\'
+        OR search_normalize(p.full_name) LIKE '% ' || search_normalize(:q_like) || '%' ESCAPE '\\')
+        DESC,
+      p.is_active DESC,
+      word_similarity(n.q, search_normalize(p.full_name)) DESC,
+      p.to_year DESC NULLS LAST,
+      p.full_name
+    LIMIT :limit
+""")
+
+
+def search_players(ctx: Context, q: str, limit: int) -> list[PlayerSearchResult]:
+    query = " ".join(q.split())
+
+    def compute() -> list[PlayerSearchResult]:
+        ctx.session.execute(
+            text("SELECT set_config('pg_trgm.word_similarity_threshold', :t, true)"),
+            {"t": str(SEARCH_THRESHOLD)},
+        )
+        rows = ctx.session.execute(
+            SEARCH_SQL, {"q": query, "q_like": _escape_like(query), "limit": limit}
+        ).mappings()
+        return [PlayerSearchResult(**r) for r in rows]
+
+    return ctx.cached("player_search", IDENTITY_TTL, (query.lower(), limit), compute)
+
+
+@dataclass(frozen=True)
+class GameRow:
+    stats: PlayerGameStats
+    game: Game
+    season: str
+    team: Team
+    opponent: Team
+
+    @property
+    def is_home(self) -> bool:
+        return self.game.home_team_id == self.stats.team_id
+
+    @property
+    def line(self) -> Line:
+        return stat_line(self.game.game_date, self.stats)
+
+
+def _game_rows_query(player_id: int) -> Select:
+    own, opp = aliased(Team), aliased(Team)
+    opponent_id = case(
+        (Game.home_team_id == PlayerGameStats.team_id, Game.away_team_id),
+        else_=Game.home_team_id,
+    )
+    return (
+        select(PlayerGameStats, Game, Season.label, own, opp)
+        .join(Game, Game.id == PlayerGameStats.game_id)
+        .join(Season, Season.id == Game.season_id)
+        .join(own, own.id == PlayerGameStats.team_id)
+        .join(opp, opp.id == opponent_id)
+        .where(PlayerGameStats.player_id == player_id)
+    )
+
+
+def _rows(session: Session, stmt: Select) -> list[GameRow]:
+    return [GameRow(*r) for r in session.execute(stmt)]
+
+
+def _game_line(row: GameRow) -> PlayerGameLine:
+    g = row.game
+    team_score, opp_score = (
+        (g.home_score, g.away_score) if row.is_home else (g.away_score, g.home_score)
+    )
+    result = None
+    if team_score is not None and opp_score is not None and team_score != opp_score:
+        result = "W" if team_score > opp_score else "L"
+    return PlayerGameLine(
+        game_id=g.id,
+        game_date=g.game_date,
+        season=row.season,
+        season_type=g.season_type,
+        team_abbreviation=row.team.abbreviation,
+        opponent=team_ref(row.opponent),
+        is_home=row.is_home,
+        result=result,
+        team_score=team_score,
+        opponent_score=opp_score,
+        minutes=float(row.stats.minutes),
+        box=box(row.stats),
+        shooting=shooting(row.stats),
+        double_double=is_double_double(row.line),
+    )
+
+
+def _chronological(stmt: Select) -> Select:
+    return stmt.order_by(Game.game_date, Game.id)
+
+
+def _season_lines(rows: list[GameRow], season_type: SeasonType | None) -> list[SeasonLine]:
+    grouped: dict[tuple[str, SeasonType], list[Line]] = defaultdict(list)
+    for row in rows:
+        if season_type is None or row.game.season_type == season_type:
+            grouped[(row.season, row.game.season_type)].append(row.line)
+    ordered = sorted(grouped.items(), key=lambda kv: kv[0][0], reverse=True)
+    return [
+        SeasonLine(
+            season=season,
+            season_type=kind,
+            **StatSummary.from_aggregate(aggregate(lines)).model_dump(),
+        )
+        for (season, kind), lines in ordered
+    ]
+
+
+def _latest_season_id(session: Session, player_id: int) -> int | None:
+    return session.scalar(
+        select(func.max(Game.season_id))
+        .join(PlayerGameStats, PlayerGameStats.game_id == Game.id)
+        .where(PlayerGameStats.player_id == player_id)
+    )
+
+
+def profile(ctx: Context, player_id: int) -> PlayerProfile:
+    def compute() -> PlayerProfile:
+        player, team = _player_or_404(ctx.session, player_id)
+        season_id = _latest_season_id(ctx.session, player_id)
+        rows = []
+        if season_id is not None:
+            stmt = _game_rows_query(player_id).where(Game.season_id == season_id)
+            rows = _rows(ctx.session, _chronological(stmt))
+        current = _season_lines(rows, SeasonType.regular) or _season_lines(rows, None)
+        identity = PlayerIdentity(
+            **_summary(player, team).model_dump(),
+            first_name=player.first_name,
+            last_name=player.last_name,
+            height_inches=player.height_inches,
+            weight_lbs=player.weight_lbs,
+            birthdate=player.birthdate,
+        )
+        return PlayerProfile(
+            player=identity,
+            current_season=current[0] if current else None,
+            last_games=[_game_line(r) for r in reversed(rows[-PROFILE_RECENT_GAMES:])],
+            meta=ctx.meta(DATASET),
+        )
+
+    return ctx.cached_model("player_profile", PROFILE_TTL, player_id, DATASET, compute)
+
+
+SPLIT_LABELS = {
+    "home": "Home",
+    "away": "Away",
+    "rest_0": "No rest (back-to-back)",
+    "rest_1": "1 day of rest",
+    "rest_2_plus": "2+ days of rest",
+}
+
+
+def _split_key_rest(days: int | None) -> str | None:
+    if days is None:
+        return None
+    return "rest_0" if days == 0 else "rest_1" if days == 1 else "rest_2_plus"
+
+
+def season_stats(
+    ctx: Context, player_id: int, season_type: SeasonType, season: str | None
+) -> PlayerSeasonStats:
+    def compute() -> PlayerSeasonStats:
+        _player_or_404(ctx.session, player_id)
+        if season:
+            resolve_season(ctx.session, season)
+        rows = _rows(ctx.session, _chronological(_game_rows_query(player_id)))
+        seasons = _season_lines(rows, season_type)
+        split_season = season or (seasons[0].season if seasons else None)
+        rest = rest_days_series([r.line for r in rows])
+        buckets: dict[str, list[Line]] = defaultdict(list)
+        for row, days in zip(rows, rest, strict=True):
+            if row.season != split_season or row.game.season_type != season_type:
+                continue
+            buckets["home" if row.is_home else "away"].append(row.line)
+            if key := _split_key_rest(days):
+                buckets[key].append(row.line)
+        splits = [
+            Split(key=key, label=label, summary=StatSummary.from_aggregate(aggregate(buckets[key])))
+            for key, label in SPLIT_LABELS.items()
+            if buckets[key]
+        ]  # fmt: skip
+        return PlayerSeasonStats(
+            player_id=player_id,
+            season_type=season_type,
+            seasons=seasons,
+            splits_season=split_season,
+            splits=splits,
+            meta=ctx.meta(DATASET),
+        )
+
+    key = (player_id, season_type, season)
+    return ctx.cached_model("player_stats", PROFILE_TTL, key, DATASET, compute)
+
+
+GAME_LOG_SORTS = {
+    "game_date": Game.game_date,
+    "minutes": PlayerGameStats.minutes,
+    **{s: getattr(PlayerGameStats, s) for s in ("pts", "reb", "ast", "fg3m", "stl", "blk")},
+}
+
+
+def game_log(
+    ctx: Context, player_id: int, *, season: str | None, season_type: SeasonType | None,
+    date_from: date | None, date_to: date | None, sort: GameLogSort, limit: int, offset: int,
+) -> Page[PlayerGameLine]:  # fmt: skip
+    if date_from and date_to and date_from > date_to:
+        raise invalid_parameter("date_from", "date_from must be on or before date_to.")
+    _player_or_404(ctx.session, player_id)
+    stmt = _game_rows_query(player_id)
+    conditions = []
+    if season:
+        conditions.append(Game.season_id == resolve_season(ctx.session, season).id)
+    if season_type:
+        conditions.append(Game.season_type == season_type)
+    if date_from:
+        conditions.append(Game.game_date >= date_from)
+    if date_to:
+        conditions.append(Game.game_date <= date_to)
+    if conditions:
+        stmt = stmt.where(and_(*conditions))
+    total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    column = GAME_LOG_SORTS[sort.lstrip("-")]
+    ordered = stmt.order_by(_order(column, sort.startswith("-")), desc(Game.game_date), Game.id)
+    rows = _rows(ctx.session, ordered.limit(limit).offset(offset))
+    return Page(
+        items=[_game_line(r) for r in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+        meta=ctx.meta(DATASET),
+    )
+
+
+def trends(
+    ctx: Context, player_id: int, stat: TrendStat, season: str | None,
+    season_type: SeasonType | None,
+) -> PlayerTrends:  # fmt: skip
+    def compute() -> PlayerTrends:
+        _player_or_404(ctx.session, player_id)
+        if season:
+            season_id: int | None = resolve_season(ctx.session, season).id
+        else:
+            season_id = _latest_season_id(ctx.session, player_id)
+        if season_id is None:
+            raise invalid_parameter("season", "This player has no recorded games.", "no_games")
+        stmt = _game_rows_query(player_id).where(Game.season_id == season_id)
+        if season_type:
+            stmt = stmt.where(Game.season_type == season_type)
+        rows = [r for r in _rows(ctx.session, _chronological(stmt)) if r.line.played]
+        values = [r.line.value(stat) for r in rows]
+        rolling = {n: rolling_previous(values, n) for n in (3, 5, 10)}
+        label = ctx.session.scalar(select(Season.label).where(Season.id == season_id)) or ""
+        return PlayerTrends(
+            player_id=player_id,
+            stat=stat,
+            season=label,
+            season_type=season_type,
+            games_played=len(rows),
+            average=round(sum(values) / len(values), 2) if values else None,
+            points=[
+                TrendPoint(
+                    game_id=r.game.id,
+                    game_date=r.game.game_date,
+                    opponent_abbreviation=r.opponent.abbreviation,
+                    is_home=r.is_home,
+                    value=v,
+                    rolling_3=rolling[3][i],
+                    rolling_5=rolling[5][i],
+                    rolling_10=rolling[10][i],
+                )
+                for i, (r, v) in enumerate(zip(rows, values, strict=True))
+            ],
+            meta=ctx.meta(DATASET),
+        )
+
+    key = (player_id, stat, season, season_type)
+    return ctx.cached_model("player_trends", PROFILE_TTL, key, DATASET, compute)

@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     stats_backoff_cap_seconds: float = 60.0
     stats_cache_dir: Path = Path(".cache/nba_stats")
 
+    cors_origins: list[str] = []
+    api_docs_enabled: bool = True
+    api_cache_enabled: bool = True
+
     first_season: int = 2018
     team_minutes_tolerance: int = 5
 

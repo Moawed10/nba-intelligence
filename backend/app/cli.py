@@ -38,6 +38,12 @@ def ingest_season(client: NBAStatsClient, season: int, types: list[SeasonType]) 
     return ok
 
 
+def openapi_json() -> str:
+    from app.main import create_app
+
+    return json.dumps(create_app().openapi(), indent=2, sort_keys=True) + "\n"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -60,8 +66,12 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("integrity", help="Run integrity and coverage checks")
     runs = sub.add_parser("runs", help="Show recent ingestion runs")
     runs.add_argument("--limit", type=int, default=20)
+    sub.add_parser("openapi", help="Print the API's OpenAPI schema")
 
     args = parser.parse_args(argv)
+    if args.command == "openapi":
+        sys.stdout.write(openapi_json())
+        return 0
     configure_logging()
     client = NBAStatsClient()
     all_types = list(SeasonType)

@@ -4,7 +4,7 @@ How NBA Intelligence keeps schedules, results, box scores and predictions curren
 
 **Implementation status:**
 - Implemented and tested in Phase 3: scheduler, jobs, lifecycle, outbox, finalization, freshness service and corrections (`backend/app/sync/`, `backend/app/ingestion/`).
-- Phase 4 adds the `/data-status` endpoint.
+- Phase 4 added `GET /api/v1/data-status` and `meta.data_freshness` on every data response.
 - Phase 7 adds prediction freshness, refresh and the evaluation handlers.
 
 Evidence is in [test-report.md](test-report.md), and status in [implementation-status.md](implementation-status.md).

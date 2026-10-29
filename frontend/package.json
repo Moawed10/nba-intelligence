@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check:contrast": "node scripts/check-contrast.mjs",
-    "api:types": "openapi-typescript ${API_URL:-http://localhost:8000}/api/v1/openapi.json -o src/lib/api/schema.d.ts"
+    "api:types": "openapi-typescript ../backend/openapi.json -o src/lib/api/schema.d.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.105.0",

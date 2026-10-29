@@ -3,11 +3,11 @@ import Link from "next/link";
 import { StateView } from "./state-view";
 
 /** Shown where a screen's data API does not exist yet. Never stands in for real data. */
-export function NotConnected({ shows }: { shows: string }) {
+export function NotConnected({ shows, title }: { shows: string; title?: string }) {
   return (
     <StateView
       kind="unavailable"
-      title="Live data isn't connected to this screen yet"
+      title={title ?? "Live data isn't connected to this screen yet"}
       message={`When it is, this screen will show ${shows}. Nothing here is sample or placeholder data.`}
       action={
         <Link

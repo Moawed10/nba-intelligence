@@ -23,7 +23,9 @@ CI (`.github/workflows/ci.yml`) runs the same suites on Ubuntu with Python 3.12,
 cd backend && NBA_LOG_LEVEL=ERROR .venv/bin/pytest -q --cov=app --cov-report=term
 ```
 
-**Result:** 88 passed, 0 failed, 0 skipped, in 5.4 s. Statement coverage is 83% overall:
+**Result (Phase 3):** 88 passed, 0 failed, 0 skipped, in 5.4 s. Statement coverage is 83% overall. Phase 4 results are [below](#phase-4-read-api).
+
+Phase 3 coverage:
 
 | Module | Coverage |
 |---|---|
@@ -100,25 +102,63 @@ cd backend && .venv/bin/python -m app.cli sync-once   # twice
 
 This run found a defect: it emitted 10,284 finalization events for historical games. It was fixed in `app/sync/worker.py` and covered by `test_historical_games_finalize_without_events`; the spurious dev rows were removed.
 
+## Phase 4 read API
+
+```bash
+cd backend && NBA_LOG_LEVEL=ERROR .venv/bin/pytest -q --cov=app --cov-report=term
+```
+
+**Result:** 171 passed, 0 failed, 0 skipped. Statement coverage is 92% overall: `app/api` 95–100%, `app/services` 98–100%, `app/stats` 100%, `app/schemas` 100%. Ruff check and format are clean.
+
+| File | Covers |
+|---|---|
+| `tests/api/test_players.py` | Directory filters, sorting, pagination; accent-insensitive search and literal wildcards; profile, season stats and splits, game log, trends; 404 and invalid-input cases |
+| `tests/api/test_teams_games.py` | Teams, records, pace and ratings from the shared definitions; null (not zero) values without games; games window, filters, upcoming, detail, box score, 409 before final |
+| `tests/api/test_system.py` | Every endpoint in OpenAPI and read-only; health, readiness, database outage as 503 without internals; data-status counts; request ids; 500 hides details |
+| `tests/api/test_queries.py` | Query counts constant across page sizes; box score ≤ 4 queries; cache hits skip the database until `data_version` changes |
+| `tests/unit/test_stats.py` | Every statistic definition against hand-computed values |
+| `tests/unit/test_cache.py`, `test_openapi.py` | Memo TTL, versioned keys, disabled cache; committed OpenAPI schema matches the app |
+
+API fixtures load synthetic season 2099 through the real ingestion pipeline.
+
+### Latency benchmark
+
+```bash
+cd backend && .venv/bin/uvicorn --factory app.main:build --port 8765 &
+.venv/bin/python scripts/benchmark.py --base-url http://127.0.0.1:8765
+```
+
+Workload: 1,000 requests per scenario from 20 concurrent clients against one uvicorn process on an Apple M2 (8 cores), local PostgreSQL 16 holding the full dataset. Profile and game-log requests draw from 200 active players (seed 7); search draws from 30 name fragments. The uncached run sets `NBA_API_CACHE_ENABLED=false`.
+
+| Scenario | p50 | p95 | p99 | Errors | Gate (p95) |
+|---|---|---|---|---|---|
+| Player search, uncached | 17.1 ms | 38.0 ms | 47.5 ms | 0 | < 300 ms |
+| Player search, cached | 12.3 ms | 32.7 ms | 45.8 ms | 0 | |
+| Player profile, uncached | 43.9 ms | 74.9 ms | 95.6 ms | 0 | < 500 ms |
+| Player profile, cached | 15.8 ms | 47.9 ms | 66.5 ms | 0 | |
+| Game log (never cached) | 58.4 ms | 102.0 ms | 119.4 ms | 0 | < 700 ms |
+
+These are local numbers; a hosted database adds network latency, so the gates are re-measured in Phase 15.
+
 ## Frontend
 
 ```bash
 cd frontend && npm run lint && npm run typecheck && npm run check:contrast
 ```
 
-**Result:** ESLint (including the full jsx-a11y recommended set) and TypeScript are clean. All 34 contrast pairs pass WCAG AA (17 per theme).
+**Result:** ESLint (including the full jsx-a11y recommended set) and TypeScript are clean. All 36 contrast pairs pass WCAG AA (18 per theme), including the highlighted-option color against popovers.
 
 ```bash
 cd frontend && npx vitest run --coverage
 ```
 
-**Result:** 20 passed in 3 files. Statement coverage is 82.78% across `src/lib` and `src/components/data`.
+**Result:** 27 passed in 4 files, including 7 `PlayerSearch` tests (debounce, request, keyboard and pointer selection, Escape, empty and error states). Statement coverage is 88.26% across `src/lib` and `src/components/data`.
 
 ```bash
 cd frontend && npx playwright test
 ```
 
-**Result:** 50 passed and 2 skipped (keyboard-only tests on the touch project) across 4 viewport projects (375, 768, 1024, 1440 px). It covers:
+**Result:** 57 passed and 3 skipped (keyboard-only tests on the touch project) across 4 viewport projects (375, 768, 1024, 1440 px). `tests/e2e/player-search.spec.ts` stubs the search endpoint with synthetic results and runs axe while the listbox is open. It covers:
 - every route returns 200 with one `h1` and the correct title;
 - axe-core WCAG 2.0/2.1/2.2 A and AA scans in dark and light themes, with 0 critical or serious violations;
 - no horizontal overflow at each viewport or at 320 px;

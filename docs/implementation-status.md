@@ -9,9 +9,9 @@ The authoritative ledger of development progress. A status here is only as good 
 | Phase | Name | Status | Progress | Blockers |
 |---|---|---|---|---|
 | 1 | Repository Audit & Architecture | Complete | 100% (8/8) | None |
-| 2 | Design System & Foundation | In Progress | 83% (10/12) | PlayerSearch + generated types need Phase 4 |
-| 3 | Database, Ingestion & Sync | In Progress | 89% (17/19) | `/data-status` endpoint (Phase 4), prediction handlers (Phase 7) |
-| 4 | Core Backend APIs | Not Started | 0% (0/11) | Phase 3 |
+| 2 | Design System & Foundation | Complete | 100% (12/12) | None |
+| 3 | Database, Ingestion & Sync | In Progress | 95% (18/19) | Prediction-evaluation handlers (Phase 7) |
+| 4 | Core Backend APIs | Complete | 100% (11/11) | None |
 | 5 | Player Explorer & Profile | Not Started | 0% (0/11) | Phases 2, 4 |
 | 6 | Machine Learning Pipeline | Not Started | 0% (0/13) | Phase 3 |
 | 7 | Prediction API & Inference | Not Started | 0% (0/14) | Phases 4, 6 |
@@ -24,7 +24,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 35 / 174 verified deliverables = **20%**.
+**Overall:** 49 / 174 verified deliverables = **28%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -33,8 +33,8 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | Milestone | Required phases | Status |
 |---|---|---|
 | Architecture Ready | 1 | Pass |
-| Application Foundation | 2 | Not Verified (10/12) |
-| Real NBA Data Available | 3–4 | Not Verified (data stored and verified; API pending) |
+| Application Foundation | 2 | Pass |
+| Real NBA Data Available | 3–4 | Not Verified (data and read API verified; Phase 3 closes with the Phase 7 handlers) |
 | Player Analytics Functional | 5 | Not Verified |
 | ML Models Validated | 6 | Not Verified |
 | Prediction Backend Functional | 7 | Not Verified |
@@ -126,8 +126,8 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 ### Phase 2 — Design System & Application Foundation
 
-**Status:** In Progress · **Progress:** 83% (10/12) · **Last Updated:** 2026-10-28
-**Dependencies:** Phase 1; two deliverables need the Phase 4 API
+**Status:** Complete · **Progress:** 100% (12/12) · **Last Updated:** 2026-10-28
+**Dependencies:** Phase 1; PlayerSearch and generated types were completed with Phase 4
 **Objective:** A themed, accessible, responsive application shell and the shared components every screen uses.
 
 #### Deliverables
@@ -138,10 +138,10 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 - [x] Typography scale with tabular numerals
 - [x] `TopNav`, `TabBar`, `MoreMenu`, skip link, landmarks, `RouteFocus` (`components/shell/`)
 - [x] All 7 routes resolve; data screens show the honest `NotConnected` state; `/about` has real content
-- [ ] `PlayerSearch` combobox. Blocked: needs `GET /players/search` (Phase 4). `SegmentedControl`, Dialog/Sheet/Popover/Tooltip and `InfoHint` are done.
+- [x] `PlayerSearch` combobox (`components/data/player-search.tsx`: WAI-ARIA list autocomplete, 250 ms debounce, aborted stale requests), plus `SegmentedControl`, Dialog/Sheet/Popover/Tooltip and `InfoHint`
 - [x] `StatTile`, `ChartFrame` (with table view), `DataTable`, `IntervalBar` (`components/data/`)
 - [x] `StateView` (loading, empty, error, stale, unavailable) and `FreshnessBadge`
-- [ ] Centralized API client. `lib/api/server.ts`, `client.ts` and `errors.ts` are done; generating types from OpenAPI is blocked until the Phase 4 FastAPI app exists.
+- [x] Centralized API client (`lib/api/server.ts`, `client.ts`, `errors.ts`) with types generated from `backend/openapi.json` (`lib/api/schema.d.ts`, `types.ts`); CI fails if they drift
 - [x] `MotionConfig reducedMotion="user"` and a global reduced-motion rule
 - [x] Vitest, ESLint (full jsx-a11y), Playwright + axe-core, contrast checker
 
@@ -150,13 +150,13 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
 | Primary nav links resolve | 100% | 5/5 primary and 2/2 secondary return 200 and render their `h1` (E2E, 4 viewports) | Pass |
-| Shared interactive components keyboard-operable | 100% | 100% of built components (SegmentedControl, DataTable sort, ChartFrame toggle, More menu, theme toggle, skip link); PlayerSearch not built | Pass (built components) |
+| Shared interactive components keyboard-operable | 100% | 7 / 7: SegmentedControl, DataTable sort, ChartFrame toggle, More menu, theme toggle, skip link, PlayerSearch (unit and E2E keyboard tests) | Pass |
 | Form controls with accessible names | 100% | 0 axe `label`/`button-name`/`link-name` violations on 7 routes × 2 themes × 4 viewports | Pass |
 | Critical axe violations in shared components | 0 | 0 critical or serious | Pass |
 | Layouts work at 375 / 768 / 1024 / 1440 px | All | No horizontal overflow at all 4, plus 320 px | Pass |
 | Essential targets meet WCAG 2.2 AA sizing | 100% or documented exceptions | Mobile tab links ≥ 44×44 px (measured); buttons 40 px, 44 px on coarse pointers | Pass |
 | Nonessential animations respect reduced motion | 100% | Computed transition duration < 1 ms under `prefers-reduced-motion` (E2E); Motion `reducedMotion="user"` | Pass |
-| Statement coverage, shared UI utilities | ≥ 80% | 82.78% | Pass |
+| Statement coverage, shared UI utilities | ≥ 80% | 88.26% | Pass |
 
 #### Implementation evidence
 
@@ -168,20 +168,21 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 | Issue | Severity | Impact | Resolution |
 |---|---|---|---|
-| PlayerSearch and generated API types need the API | Medium | 2 deliverables open | Build in Phase 4/5 |
+| PlayerSearch and generated API types need the API | Medium (resolved) | Were blocked on Phase 4 | Built with Phase 4 |
+| Highlighted menu item and search option were invisible in dark mode (`accent` token equalled the popover color) | High (fixed) | Keyboard users could not see the current item | `accent` now maps to the primary fill; contrast checker covers it (6.78:1 dark, 5.55:1 light) |
 | `npm audit` reports advisories in dev dependencies | Unknown | Not triaged | Triage in Phase 13 |
 | VoiceOver not tested manually | Medium | Screen-reader behavior verified only via axe and semantics | Manual pass in Phase 12 |
 
 #### Completion decision
 
-**Result:** Not Verified. **Reason:** all 8 measured criteria pass, but 2 of 12 deliverables are blocked on Phase 4.
+**Result:** Complete. **Reason:** 12 / 12 deliverables and 8 / 8 criteria pass. Open items (manual VoiceOver pass, `npm audit` triage) are tracked in Phases 12 and 13.
 
 ---
 
 ### Phase 3 — Database, NBA Data Ingestion & Synchronization
 
-**Status:** In Progress · **Progress:** 89% (17/19) · **Last Updated:** 2026-10-28
-**Dependencies:** Phase 1 (done); two deliverables complete with Phases 4 and 7
+**Status:** In Progress · **Progress:** 95% (18/19) · **Last Updated:** 2026-10-28
+**Dependencies:** Phase 1 (done); the last deliverable completes with Phase 7
 **Objective:** Real NBA data for 2018-19 onward, stored without duplicates, with provenance, freshness and automatic synchronization.
 
 #### Deliverables
@@ -202,7 +203,7 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 - [x] Sync worker with persisted `sync_schedules`, game-aware polling and advisory-lock exclusion (`app/sync/worker.py`)
 - [x] Game lifecycle state machine with no-downgrade rule (`app/ingestion/lifecycle.py`)
 - [ ] `sync_events` outbox and handlers. Emission, dedupe and drain are done; prediction-evaluation handlers come in Phase 7.
-- [ ] Freshness exposed in `/data-status`. The service is done (`app/sync/freshness.py`, 6 datasets); the endpoint is Phase 4, and the prediction datasets are Phase 7.
+- [x] Freshness exposed in `GET /api/v1/data-status` and in `meta.data_freshness` on every data response (6 datasets; the 2 prediction datasets are added with Phase 7)
 - [x] Retry classification, full-jitter backoff, `Retry-After`, lease recovery
 - [x] Weekly corrections job; sync tests including the New York season boundary
 
@@ -224,10 +225,10 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 | Retry behavior bounded and tested | Yes | Unit tests for statuses, timeouts, cap, `Retry-After` | Pass |
 | Failed/interrupted job recovery | Integration test | Abandoned-lease recovery and next-cycle retry tests | Pass |
 | Finalized-game reconciliation fixtures passing | 100% | Data side passes (finalization, events); prediction evaluation pending Phase 7 | Not Verified |
-| Cache invalidation on tested dependencies | 100% | API cache not built (Phase 4) | Not Verified |
+| Cache invalidation on tested dependencies | 100% | Cached responses are keyed by `data_version`; a new succeeded run invalidates them (`test_cache_hits_skip_the_database_until_data_version_changes`, unit tests) | Pass |
 | Freshness metadata for synchronized datasets | All 8 | 6 / 8 (prediction features and predictions pending Phase 7) | Not Verified |
 | Scheduler restart recovery | Verified | Persisted `next_run_at`; restart at the same instant runs nothing (test and live) | Pass |
-| Critical sync tests passing | 100% | 88 / 88 backend tests | Pass |
+| Critical sync tests passing | 100% | 171 / 171 backend tests | Pass |
 
 #### Implementation evidence
 
@@ -247,50 +248,70 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 #### Next actions
 
-1. Phase 4: FastAPI app, error envelope, read endpoints, `/data-status` (closes the freshness deliverable).
-2. Phase 2: generate API types and build `PlayerSearch` against `/players/search`.
-3. Phase 6: feature pipeline on the 219,230 stored player lines.
+1. Phase 7: prediction-evaluation handlers and prediction freshness datasets.
+2. Phase 6: feature pipeline on the 219,230 stored player lines.
 
 #### Completion decision
 
-**Result:** Not Verified. **Reason:** 15 of 18 criteria pass; the other 3 depend on the Phase 4 cache and Phase 7 predictions.
+**Result:** Not Verified. **Reason:** 16 of 18 criteria pass; the other 2 depend on Phase 7 predictions.
 
 ---
 
 ### Phase 4 — Core Read-Only Backend APIs
 
-**Status:** Not Started · **Progress:** 0% (0/11) · **Dependencies:** Phase 3
+**Status:** Complete · **Progress:** 100% (11/11) · **Last Updated:** 2026-10-28
+**Dependencies:** Phase 3
+**Objective:** Fast, bounded, documented read endpoints over the verified NBA data, with one error format and freshness on every response.
 
 #### Deliverables
 
-- [ ] `app/main.py`: app factory, request id, error envelope, CORS config
-- [ ] `app/stats/` statistic definitions
-- [ ] `/players`, `/players/search` (trigram)
-- [ ] `/players/{id}`, `/stats`, `/games`, `/trends`
-- [ ] `/teams`, `/teams/{id}`, `/teams/{id}/stats`
-- [ ] `/games`, `/games/upcoming`, `/games/{id}`, `/games/{id}/boxscore`
-- [ ] `/health`, `/readiness`, `/data-status`
-- [ ] Pagination, filtering and sorting allow-lists
-- [ ] Data-version cache (`app/services/cache.py`)
-- [ ] Integration tests per endpoint (success, invalid input, missing resource)
-- [ ] Latency benchmark script and documented workload
+- [x] `app/main.py`: app factory, request id (echoed or generated), JSON access log, error envelope (`app/api/errors.py`), CORS off unless `NBA_CORS_ORIGINS` is set
+- [x] `app/stats/` statistic definitions, shared by every endpoint (ML pipeline will import the same module)
+- [x] `/players`, `/players/search` (accent-insensitive trigram search; migration `3c1d7e9a2b45`)
+- [x] `/players/{id}`, `/stats` (seasons plus home/away and rest splits), `/games`, `/trends` (rolling 3/5/10 over previous games)
+- [x] `/teams`, `/teams/{id}`, `/teams/{id}/stats` (pace and ratings from team logs)
+- [x] `/games`, `/games/upcoming`, `/games/{id}`, `/games/{id}/boxscore`
+- [x] `/health`, `/readiness`, `/data-status`
+- [x] Pagination (`limit` ≤ 100, `offset`), filters and sort allow-lists validated by the schema
+- [x] Data-version cache (`app/services/cache.py`) plus `Cache-Control` per endpoint
+- [x] Integration tests per endpoint (success, invalid input, missing resource): `tests/api/`
+- [x] Latency benchmark script (`scripts/benchmark.py`) and documented workload
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Required player/team/game endpoints implemented | 100% | Not measured | Not Verified |
-| Endpoints in OpenAPI | 100% | Not measured | Not Verified |
-| Success / invalid / missing tests per endpoint | 100% where applicable | Not measured | Not Verified |
-| Statement coverage, core API logic | ≥ 85% | Not measured | Not Verified |
-| Player search p95 (20 clients, 1,000 req) | < 300 ms | Not measured | Not Verified |
-| Player profile p95 | < 500 ms | Not measured | Not Verified |
-| Game log p95 | < 700 ms | Not measured | Not Verified |
-| Unbounded queries | 0 | Not measured | Not Verified |
-| N+1 patterns on primary endpoints | 0 | Not measured | Not Verified |
-| List endpoints enforce limits | 100% | Not measured | Not Verified |
+| Required player/team/game endpoints implemented | 100% | 16 / 16 read endpoints in the contract table (prediction, compare, model and overview endpoints belong to Phases 7–11) | Pass |
+| Endpoints in OpenAPI | 100% | 16 / 16, all `GET` (`test_every_endpoint_is_documented_read_only`); schema committed as `backend/openapi.json` with a drift test | Pass |
+| Success / invalid / missing tests per endpoint | 100% where applicable | Every endpoint has a success test; every parameterised endpoint has invalid-input tests; every `{id}` endpoint has a 404 test (`tests/api/`, 66 tests) | Pass |
+| Statement coverage, core API logic | ≥ 85% | `app/api` 95–100%, `app/services` 98–100%, `app/stats` 100%, `app/schemas` 100% | Pass |
+| Player search p95 (20 clients, 1,000 req) | < 300 ms | 38.0 ms uncached, 32.7 ms with cache | Pass |
+| Player profile p95 | < 500 ms | 74.9 ms uncached, 47.9 ms with cache | Pass |
+| Game log p95 | < 700 ms | 102.0 ms (not cached) | Pass |
+| Unbounded queries | 0 | Lists capped at 100 rows; games window ≤ 31 days; upcoming ≤ 14 days and 100 rows; per-player reads ≤ one stored career (max 718 lines); rosters ≤ 18; team season ≤ 107 games | Pass |
+| N+1 patterns on primary endpoints | 0 | Query count identical for page sizes 1–16 on players, game log and games; box score ≤ 4 queries (`tests/api/test_queries.py`) | Pass |
+| List endpoints enforce limits | 100% | `limit` > 100 (or > 20 for search) returns 422 on every list endpoint | Pass |
 
-**Evidence:** none yet · **Issues:** none identified · **Decision:** Not Verified (not started)
+#### Implementation evidence
+
+**Files created:** `backend/app/main.py`, `app/api/{deps,errors}.py`, `app/api/v1/{players,teams,games,system}.py`, `app/schemas/{common,resources}.py`, `app/services/{cache,common,players,teams,games,system}.py`, `app/stats/__init__.py`, `alembic/versions/20261028_3c1d7e9a2b45_accent_insensitive_search.py`, `scripts/benchmark.py`, `openapi.json`, `tests/api/*`, `tests/unit/{test_stats,test_cache,test_openapi}.py`
+**Tests added:** 83 backend tests (171 total). See [test-report.md](test-report.md#phase-4-read-api).
+**Commands executed:** `pytest --cov=app` (171 passed, 92%); `ruff check` and `ruff format --check` (clean); `scripts/benchmark.py` with and without the response cache (0 errors in 6,000 requests); manual browser check of `/players` search against the real database through the Next.js proxy.
+
+#### Issues and blockers
+
+| Issue | Severity | Impact | Resolution |
+|---|---|---|---|
+| Rest-day splits started each season at null | Medium (fixed) | Season openers dropped out of rest splits | Rest days computed over the whole stored career, as defined; test |
+| Team record treated ties as losses | Low (fixed) | Would misreport any tied fixture | Wins and losses counted explicitly; test |
+| `dict(Result)` treated a SQLAlchemy result as a mapping | Medium (fixed) | `/data-status` returned 500 | Fixed and covered by `test_data_status` |
+| Search threshold 0.4 matched unrelated names ("jokic" → Magic Johnson) | Low (fixed) | Noisy results | Threshold 0.6 (Postgres default); still matches one-typo names ("lebrn" → LeBron James) |
+| Rate limiting and the 16 KB body limit are not implemented | Medium | No write endpoints exist yet | Phase 13 (with `POST /predictions` in Phase 7) |
+| Nicknames ("SGA") don't match | Low | Name search only | Not planned |
+
+#### Completion decision
+
+**Result:** Complete. **Reason:** 11 / 11 deliverables and 10 / 10 criteria pass with recorded evidence.
 
 ---
 
@@ -757,3 +778,21 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 
 **Next step:** Phase 4 read-only API.
 
+
+### Session — 2026-10-28 (Phase 4)
+
+**Phase:** 4, finishing Phase 2
+
+**Completed:**
+- FastAPI app with request ids, error envelope, freshness meta and a data-version cache; 16 read endpoints.
+- Shared statistic definitions (`app/stats`) and accent-insensitive player search (migration `3c1d7e9a2b45`).
+- OpenAPI schema committed and frontend types generated from it; `PlayerSearch` combobox on `/players`.
+- Benchmark: every latency gate passes by at least 3× with the cache off.
+
+**Files changed:** `backend/app/{main.py,api,schemas,services,stats}`, `backend/alembic/versions/`, `backend/tests/{api,unit}`, `backend/scripts/benchmark.py`, `backend/openapi.json`, `frontend/src/{lib/api,components/data,app/players}`, `frontend/tests/`, `.github/workflows/ci.yml`, docs.
+
+**Tests run:** backend 171 passed (92% coverage); frontend unit 27 passed (88.26%); Playwright 57 passed, 3 skipped; contrast 36 / 36.
+
+**Problems encountered:** see the Phase 4 issues table, plus the invisible dark-mode highlight found during the browser check (fixed in the theme tokens).
+
+**Next step:** Phase 5 (Player Explorer and Profile) on the new endpoints, or Phase 6 (ML pipeline).

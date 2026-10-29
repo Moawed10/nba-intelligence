@@ -53,6 +53,8 @@ const pairs = [
   ["primary", "card", 4.5],
   ["primary", "background", 4.5],
   ["primary-foreground", "primary", 4.5],
+  // Highlighted option or menu item (accent = primary): state must stand out from the popup.
+  ["primary", "popover", 3],
   ["positive", "card", 4.5],
   ["negative", "card", 4.5],
   ["chart-2", "card", 3],
