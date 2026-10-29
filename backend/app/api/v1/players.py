@@ -10,6 +10,7 @@ from app.models import Player, SeasonType
 from app.schemas.common import Page
 from app.schemas.resources import (
     DirectoryPlayer,
+    MatchupHistory,
     PlayerGameLine,
     PlayerProfile,
     PlayerSearchResult,
@@ -125,3 +126,12 @@ def get_player_trends(
 ) -> PlayerTrends:
     ctx.cache_for(300)
     return players.trends(ctx, player_id, stat, season, season_type)
+
+
+@router.get("/{player_id}/matchups/{team_id}", response_model=MatchupHistory)
+def get_matchup(
+    ctx: Ctx, player_id: PlayerId, team_id: Annotated[int, Path(ge=1, le=2_147_483_647)]
+) -> MatchupHistory:
+    """How the player has done against one team, every stored season."""
+    ctx.cache_for(1800)
+    return players.matchup(ctx, player_id, team_id)

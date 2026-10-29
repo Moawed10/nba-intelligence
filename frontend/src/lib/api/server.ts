@@ -39,3 +39,23 @@ export async function serverTry<T>(path: string, query?: Query): Promise<ServerR
     throw error;
   }
 }
+
+/** Server-side POST for idempotent API actions (e.g. stored forecasts); errors come back as values. */
+export async function serverPostTry<T>(path: string, body: unknown): Promise<ServerResult<T>> {
+  let response: Response;
+  try {
+    response = await fetch(apiUrl(path), {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (cause) {
+    throw networkError(cause);
+  }
+  try {
+    return { data: await parseResponse<T>(response), error: null };
+  } catch (error) {
+    if (error instanceof ApiError) return { data: null, error };
+    throw error;
+  }
+}

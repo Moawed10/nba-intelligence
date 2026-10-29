@@ -2,14 +2,12 @@
 
 import { useState, useTransition } from "react";
 
-import { IntervalBar } from "@/components/data/interval-bar";
 import { Unavailable, kindForError } from "@/components/data/unavailable";
 import { clientPost } from "@/lib/api/client";
 import { ApiError, describeError, networkError } from "@/lib/api/errors";
 import type { Prediction } from "@/lib/api/types";
 import { formatRelativeTime, formatStat } from "@/lib/format";
 import { targetLabel } from "@/lib/models";
-import { cn } from "@/lib/utils";
 
 const ERROR_TITLES: Record<string, string> = {
   insufficient_data: "Not enough recent games for a forecast",
@@ -18,129 +16,155 @@ const ERROR_TITLES: Record<string, string> = {
   model_unavailable: "Forecasts are unavailable right now",
 };
 
-/** Axis ceilings per statistic so every range reads on a sensible, fixed scale. */
-const AXIS_MAX: Record<string, number> = { pts: 50, reb: 20, ast: 15, fg3m: 8, stl: 5, blk: 5, min: 48 };
+const HEADLINE = ["pts", "reb", "ast"] as const;
+const SECONDARY = ["fg3m", "stl", "blk", "min"] as const;
 
-function Inputs({ prediction, stat }: { prediction: Prediction; stat: string }) {
-  const inputs = (
-    prediction.explanation?.inputs as Record<string, Record<string, number | null>> | undefined
-  )?.[stat];
-  if (!inputs) return null;
-  const parts = [
-    ["last 5", inputs[`${stat}_avg_5`]],
-    ["last 10", inputs[`${stat}_avg_10`]],
-    ["season", inputs[`${stat}_season_avg`]],
-    ["vs opponent", inputs[`${stat}_vs_opponent`]],
-  ] as const;
-  return (
-    <p className="mt-1 text-footnote text-muted-foreground">
-      Inputs: {parts.map(([label, value]) => `${label} ${formatStat(value ?? null)}`).join(" · ")}
-    </p>
-  );
-}
-
-const FRESHNESS: Record<Prediction["freshness"], string> = {
-  current: "Up to date",
-  stale: "Newer data available",
-  invalid: "Matchup changed",
-  superseded: "Newer forecast available",
-  final_pregame: "Made before tip-off",
-};
+const round = (v: number) => Math.round(v);
 
 function ForecastView({
   prediction,
+  playerName,
+  opponentName,
   onRefresh,
   pending,
 }: {
   prediction: Prediction;
+  playerName: string;
+  opponentName: string;
   onRefresh: () => void;
   pending: boolean;
 }) {
+  const value = Object.fromEntries(prediction.values.map((v) => [v.stat, v]));
+  const pts = value.pts;
   const stale = prediction.freshness === "stale" && !prediction.freshness_reason?.includes("release");
+  const inputs = prediction.explanation?.inputs as Record<string, Record<string, number | null>> | undefined;
+  const actual = prediction.actuals;
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3 text-subhead">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 font-medium">
-          <span
-            aria-hidden
-            className={cn(
-              "size-1.5 rounded-full",
-              prediction.freshness === "current" || prediction.freshness === "final_pregame"
-                ? "bg-positive"
-                : "bg-muted-foreground",
-            )}
-          />
-          {FRESHNESS[prediction.freshness]}
-        </span>
-        {prediction.freshness_reason && (
-          <span className="text-footnote text-muted-foreground">{prediction.freshness_reason}</span>
-        )}
-        {stale && (
+      {pts && (
+        <p className="text-title3 leading-snug">
+          Against the {opponentName}, {playerName} is expected to score about{" "}
+          <strong className="text-primary">{round(pts.point)} points</strong>
+          {value.reb && value.ast && (
+            <>
+              {" "}
+              with about {round(value.reb.point)} rebounds and {round(value.ast.point)} assists
+            </>
+          )}
+          .
+        </p>
+      )}
+      {stale && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/60 px-4 py-3 text-subhead">
+          <span>New games have been played since this forecast was made.</span>
           <button
             type="button"
             onClick={onRefresh}
             disabled={pending}
-            className="min-h-9 rounded-full border border-border px-4 text-subhead font-medium transition-colors hover:border-foreground/25 disabled:opacity-60"
+            className="min-h-9 rounded-full bg-primary px-4 font-semibold text-primary-foreground disabled:opacity-60"
           >
             {pending ? "Updating…" : "Update forecast"}
           </button>
-        )}
-      </div>
-      <ul className="grid gap-x-8 gap-y-5 md:grid-cols-2">
-        {prediction.values.map((v) => (
-          <li key={v.stat}>
-            <IntervalBar
-              label={targetLabel(v.stat)}
-              point={v.point}
-              lower={v.lower}
-              upper={v.upper}
-              level={v.interval_level}
-              max={Math.max(AXIS_MAX[v.stat] ?? 10, v.upper)}
-            />
-            <Inputs prediction={prediction} stat={v.stat} />
-            {prediction.actuals?.[v.stat] != null && (
-              <p className="mt-1 text-footnote">
-                Actual{" "}
-                <span className="font-semibold tabular-nums">{formatStat(prediction.actuals[v.stat])}</span>{" "}
-                <span className="text-muted-foreground">
-                  ·{" "}
-                  {prediction.actuals[v.stat] >= v.lower && prediction.actuals[v.stat] <= v.upper
-                    ? "inside"
-                    : "outside"}{" "}
-                  the range
+        </div>
+      )}
+      <dl className="grid gap-3 sm:grid-cols-3">
+        {HEADLINE.map((stat) => {
+          const v = value[stat];
+          if (!v) return null;
+          return (
+            <div key={stat} className="rounded-2xl border border-border bg-muted/40 p-4">
+              <dt className="kicker">{targetLabel(stat)}</dt>
+              <dd>
+                <span className="numeral block text-[3.25rem]">{formatStat(v.point)}</span>
+                <span className="text-footnote text-muted-foreground">
+                  Usually {round(v.lower)}–{round(v.upper)}
                 </span>
-              </p>
-            )}
-          </li>
-        ))}
-      </ul>
+                {actual?.[stat] != null && (
+                  <span className="mt-1 block text-footnote">
+                    Actual: <strong>{actual[stat]}</strong>
+                  </span>
+                )}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {SECONDARY.map((stat) => {
+          const v = value[stat];
+          if (!v) return null;
+          return (
+            <div key={stat} className="rounded-xl bg-muted/40 px-3 py-2.5">
+              <dt className="text-footnote text-muted-foreground">{targetLabel(stat)}</dt>
+              <dd className="numeral text-title2">{formatStat(v.point)}</dd>
+            </div>
+          );
+        })}
+      </dl>
       {prediction.double_double_probability != null && (
         <p className="text-subhead">
-          Double-double chance:{" "}
-          <span className="font-semibold tabular-nums">
-            {Math.round(prediction.double_double_probability * 100)}%
-          </span>
+          Chance of a double-double (10+ in two categories):{" "}
+          <strong>{Math.round(prediction.double_double_probability * 100)}%</strong>
         </p>
       )}
-      <p className="text-footnote text-muted-foreground">
-        Release <span className="font-mono">{prediction.release_version}</span> · uses final games before{" "}
-        {new Date(prediction.data_cutoff_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}{" "}
-        · stored {formatRelativeTime(prediction.created_at)}. Each range is meant to contain the actual result
-        4 times in 5. Inputs are the averages the model received, not a breakdown of its reasoning.
-      </p>
+      <details className="group rounded-xl border border-border px-4 py-3 text-subhead">
+        <summary className="cursor-pointer font-medium text-primary">What is this based on?</summary>
+        <div className="mt-3 space-y-4">
+          <p className="text-muted-foreground">
+            We look at how {playerName} has played lately, this season, and in past games against the{" "}
+            {opponentName}, plus rest and whether the game is at home. Most of the time, about 4 games out of
+            5, the real number lands inside the &quot;usually&quot; range.
+          </p>
+          {inputs && (
+            <div className="space-y-2">
+              {HEADLINE.map((stat) => {
+                const row = inputs[stat];
+                if (!row) return null;
+                const facts = [
+                  ["Recent games", row[`${stat}_avg_5`]],
+                  ["This season", row[`${stat}_season_avg`]],
+                  [`Vs ${opponentName}`, row[`${stat}_vs_opponent`]],
+                ] as const;
+                return (
+                  <div key={stat} className="flex flex-wrap items-center gap-2">
+                    <span className="w-20 font-medium">{targetLabel(stat)}</span>
+                    {facts.map(([label, v]) => (
+                      <span key={label} className="rounded-full bg-muted px-3 py-1 text-footnote">
+                        {label} <strong className="text-foreground">{v == null ? "—" : Math.round(v)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <p className="text-footnote text-muted-foreground">
+            Updated {formatRelativeTime(prediction.created_at)}.{" "}
+            <a href="/models" className="text-primary hover:underline">
+              How accurate are these forecasts?
+            </a>
+          </p>
+        </div>
+      </details>
     </div>
   );
 }
 
-/** Shows the stored forecast for this game, or makes one on request (stored before tip-off). */
+/** The forecast for one game in plain language; technical detail sits behind a disclosure. */
 export function Forecast({
   initial,
+  unavailable,
   playerId,
   gameId,
+  playerName,
+  opponentName,
 }: {
   initial: Prediction | null;
+  unavailable?: { code: string; message: string } | null;
   playerId: number;
   gameId: string;
+  playerName: string;
+  opponentName: string;
 }) {
   const [prediction, setPrediction] = useState(initial);
   const [error, setError] = useState<ApiError | null>(null);
@@ -157,21 +181,33 @@ export function Forecast({
     });
   }
 
-  if (prediction) return <ForecastView prediction={prediction} onRefresh={request} pending={pending} />;
-  if (error) {
-    const known = ERROR_TITLES[error.code];
-    const { title, message } = known ? { title: known, message: error.message } : describeError(error);
+  if (prediction) {
     return (
-      <Unavailable kind={error.code === "insufficient_data" ? "no_games" : kindForError(error)} title={title}>
+      <ForecastView
+        prediction={prediction}
+        playerName={playerName}
+        opponentName={opponentName}
+        onRefresh={request}
+        pending={pending}
+      />
+    );
+  }
+  const reason = error ?? (unavailable ? new ApiError(422, unavailable.code, unavailable.message) : null);
+  if (reason) {
+    const known = ERROR_TITLES[reason.code];
+    const { title, message } = known ? { title: known, message: reason.message } : describeError(reason);
+    return (
+      <Unavailable
+        kind={reason.code === "insufficient_data" ? "no_games" : kindForError(reason)}
+        title={title}
+      >
         {message}
       </Unavailable>
     );
   }
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed border-border p-5">
-      <p className="min-w-0 flex-1 text-subhead text-muted-foreground">
-        No forecast is stored for this game yet. One is made from final games so far and kept unchanged.
-      </p>
+      <p className="min-w-0 flex-1 text-subhead text-muted-foreground">No forecast for this game yet.</p>
       <button
         type="button"
         onClick={request}

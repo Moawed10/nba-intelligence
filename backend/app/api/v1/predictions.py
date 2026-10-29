@@ -4,7 +4,13 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Response
 
 from app.api.deps import Ctx
-from app.schemas.predictions import Prediction, PredictionExplanation, PredictionRequest
+from app.schemas.predictions import (
+    Prediction,
+    PredictionExplanation,
+    PredictionRequest,
+    UpcomingForecast,
+    UpcomingRequest,
+)
 from app.services import predictions
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -17,6 +23,12 @@ def create_prediction(ctx: Ctx, body: PredictionRequest, response: Response) -> 
     prediction, created = predictions.create_prediction(ctx, body.player_id, body.game_id)
     response.status_code = 201 if created else 200
     return prediction
+
+
+@router.post("/upcoming", response_model=list[UpcomingForecast])
+def upcoming_forecasts(ctx: Ctx, body: UpcomingRequest) -> list[UpcomingForecast]:
+    """Forecast every game a player has in the next `days` days (stored, reused while current)."""
+    return predictions.upcoming(ctx, body.player_id, body.days)
 
 
 @router.get("", response_model=list[Prediction])

@@ -17,7 +17,7 @@ test.describe("predictions", () => {
     await expect(page.getByRole("heading", { name: "Zed Fixture" })).toBeVisible();
   });
 
-  test("lists upcoming games and switches the forecast between them", async ({ page }) => {
+  test("forecasts every upcoming game and explains it in plain language", async ({ page }) => {
     await page.goto("/predict?player=1000");
     const games = page.getByRole("region", { name: "Upcoming games" });
     const list = games.getByRole("listbox", { name: "Upcoming games" });
@@ -26,32 +26,29 @@ test.describe("predictions", () => {
       "aria-selected",
       "true",
     );
-    const forecast = page.getByRole("region", { name: "Forecast vs BBB" });
-    await forecast.getByRole("button", { name: "Make forecast" }).click();
-    await expect(
-      forecast.getByRole("img", { name: /^Points: predicted 24\.0, likely range 16\.0 to 32\.0/ }),
-    ).toBeVisible();
-    await expect(forecast.getByText("25%")).toBeVisible();
-    await expect(forecast.getByText("Up to date")).toBeVisible();
-    await expect(forecast.getByText(/Inputs: last 5 23\.0 · last 10 22\.0/)).toBeVisible();
-    await expect(forecast.getByText("111.9")).toBeVisible();
+    await expect(list.getByRole("option", { name: /@ Bravo Bears.*26/ })).toBeVisible();
 
-    await list.getByRole("option", { name: /@ Bravo Bears/ }).click();
-    await expect(page).toHaveURL(/game=0099000103/);
-    await expect(page.getByRole("region", { name: "Forecast @ BBB" })).toBeVisible();
+    const forecast = page.getByRole("region", { name: "Forecast vs BBB" });
+    await expect(forecast.getByText(/expected to score about 24 points/)).toBeVisible();
+    await expect(forecast.getByText("Usually 16–32")).toBeVisible();
+    await expect(forecast.getByText("25%")).toBeVisible();
+    await expect(forecast.getByText(/In 3 games since 2097-98/)).toBeVisible();
+    await expect(forecast.getByText("111.9")).toBeVisible();
+    await forecast.getByText("What is this based on?").click();
+    await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });
 
   test("switching games replaces the forecast instead of keeping the previous one", async ({ page }) => {
     await page.goto("/predict?player=1000");
-    const first = page.getByRole("region", { name: "Forecast vs BBB" });
-    await first.getByRole("button", { name: "Make forecast" }).click();
-    await expect(first.getByRole("img", { name: /^Points: predicted/ })).toBeVisible();
-
+    await expect(
+      page.getByRole("region", { name: "Forecast vs BBB" }).getByText(/about 24 points/),
+    ).toBeVisible();
     const list = page.getByRole("listbox", { name: "Upcoming games" });
     await list.getByRole("option", { name: /@ Bravo Bears/ }).click();
+    await expect(page).toHaveURL(/game=0099000103/);
     const second = page.getByRole("region", { name: "Forecast @ BBB" });
-    await expect(second.getByRole("button", { name: "Make forecast" })).toBeVisible();
-    await expect(second.getByRole("img", { name: /^Points: predicted/ })).toHaveCount(0);
+    await expect(second.getByText(/about 26 points/)).toBeVisible();
+    await expect(second.getByText(/about 24 points/)).toHaveCount(0);
   });
 
   test("upcoming games can be chosen with the keyboard", async ({ page, isMobile }) => {
@@ -71,7 +68,6 @@ test.describe("predictions", () => {
   test("explains when a player has too few games for a forecast", async ({ page }) => {
     await page.goto("/predict?player=1001");
     const forecast = page.getByRole("region", { name: /^Forecast/ });
-    await forecast.getByRole("button", { name: "Make forecast" }).click();
     await expect(forecast.getByText("Not enough recent games for a forecast")).toBeVisible();
   });
 

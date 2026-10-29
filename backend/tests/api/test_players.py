@@ -190,3 +190,19 @@ def test_stat_sort_survives_players_who_only_had_did_not_play_lines(client, load
     assert rows[NO_SHOTS]["season_averages"]["games_played"] == 0
     assert rows[NO_SHOTS]["season_averages"]["pts"] is None
     assert list(rows)[-1] == NO_SHOTS  # no per-game value sorts last
+
+
+def test_matchup_history_against_one_team(client):
+    body = client.get(f"/api/v1/players/{STAR}/matchups/2").json()
+    assert body["opponent"]["id"] == 2
+    assert body["games"] == len(body["meetings"]) == 2
+    dates = [m["game_date"] for m in body["meetings"]]
+    assert dates == sorted(dates, reverse=True)
+    assert all(m["opponent"]["id"] == 2 for m in body["meetings"])
+    points = [m["box"]["pts"] for m in body["meetings"]]
+    assert body["averages"]["pts"] == pytest.approx(sum(points) / 2)
+    assert body["wins"] + body["losses"] == 2
+    assert (
+        client.get(f"/api/v1/players/{STAR}/matchups/99").json()["error"]["code"]
+        == "team_not_found"
+    )

@@ -5,13 +5,19 @@ import uuid
 from sqlalchemy import select
 
 from app.api.deps import Context
-from app.api.errors import not_found
+from app.api.errors import ApiError, not_found
 from app.ml.artifacts import ArtifactMismatch
 from app.ml.inference import ActiveRelease, active_release
-from app.models import ModelRelease, Prediction, PredictionEvaluation, PredictionValue
+from app.models import ModelRelease, Player, Prediction, PredictionEvaluation, PredictionValue
 from app.models.predictions import PredictedStat
-from app.schemas.predictions import PredictedValue, PredictionExplanation
+from app.schemas.predictions import (
+    PredictedValue,
+    PredictionExplanation,
+    Unavailable,
+    UpcomingForecast,
+)
 from app.schemas.predictions import Prediction as PredictionOut
+from app.services import games as games_service
 from app.services.prediction_lifecycle import Freshness, FreshnessState, forecast, freshness
 
 HISTORY_LIMIT = 20
@@ -106,3 +112,26 @@ def history(ctx: Context, player_id: int, game_id: str | None) -> list[Predictio
         query.order_by(Prediction.created_at.desc()).limit(HISTORY_LIMIT)
     ).all()
     return [_out(ctx, r) for r in rows]
+
+
+def upcoming(ctx: Context, player_id: int, days: int) -> list[UpcomingForecast]:
+    """Forecasts for every game the player has in the next `days` days. Each stored forecast is
+    reused while its inputs are unchanged, so repeating the call never duplicates rows."""
+    if ctx.session.get(Player, player_id) is None:
+        raise not_found("player", player_id)
+    out: list[UpcomingForecast] = []
+    for game in games_service.upcoming(ctx, days, player_id):
+        try:
+            row, _ = forecast(ctx.session, ctx.state.artifacts_dir, ctx.now, player_id, game.id)
+        except ApiError as error:
+            ctx.session.rollback()
+            if error.status == 503 and error.code == "model_unavailable":
+                raise
+            reason = Unavailable(code=error.code, message=error.message)
+            out.append(UpcomingForecast(game=game, prediction=None, unavailable=reason))
+            continue
+        current = FreshnessState(Freshness.current)
+        out.append(
+            UpcomingForecast(game=game, prediction=_out(ctx, row, current), unavailable=None)
+        )
+    return out

@@ -405,3 +405,18 @@ def test_worker_job_scores_and_refreshes(league, tmp_path, serving):
         "refreshed": 0,
         "skipped": 0,
     }
+
+
+def test_upcoming_forecasts_every_scheduled_game_once(serving):
+    body = serving.post("/api/v1/predictions/upcoming", json={"player_id": STAR}).json()
+    assert [entry["game"]["id"] for entry in body] == [NEXT_GAME.id]
+    assert body[0]["unavailable"] is None
+    first_id = body[0]["prediction"]["id"]
+    again = serving.post("/api/v1/predictions/upcoming", json={"player_id": STAR}).json()
+    assert again[0]["prediction"]["id"] == first_id
+
+
+def test_upcoming_explains_games_it_cannot_forecast(serving):
+    body = serving.post("/api/v1/predictions/upcoming", json={"player_id": TEAM_TWO}).json()
+    assert body and all(entry["prediction"] is None for entry in body)
+    assert {entry["unavailable"]["code"] for entry in body} == {"insufficient_data"}

@@ -1238,6 +1238,114 @@
         "title": "LiveStat",
         "type": "object"
       },
+      "MatchupHistory": {
+        "description": "A player's games against one opponent, every season stored (2018-19 onward).",
+        "properties": {
+          "averages": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Averages",
+            "type": "object"
+          },
+          "fg3_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3 Pct"
+          },
+          "fg_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg Pct"
+          },
+          "first_season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Season"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "last_season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Season"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "meetings": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerGameLine"
+            },
+            "title": "Meetings",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "wins": {
+            "title": "Wins",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_id",
+          "opponent",
+          "games",
+          "wins",
+          "losses",
+          "averages",
+          "fg_pct",
+          "fg3_pct",
+          "first_season",
+          "last_season",
+          "meetings",
+          "meta"
+        ],
+        "title": "MatchupHistory",
+        "type": "object"
+      },
       "Meta": {
         "properties": {
           "data_freshness": {
@@ -3753,6 +3861,80 @@
         ],
         "title": "TrendPoint",
         "type": "object"
+      },
+      "Unavailable": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "Unavailable",
+        "type": "object"
+      },
+      "UpcomingForecast": {
+        "description": "One scheduled game with its stored forecast, or the reason there is none.",
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameSummary"
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Prediction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Unavailable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "game",
+          "prediction",
+          "unavailable"
+        ],
+        "title": "UpcomingForecast",
+        "type": "object"
+      },
+      "UpcomingRequest": {
+        "properties": {
+          "days": {
+            "default": 14,
+            "maximum": 14.0,
+            "minimum": 1.0,
+            "title": "Days",
+            "type": "integer"
+          },
+          "player_id": {
+            "minimum": 1.0,
+            "title": "Player Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_id"
+        ],
+        "title": "UpcomingRequest",
+        "type": "object"
       }
     }
   },
@@ -5373,6 +5555,102 @@
         ]
       }
     },
+    "/api/v1/players/{player_id}/matchups/{team_id}": {
+      "get": {
+        "description": "How the player has done against one team, every stored season.",
+        "operationId": "get_matchup_api_v1_players__player_id__matchups__team_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Team Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchupHistory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Matchup",
+        "tags": [
+          "players"
+        ]
+      }
+    },
     "/api/v1/players/{player_id}/photo": {
       "get": {
         "description": "Copied once from the NBA's image server and then served locally; 404 when none exists.",
@@ -5893,6 +6171,92 @@
           }
         },
         "summary": "Create Prediction",
+        "tags": [
+          "predictions"
+        ]
+      }
+    },
+    "/api/v1/predictions/upcoming": {
+      "post": {
+        "description": "Forecast every game a player has in the next `days` days (stored, reused while current).",
+        "operationId": "upcoming_forecasts_api_v1_predictions_upcoming_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpcomingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UpcomingForecast"
+                  },
+                  "title": "Response Upcoming Forecasts Api V1 Predictions Upcoming Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Upcoming Forecasts",
         "tags": [
           "predictions"
         ]

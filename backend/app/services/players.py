@@ -8,10 +8,11 @@ from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
 from app.api.errors import invalid_parameter, not_found
-from app.models import Game, Player, PlayerGameStats, Season, SeasonType, Team
+from app.models import Game, GameStatus, Player, PlayerGameStats, Season, SeasonType, Team
 from app.schemas.common import Page, StatSummary
 from app.schemas.resources import (
     DirectoryPlayer,
+    MatchupHistory,
     PlayerGameLine,
     PlayerIdentity,
     PlayerProfile,
@@ -26,7 +27,15 @@ from app.schemas.resources import (
 )
 from app.services.common import box, resolve_season, shooting, stat_line, team_ref
 from app.services.insights import averages_from_row, season_totals
-from app.stats import Line, aggregate, is_double_double, rest_days_series, rolling_previous
+from app.stats import (
+    Line,
+    aggregate,
+    is_double_double,
+    per_game,
+    ratio,
+    rest_days_series,
+    rolling_previous,
+)
 
 DATASET = "player_game_logs"
 PROFILE_TTL = 1800
@@ -413,3 +422,48 @@ def trends(
 
     key = (player_id, stat, season, season_type)
     return ctx.cached_model("player_trends", PROFILE_TTL, key, DATASET, compute)
+
+
+MATCHUP_AVERAGES = ("pts", "reb", "ast", "fg3m", "stl", "blk")
+MATCHUP_MEETINGS = 10
+
+
+def matchup(ctx: Context, player_id: int, team_id: int) -> MatchupHistory:
+    """Every stored game the player played against one team (did-not-play lines excluded)."""
+
+    def compute() -> MatchupHistory:
+        _player_or_404(ctx.session, player_id)
+        opponent = ctx.session.get(Team, team_id)
+        if opponent is None:
+            raise not_found("team", team_id)
+        opponent_id = case(
+            (Game.home_team_id == PlayerGameStats.team_id, Game.away_team_id),
+            else_=Game.home_team_id,
+        )
+        stmt = _game_rows_query(player_id).where(
+            opponent_id == team_id, PlayerGameStats.minutes > 0, Game.status == GameStatus.final
+        )
+        rows = _rows(ctx.session, stmt.order_by(desc(Game.game_date), Game.id))
+        lines = [_game_line(r) for r in rows]
+        games = len(rows)
+        totals = {k: sum(getattr(r.stats, k) for r in rows) for k in MATCHUP_AVERAGES}
+        minutes = sum(float(r.stats.minutes) for r in rows)
+        averages = {k: per_game(float(v), games) for k, v in totals.items()}
+        averages["min"] = per_game(minutes, games)
+        made = {k: sum(getattr(r.stats, k) for r in rows) for k in ("fgm", "fga", "fg3m", "fg3a")}
+        return MatchupHistory(
+            player_id=player_id,
+            opponent=team_ref(opponent),
+            games=games,
+            wins=sum(line.result == "W" for line in lines),
+            losses=sum(line.result == "L" for line in lines),
+            averages=averages,
+            fg_pct=ratio(made["fgm"], made["fga"]).value,
+            fg3_pct=ratio(made["fg3m"], made["fg3a"]).value,
+            first_season=rows[-1].season if rows else None,
+            last_season=rows[0].season if rows else None,
+            meetings=lines[:MATCHUP_MEETINGS],
+            meta=ctx.meta(DATASET),
+        )
+
+    return ctx.cached_model("player_matchup", 1800, (player_id, team_id), DATASET, compute)

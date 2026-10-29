@@ -30,11 +30,14 @@ export function GamePicker({
   playerId,
   teamId,
   selectedId,
+  forecasts,
 }: {
   games: GameSummary[];
   playerId: number;
   teamId: number;
   selectedId: string | null;
+  /** Expected points, rebounds and assists per game id; null when the game can't be forecast. */
+  forecasts: Record<string, number[] | null>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -79,7 +82,18 @@ export function GamePicker({
                   {game.tipoff_at ? formatGameTime(game.tipoff_at) : formatGameDate(game.game_date, true)}
                 </span>
               </span>
-              {game.id === selectedId && <span className="kicker text-primary">Selected</span>}
+              {forecasts[game.id] ? (
+                <span className="flex gap-3 text-right">
+                  {forecasts[game.id]!.map((v, i) => (
+                    <span key={i}>
+                      <span className="numeral block text-title3">{Math.round(v)}</span>
+                      <span className="kicker">{["PTS", "REB", "AST"][i]}</span>
+                    </span>
+                  ))}
+                </span>
+              ) : (
+                game.id === selectedId && <span className="kicker text-primary">Selected</span>
+              )}
             </span>
           );
         }}

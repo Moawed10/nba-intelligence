@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.resources import GameSummary
+
 
 class PredictionRequest(BaseModel):
     player_id: int = Field(ge=1)
@@ -45,3 +47,21 @@ class PredictionExplanation(BaseModel):
     inputs: dict[str, Any]
     context: dict[str, Any]
     features: dict[str, float | None]
+
+
+class UpcomingRequest(BaseModel):
+    player_id: int = Field(ge=1)
+    days: int = Field(default=14, ge=1, le=14)
+
+
+class Unavailable(BaseModel):
+    code: str
+    message: str
+
+
+class UpcomingForecast(BaseModel):
+    """One scheduled game with its stored forecast, or the reason there is none."""
+
+    game: GameSummary
+    prediction: Prediction | None
+    unavailable: Unavailable | None

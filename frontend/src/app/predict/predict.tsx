@@ -4,17 +4,17 @@ import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { Panel } from "@/components/data/panel";
-import { StatTile } from "@/components/data/stat-tile";
 import { Unavailable } from "@/components/data/unavailable";
-import { serverTry } from "@/lib/api/server";
+import { serverPostTry, serverTry } from "@/lib/api/server";
 import type {
   GameSummary,
   Leaders,
   ModelReleaseSummary,
   PlayerGameLine,
+  MatchupHistory,
   PlayerProfile,
-  Prediction,
   TeamSeasonStats,
+  UpcomingForecast,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
 import { param, type SearchParams } from "@/lib/url";
@@ -27,12 +27,6 @@ import { PredictPicker } from "./predict-client";
 const PLAYER_ID = /^\d{1,10}$/;
 const LOOKAHEAD_DAYS = 14;
 const FORM_GAMES = 5;
-const FORM_STATS = [
-  { key: "pts", label: "Points" },
-  { key: "reb", label: "Rebounds" },
-  { key: "ast", label: "Assists" },
-  { key: "min", label: "Minutes" },
-] as const;
 
 const DAY_MS = 86_400_000;
 const daysBetween = (from: string, to: string) =>
@@ -59,7 +53,7 @@ function servingNote(releases: ModelReleaseSummary[] | null): { title: string; b
   };
 }
 
-function average(lines: PlayerGameLine[], key: (typeof FORM_STATS)[number]["key"]): number | null {
+function average(lines: PlayerGameLine[], key: "pts" | "reb" | "ast" | "min"): number | null {
   if (!lines.length) return null;
   const total = lines.reduce((sum, l) => sum + (key === "min" ? l.minutes : l.box[key]), 0);
   return Math.round((total / lines.length) * 10) / 10;
@@ -85,6 +79,83 @@ async function QuickPicks() {
         ))}
       </ul>
     </div>
+  );
+}
+
+function HeadToHead({
+  history,
+  name,
+  opponent,
+}: {
+  history: MatchupHistory | null;
+  name: string;
+  opponent: string;
+}) {
+  return (
+    <section aria-labelledby="head-to-head" className="space-y-3">
+      <h3 id="head-to-head" className="kicker">
+        {name} against the {opponent}
+      </h3>
+      {!history || history.games === 0 ? (
+        <p className="text-subhead text-muted-foreground">
+          No previous games against them in our records, which start in 2018-19.
+        </p>
+      ) : (
+        <>
+          <p className="text-subhead">
+            In <strong>{history.games}</strong> {history.games === 1 ? "game" : "games"} since{" "}
+            {history.first_season}, {name} averaged{" "}
+            <strong>{formatStat(history.averages.pts ?? null)} points</strong>,{" "}
+            {formatStat(history.averages.reb ?? null)} rebounds and {formatStat(history.averages.ast ?? null)}{" "}
+            assists against them. {name}&apos;s team won {history.wins} and lost {history.losses}.
+          </p>
+          <div
+            role="region"
+            aria-label={`Recent games against the ${opponent}`}
+            tabIndex={0}
+            className="overflow-x-auto"
+          >
+            <table className="w-full text-subhead tabular-nums">
+              <thead className="text-footnote text-muted-foreground">
+                <tr className="border-b border-border">
+                  <th scope="col" className="py-1.5 text-left font-medium">
+                    Date
+                  </th>
+                  <th scope="col" className="py-1.5 text-left font-medium">
+                    Result
+                  </th>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    PTS
+                  </th>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    REB
+                  </th>
+                  <th scope="col" className="py-1.5 text-right font-medium">
+                    AST
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.meetings.slice(0, 5).map((m) => (
+                  <tr key={m.game_id} className="border-b border-border/50 last:border-0">
+                    <th scope="row" className="py-1.5 text-left font-normal">
+                      {formatGameDate(m.game_date, true)}
+                    </th>
+                    <td className="py-1.5">
+                      {m.result === "W" ? "Won" : m.result === "L" ? "Lost" : "—"} {m.team_score}–
+                      {m.opponent_score}
+                    </td>
+                    <td className="py-1.5 text-right font-semibold">{m.box.pts}</td>
+                    <td className="py-1.5 text-right">{m.box.reb}</td>
+                    <td className="py-1.5 text-right">{m.box.ast}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -137,10 +208,18 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   const restDays = gap > 0 ? gap - 1 : null;
   const note = servingNote(releases.data);
   const serving = releases.data?.some((r) => r.status === "active") ?? false;
-  const stored =
-    serving && game
-      ? await serverTry<Prediction[]>("/predictions", { player_id: player.id, game_id: game.id })
-      : null;
+  const [forecasts, matchup] = await Promise.all([
+    serving && games.length
+      ? serverPostTry<UpcomingForecast[]>("/predictions/upcoming", {
+          player_id: player.id,
+          days: LOOKAHEAD_DAYS,
+        })
+      : null,
+    opponent ? serverTry<MatchupHistory>(`/players/${player.id}/matchups/${opponent.id}`) : null,
+  ]);
+  const byGame = new Map((forecasts?.data ?? []).map((f) => [f.game.id, f]));
+  const selected = game ? byGame.get(game.id) : undefined;
+  const firstName = player.full_name.split(" ")[0];
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
@@ -158,7 +237,18 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                 : "This player isn't on a current roster."}
             </Unavailable>
           ) : (
-            <GamePicker games={games} playerId={player.id} teamId={teamId!} selectedId={game?.id ?? null} />
+            <GamePicker
+              games={games}
+              playerId={player.id}
+              teamId={teamId!}
+              selectedId={game?.id ?? null}
+              forecasts={Object.fromEntries(
+                [...byGame].map(([id, f]) => [
+                  id,
+                  f.prediction ? f.prediction.values.slice(0, 3).map((v) => v.point) : null,
+                ]),
+              )}
+            />
           )}
         </Panel>
       </div>
@@ -191,9 +281,12 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
             {serving ? (
               <Forecast
                 key={game.id}
-                initial={stored?.data?.[0] ?? null}
+                initial={selected?.prediction ?? null}
+                unavailable={selected?.unavailable ?? null}
                 playerId={player.id}
                 gameId={game.id}
+                playerName={player.full_name}
+                opponentName={opponent.name}
               />
             ) : (
               <Unavailable
@@ -209,69 +302,50 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               </Unavailable>
             )}
 
-            <div>
-              <h3 className="kicker mb-3">Context · from final box scores so far</h3>
-              {recent.length ? (
-                <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {FORM_STATS.map(({ key, label }) => {
-                    const form = average(recent, key);
-                    const base = season ? season.per_game[key] : null;
-                    return (
-                      <StatTile
-                        key={key}
-                        label={label}
-                        value={form}
-                        delta={
-                          form != null && base != null && season!.games_played > recent.length
-                            ? { value: Math.round((form - base) * 10) / 10, versus: "season" }
-                            : null
-                        }
-                        footnote={`Last ${recent.length} games`}
-                        className="bg-muted/50"
-                      />
-                    );
-                  })}
-                </dl>
-              ) : (
-                <Unavailable kind="no_games" title="No completed games yet" />
-              )}
-              <dl className="mt-3 grid gap-3 text-subhead sm:grid-cols-3">
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <dt className="text-footnote text-muted-foreground">Rest before this game</dt>
-                  <dd className="font-semibold">
+            <HeadToHead
+              history={matchup?.data ?? null}
+              name={firstName}
+              opponent={`${opponent.city} ${opponent.name}`}
+            />
+
+            <section aria-labelledby="good-to-know" className="space-y-3">
+              <h3 id="good-to-know" className="kicker">
+                Good to know
+              </h3>
+              <ul className="grid gap-3 text-subhead sm:grid-cols-3">
+                <li className="rounded-xl bg-muted/40 p-4">
+                  <span className="block text-footnote text-muted-foreground">Recent form</span>
+                  {recent.length ? (
+                    <>
+                      <strong className="numeral block text-title2">
+                        {formatStat(average(recent, "pts"))} pts
+                      </strong>
+                      per game over the last {recent.length} {recent.length === 1 ? "game" : "games"}
+                    </>
+                  ) : (
+                    "No games played yet"
+                  )}
+                </li>
+                <li className="rounded-xl bg-muted/40 p-4">
+                  <span className="block text-footnote text-muted-foreground">Rest</span>
+                  <strong className="numeral block text-title2">
                     {restDays == null
                       ? "—"
                       : restDays === 0
-                        ? "Back-to-back"
+                        ? "None"
                         : `${restDays} ${restDays === 1 ? "day" : "days"}`}
-                  </dd>
-                  {lastPlayed && (
-                    <dd className="text-footnote text-muted-foreground">
-                      Last played {formatGameDate(lastPlayed, true)}
-                    </dd>
-                  )}
-                </div>
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <dt className="text-footnote text-muted-foreground">
-                    {opponent.abbreviation} defensive rating
-                  </dt>
-                  <dd className="font-semibold tabular-nums">
+                  </strong>
+                  {restDays === 0 ? "Second game in two nights" : "off before this game"}
+                </li>
+                <li className="rounded-xl bg-muted/40 p-4">
+                  <span className="block text-footnote text-muted-foreground">{opponent.name} defense</span>
+                  <strong className="numeral block text-title2">
                     {formatStat(opponentStats?.data?.defensive_rating ?? null)}
-                  </dd>
-                  <dd className="text-footnote text-muted-foreground">
-                    Points allowed per 100 possessions, {game.season}
-                    {opponentStats?.data ? ` · ${opponentStats.data.games} games` : ""}
-                  </dd>
-                </div>
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <dt className="text-footnote text-muted-foreground">{opponent.abbreviation} pace</dt>
-                  <dd className="font-semibold tabular-nums">
-                    {formatStat(opponentStats?.data?.pace ?? null)}
-                  </dd>
-                  <dd className="text-footnote text-muted-foreground">Possessions per 48 minutes</dd>
-                </div>
-              </dl>
-            </div>
+                  </strong>
+                  points allowed per 100 possessions this season (higher is easier to score on)
+                </li>
+              </ul>
+            </section>
           </div>
         )}
       </Panel>

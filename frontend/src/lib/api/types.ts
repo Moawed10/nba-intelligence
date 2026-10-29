@@ -44,3 +44,5 @@ export type TeamHistory = Schemas["TeamHistory"];
 export type HistoricSeason = Schemas["HistoricSeason"];
 export type LiveAccuracy = Schemas["LiveAccuracy"];
 export type PredictionExplanation = Schemas["PredictionExplanation"];
+export type UpcomingForecast = Schemas["UpcomingForecast"];
+export type MatchupHistory = Schemas["MatchupHistory"];

@@ -347,28 +347,51 @@ createServer((req, res) => {
     });
   }
   if (path.startsWith("/models/")) return error(res, 404, "model_not_found", "No such model version.");
-  // Predictions are stateless here: GET lists none, POST returns a fixed synthetic forecast.
+  // Predictions are stateless here: GET lists none, POST returns a fixed synthetic forecast whose
+  // points depend on the game, so switching games visibly changes the numbers.
+  const stubForecast = (player_id, game_id) => {
+    const pts = game_id === "0099000103" ? 26 : 24;
+    const value = (stat, point, half) => ({ stat, point, lower: Math.max(0, point - half), upper: point + half, interval_level: 0.8 });
+    return {
+      id: `00000000-0000-4000-8000-0000000000${game_id.slice(-2)}`, player_id, game_id, release_version: RELEASE.version,
+      kind: "pregame", status: "ok", created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
+      feature_schema_version: "stub", double_double_probability: 0.25, supersedes_prediction_id: null,
+      freshness: "current", freshness_reason: null, actuals: null,
+      values: [value("pts", pts, 8), value("reb", 7, 3), value("ast", 5, 2.5), value("fg3m", 2, 1.5),
+        value("stl", 1, 1), value("blk", 0.5, 0.5), value("min", 33, 6)],
+      explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: {} },
+    };
+  };
+  const tooFew = { code: "insufficient_data", message: "Forecasts need at least 5 games this season or last; this player has 2." };
   if (path === "/predictions" && req.method === "GET") return send(res, 200, []);
-  if (path === "/predictions" && req.method === "POST") {
+  if ((path === "/predictions" || path === "/predictions/upcoming") && req.method === "POST") {
     let raw = "";
     req.on("data", (chunk) => (raw += chunk));
     req.on("end", () => {
       const { player_id, game_id } = JSON.parse(raw || "{}");
-      if (player_id === 1001) {
-        return error(res, 422, "insufficient_data", "Forecasts need at least 5 games this season or last; this player has 2.");
+      if (path === "/predictions") {
+        if (player_id === 1001) return error(res, 422, tooFew.code, tooFew.message);
+        return send(res, 201, stubForecast(player_id, game_id));
       }
-      const value = (stat, point, half) => ({ stat, point, lower: Math.max(0, point - half), upper: point + half, interval_level: 0.8 });
-      send(res, 201, {
-        id: "00000000-0000-4000-8000-000000000001", player_id, game_id, release_version: RELEASE.version,
-        kind: "pregame", status: "ok", created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
-        feature_schema_version: "stub", double_double_probability: 0.25, supersedes_prediction_id: null,
-        freshness: "current", freshness_reason: null, actuals: null,
-        values: [value("pts", 24, 8), value("reb", 7, 3), value("ast", 5, 2.5), value("fg3m", 2, 1.5),
-          value("stl", 1, 1), value("blk", 0.5, 0.5), value("min", 33, 6)],
-        explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: {} },
-      });
+      const player = PLAYERS.find((p) => p.id === player_id);
+      const games = GAMES.filter((g) => g.status === "scheduled" && [g.home.team.id, g.away.team.id].includes(player?.team?.id));
+      send(res, 200, games.map((g) => player_id === 1001
+        ? { game: g, prediction: null, unavailable: tooFew }
+        : { game: g, prediction: stubForecast(player_id, g.id), unavailable: null }));
     });
     return;
+  }
+  const matchupMatch = path.match(/^\/players\/(\d+)\/matchups\/(\d+)$/);
+  if (matchupMatch) {
+    const opponent = TEAMS.find((t) => t.id === Number(matchupMatch[2]));
+    const player = PLAYERS.find((p) => p.id === Number(matchupMatch[1]));
+    if (!opponent || !player) return error(res, 404, "team_not_found", "No such team.");
+    const meetings = gameLines(player, "2099-00").slice(0, 3).map((l) => ({ ...l, opponent: ref(opponent) }));
+    return send(res, 200, {
+      player_id: player.id, opponent: ref(opponent), games: 3, wins: 2, losses: 1,
+      averages: { pts: 21.5, reb: 6.2, ast: 4.4, fg3m: 1.3, stl: 0.7, blk: 0.3, min: 31.2 },
+      fg_pct: 0.48, fg3_pct: 0.36, first_season: "2097-98", last_season: "2099-00", meetings, meta: META,
+    });
   }
   if (path === "/players") {
     let items = PLAYERS;

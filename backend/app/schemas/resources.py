@@ -401,3 +401,20 @@ class LiveAccuracy(BaseModel):
     games: int
     stats: list[LiveStat]
     double_double: LiveDoubleDouble | None
+
+
+class MatchupHistory(BaseModel):
+    """A player's games against one opponent, every season stored (2018-19 onward)."""
+
+    player_id: int
+    opponent: TeamRef
+    games: int
+    wins: int
+    losses: int
+    averages: dict[str, float | None]
+    fg_pct: float | None
+    fg3_pct: float | None
+    first_season: str | None
+    last_season: str | None
+    meetings: list[PlayerGameLine]
+    meta: Meta
