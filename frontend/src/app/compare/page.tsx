@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { NotConnected } from "@/components/data/not-connected";
 import { PageHeader } from "@/components/data/page-header";
+import { LoadingBlock } from "@/components/data/state-view";
+
+import { CompareView } from "./compare";
 
 export const metadata: Metadata = { title: "Compare" };
 
-export default function ComparePage() {
+export default function ComparePage({ searchParams }: PageProps<"/compare">) {
   return (
     <>
       <PageHeader
+        kicker="Head to head"
         title="Compare"
-        description="Put two players side by side on the same season and the same definitions."
+        description="Two players, the same season, the same definitions."
       />
-      <NotConnected shows="side-by-side averages, efficiency and trends for two players" />
+      <Suspense fallback={<LoadingBlock label="Loading comparison" className="panel p-5" />}>
+        <CompareView searchParams={searchParams} />
+      </Suspense>
     </>
   );
 }
