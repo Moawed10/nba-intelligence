@@ -16,6 +16,8 @@ class FakeServer:
 
     def __call__(self, url: str) -> bytes:
         player = int(url.rsplit("/", 1)[1].removesuffix(".png"))
+        if "1040x760" in url and player in PHOTOS:
+            return PHOTOS[player] + b"large"
         self.calls.append(player)
         if self.down:
             raise PhotoSourceError("timed out")
@@ -72,3 +74,10 @@ def test_non_png_responses_are_refused(tmp_path):
     with pytest.raises(PhotoSourceError):
         cache.path(STAR)
     assert not list(tmp_path.glob("*.png"))
+
+
+def test_large_photos_are_cached_separately(client, server):
+    small = client.get(f"/api/v1/players/{STAR}/photo").content
+    large = client.get(f"/api/v1/players/{STAR}/photo", params={"size": "large"}).content
+    assert large == PHOTOS[STAR] + b"large" and small == PHOTOS[STAR]
+    assert client.get(f"/api/v1/players/{STAR}/photo", params={"size": "huge"}).status_code == 422

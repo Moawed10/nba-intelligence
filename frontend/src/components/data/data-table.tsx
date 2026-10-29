@@ -41,12 +41,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort }: 
   }, [rows, columns, sort]);
 
   return (
-    <div
-      role="region"
-      aria-label={caption}
-      tabIndex={0}
-      className="overflow-x-auto rounded-xl bg-card"
-    >
+    <div role="region" aria-label={caption} tabIndex={0} className="overflow-x-auto rounded-xl bg-card">
       <table className="w-full border-collapse text-subhead">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -72,8 +67,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort }: 
                       onClick={() =>
                         setSort({
                           key: column.key,
-                          direction:
-                            active && sort.direction === "descending" ? "ascending" : "descending",
+                          direction: active && sort.direction === "descending" ? "ascending" : "descending",
                         })
                       }
                       className="inline-flex min-h-8 items-center gap-1 hover:text-foreground"

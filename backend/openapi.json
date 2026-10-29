@@ -5388,6 +5388,20 @@
               "title": "Player Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": "small",
+              "enum": [
+                "small",
+                "large"
+              ],
+              "title": "Size",
+              "type": "string"
+            }
           }
         ],
         "responses": {

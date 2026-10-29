@@ -35,16 +35,12 @@ export function StatTile({ label, value, unit, delta, footnote, className }: Sta
   const direction = delta ? (delta.value > 0 ? "up" : delta.value < 0 ? "down" : "flat") : null;
   return (
     <div className={cn("rounded-xl bg-card p-4", className)}>
-      <dt className="text-footnote font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
+      <dt className="text-footnote font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-1">
         <span className="text-stat font-semibold tabular-nums tracking-tight">
           {value == null ? "—" : <AnimatedNumber value={value} />}
         </span>
-        {unit && value != null && (
-          <span className="ml-1 text-subhead text-muted-foreground">{unit}</span>
-        )}
+        {unit && value != null && <span className="ml-1 text-subhead text-muted-foreground">{unit}</span>}
         {value == null && <span className="sr-only">Not available</span>}
       </dd>
       {delta && (

@@ -15,7 +15,10 @@ export function PageHeader({
     <div className="flex flex-col gap-3 pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
         {kicker && <p className="kicker mb-2 text-primary">{kicker}</p>}
-        <h1 tabIndex={-1} className="text-large-title font-bold tracking-tight outline-none">
+        <h1
+          tabIndex={-1}
+          className="text-[2.5rem] leading-none font-extrabold outline-none sm:text-large-title"
+        >
           {title}
         </h1>
         {description && <p className="mt-2 text-body text-muted-foreground">{description}</p>}

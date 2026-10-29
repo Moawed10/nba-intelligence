@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query
 from fastapi.responses import FileResponse
@@ -68,12 +68,14 @@ def get_player(ctx: Ctx, player_id: PlayerId) -> PlayerProfile:
     response_class=FileResponse,
     responses={200: {"content": {"image/png": {}}, "description": "The player's photo"}},
 )
-def get_player_photo(ctx: Ctx, player_id: PlayerId) -> FileResponse:
+def get_player_photo(
+    ctx: Ctx, player_id: PlayerId, size: Literal["small", "large"] = "small"
+) -> FileResponse:
     """Copied once from the NBA's image server and then served locally; 404 when none exists."""
     if ctx.session.get(Player, player_id) is None:
         raise not_found("player", player_id)
     try:
-        path = ctx.state.photos.path(player_id)
+        path = ctx.state.photos.path(player_id, size)
     except PhotoSourceError:
         raise ApiError(503, "photo_unavailable", "The photo service is unavailable.") from None
     if path is None:

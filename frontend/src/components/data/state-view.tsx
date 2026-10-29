@@ -39,7 +39,10 @@ export function StateView({ kind, title, message, error, action, onRetry, classN
         className,
       )}
     >
-      <Icon aria-hidden className={cn("size-8", kind === "error" ? "text-negative" : "text-muted-foreground")} />
+      <Icon
+        aria-hidden
+        className={cn("size-8", kind === "error" ? "text-negative" : "text-muted-foreground")}
+      />
       <div className="max-w-md">
         <p className="text-headline font-semibold">{title ?? described?.title}</p>
         {(message ?? described?.message) && (

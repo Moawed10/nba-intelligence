@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
 import { CourtBackdrop } from "@/components/brand/court-backdrop";
-import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { ChartFrame } from "@/components/data/chart-frame";
@@ -144,27 +144,22 @@ function ProfileHero({
   return (
     <section
       aria-labelledby="player-name"
-      className="relative overflow-hidden rounded-2xl border border-border bg-card"
-      style={
-        color
-          ? {
-              backgroundImage: `linear-gradient(115deg, color-mix(in oklab, ${color} 30%, var(--card)) 0%, var(--card) 62%)`,
-            }
-          : undefined
-      }
+      className="relative isolate overflow-hidden rounded-3xl border border-border bg-card"
     >
+      {color && (
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{
+            background: `linear-gradient(115deg, color-mix(in oklab, ${color} 40%, transparent) 0%, transparent 60%)`,
+          }}
+        />
+      )}
       <CourtBackdrop color={color} />
-      <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-4 sm:gap-5">
-          <PlayerAvatar
-            id={player.id}
-            name={player.full_name}
-            team={player.team}
-            size="xl"
-            className="max-sm:size-16 max-sm:text-lg"
-          />
-          <div className="min-w-0">
-            <p className="kicker flex items-center gap-2">
+      <div className="relative grid items-end md:grid-cols-[1.25fr_1fr]">
+        <div className="order-2 flex flex-col gap-6 p-6 sm:p-9 md:order-1">
+          <div>
+            <p className="kicker flex items-center gap-2 text-foreground/80">
               {player.team && <TeamMark team={player.team} size="xs" />}
               {player.team
                 ? `${player.team.city} ${player.team.name}`
@@ -175,52 +170,62 @@ function ProfileHero({
             <h1
               id="player-name"
               tabIndex={-1}
-              className="mt-1 text-[2rem] leading-tight font-bold tracking-tight outline-none sm:text-display"
+              className="mt-2 text-[clamp(2.75rem,8vw,5.5rem)] leading-[0.88] outline-none"
             >
               {player.full_name}
             </h1>
-            <p className="mt-1 text-subhead text-muted-foreground">
+            <p className="mt-3 text-subhead text-muted-foreground">
               {identity(profile) || "Biography not available"}
             </p>
             <div className="mt-2">{freshness}</div>
           </div>
-        </div>
-        <div className="flex flex-col gap-4 lg:items-end">
           {line && (
-            <dl className="flex gap-6 sm:gap-8" aria-label={`${line.season} regular-season averages`}>
+            <dl
+              className="flex flex-wrap gap-x-8 gap-y-3"
+              aria-label={`${line.season} regular-season averages`}
+            >
               {HERO_STATS.map((s) => (
                 <div key={s.key}>
                   <dt className="kicker">{s.label}</dt>
-                  <dd className="text-[2.25rem] leading-none font-semibold tracking-tight tabular-nums sm:text-[2.75rem]">
+                  <dd className="numeral text-[clamp(2.75rem,6vw,4.5rem)]">
                     {formatStat(line.per_game[s.key])}
                   </dd>
                 </div>
               ))}
               <div>
                 <dt className="kicker">GP</dt>
-                <dd className="text-[2.25rem] leading-none font-semibold tracking-tight text-muted-foreground tabular-nums sm:text-[2.75rem]">
+                <dd className="numeral text-[clamp(2.75rem,6vw,4.5rem)] text-muted-foreground">
                   {line.games_played}
                 </dd>
               </div>
             </dl>
           )}
           <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/predict?player=${player.id}`}
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-subhead font-semibold text-primary-foreground transition-transform hover:brightness-110 active:scale-[0.98]"
-            >
-              <Target aria-hidden className="size-4" />
-              Predict next game
-            </Link>
+            {player.is_active && (
+              <Link
+                href={`/predict?player=${player.id}`}
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-subhead font-semibold text-primary-foreground transition-transform hover:brightness-110 active:scale-[0.98]"
+              >
+                <Target aria-hidden className="size-4" />
+                Predict next game
+              </Link>
+            )}
             <Link
               href={`/compare?p1=${player.id}`}
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card/70 px-4 text-subhead font-medium transition-colors hover:border-foreground/25 active:scale-[0.98]"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-card/70 px-5 text-subhead font-medium backdrop-blur transition-colors hover:border-foreground/25 active:scale-[0.98]"
             >
               <ArrowLeftRight aria-hidden className="size-4" />
               Compare
             </Link>
           </div>
         </div>
+        <PlayerCutout
+          id={player.id}
+          name={player.full_name}
+          team={player.team}
+          eager
+          className="order-1 h-60 sm:h-80 md:order-2 md:h-[26rem]"
+        />
       </div>
     </section>
   );

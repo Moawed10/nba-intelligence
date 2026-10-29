@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { CourtBackdrop } from "@/components/brand/court-backdrop";
-import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { PlayerCutout } from "@/components/brand/player-cutout";
 import { ApiErrorView } from "@/components/data/api-error";
 import { CompareBar } from "@/components/data/compare-bar";
 import { Panel } from "@/components/data/panel";
@@ -122,11 +122,11 @@ function Hero({
                 : "flex flex-col items-center gap-3 text-center"
             }
           >
-            <PlayerAvatar id={p.id} name={p.full_name} team={p.team} size="xl" />
+            <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager className="h-40 w-full sm:h-56" />
             <div>
               <Link
                 href={`/players/${p.id}?season=${season}`}
-                className="text-title3 font-semibold hover:text-primary"
+                className="font-[family-name:var(--font-display)] text-[clamp(1.5rem,3.5vw,2.5rem)] leading-none font-extrabold uppercase hover:text-primary"
               >
                 {p.full_name}
               </Link>
@@ -135,15 +135,13 @@ function Hero({
               </p>
             </div>
             <p className="text-subhead">
-              <span className="text-[2rem] leading-none font-semibold tabular-nums">
-                {i === 0 ? aLeads : bLeads}
-              </span>
+              <span className="numeral text-[2.75rem]">{i === 0 ? aLeads : bLeads}</span>
               <span className="block text-footnote text-muted-foreground">of {total} categories led</span>
             </p>
           </div>
         ))}
         <div className="order-last col-span-2 text-center md:order-2 md:col-span-1">
-          <p className="text-title2 font-semibold text-muted-foreground">vs</p>
+          <p className="numeral text-[3rem] text-muted-foreground">VS</p>
           <p className="kicker mt-1">{season} regular season</p>
           {ties > 0 && <p className="text-footnote text-muted-foreground">{ties} tied</p>}
         </div>

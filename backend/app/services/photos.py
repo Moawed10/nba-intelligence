@@ -13,7 +13,9 @@ from pathlib import Path
 
 import requests
 
-PHOTO_URL = "https://cdn.nba.com/headshots/nba/latest/260x190/{player_id}.png"
+PHOTO_URL = "https://cdn.nba.com/headshots/nba/latest/{dimensions}/{player_id}.png"
+# Transparent cutouts; "large" is for hero placements.
+SIZES = {"small": "260x190", "large": "1040x760"}
 SENTINEL_ID = 0  # never a real player; its photo is the silhouette
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 MAX_BYTES = 2_000_000
@@ -37,6 +39,10 @@ def download(url: str) -> bytes:
     return response.content
 
 
+def _suffix(size: str) -> str:
+    return "" if size == "small" else f"@{size}"
+
+
 @dataclass
 class PhotoCache:
     directory: Path
@@ -48,8 +54,8 @@ class PhotoCache:
         with self._guard:
             return self._locks.setdefault(key, threading.Lock())
 
-    def _get(self, player_id: int) -> bytes:
-        body = self.fetch(PHOTO_URL.format(player_id=player_id))
+    def _get(self, player_id: int, size: str) -> bytes:
+        body = self.fetch(PHOTO_URL.format(dimensions=SIZES[size], player_id=player_id))
         if body and (not body.startswith(PNG_SIGNATURE) or len(body) > MAX_BYTES):
             raise PhotoSourceError("response is not a PNG photo")
         return body
@@ -59,21 +65,21 @@ class PhotoCache:
         tmp.write_bytes(body)
         tmp.replace(path)
 
-    def _silhouette(self) -> bytes:
-        path = self.directory / "_silhouette.png"
+    def _silhouette(self, size: str) -> bytes:
+        path = self.directory / f"_silhouette{_suffix(size)}.png"
         with self._lock(SENTINEL_ID):
             if not path.exists():
-                self._write(path, self._get(SENTINEL_ID))
+                self._write(path, self._get(SENTINEL_ID, size))
         return path.read_bytes()
 
-    def path(self, player_id: int) -> Path | None:
+    def path(self, player_id: int, size: str = "small") -> Path | None:
         """The cached photo, fetching it on first use; None when the player has no photo.
 
         Raises PhotoSourceError when the image server fails; nothing is recorded in that case.
         """
         self.directory.mkdir(parents=True, exist_ok=True)
-        photo = self.directory / f"{player_id}.png"
-        missing = self.directory / f"{player_id}.none"
+        photo = self.directory / f"{player_id}{_suffix(size)}.png"
+        missing = self.directory / f"{player_id}{_suffix(size)}.none"
         if photo.exists():
             return photo
         if missing.exists() and time.time() - missing.stat().st_mtime < MISSING_TTL_SECONDS:
@@ -81,8 +87,8 @@ class PhotoCache:
         with self._lock(player_id):
             if photo.exists():
                 return photo
-            body = self._get(player_id)
-            if not body or body == self._silhouette():
+            body = self._get(player_id, size)
+            if not body or body == self._silhouette(size):
                 missing.touch()
                 return None
             self._write(photo, body)

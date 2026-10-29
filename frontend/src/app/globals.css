@@ -8,9 +8,10 @@
   --font-sans: var(--font-geist), system-ui, sans-serif;
   --font-heading: var(--font-geist), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, Menlo, monospace;
+  --font-display: var(--font-barlow), "Arial Narrow", system-ui, sans-serif;
 
-  --text-large-title: 2.125rem;
-  --text-large-title--line-height: 2.5625rem;
+  --text-large-title: 3rem;
+  --text-large-title--line-height: 1;
   --text-large-title--font-weight: 700;
   --text-title1: 1.75rem;
   --text-title1--line-height: 2.125rem;
@@ -129,11 +130,16 @@
   body {
     @apply bg-background text-foreground text-body antialiased;
   }
-  h1,
   h2,
   h3 {
     font-family: var(--font-heading);
     letter-spacing: -0.015em;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -143,6 +149,15 @@
   ::selection {
     background: color-mix(in oklab, var(--primary) 35%, transparent);
   }
+}
+
+/* Scoreboard numerals: condensed, tabular, tight. */
+@utility numeral {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
 }
 
 @utility kicker {
@@ -219,5 +234,25 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Scoreboard ticker: the track holds the list twice and slides by half its width. */
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (min-width: 1024px) {
+  .ticker {
+    mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  }
+  .ticker-track {
+    animation: ticker linear infinite;
+  }
+  .ticker:hover .ticker-track,
+  .ticker:focus-within .ticker-track {
+    animation-play-state: paused;
   }
 }
