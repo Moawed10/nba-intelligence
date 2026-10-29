@@ -295,3 +295,7 @@ Each spec includes an axe pass (WCAG 2.2 AA tags, serious and critical violation
 
 - Linux CI rendered the position filter wider than macOS at 320 px; it now scrolls within its column.
 - The top-bar slack test counted a gap for the hidden desktop navigation; it now measures visible items only.
+- Light-theme contrast of the "Selected" algorithm badge was borderline on Linux; it is now a solid primary chip.
+- Wide-table scroll containers on narrow viewports are now focusable, labelled regions (axe `scrollable-region-focusable`).
+- `/games` reads the clock after `connection()`, so the default date is resolved per request instead of during prerender.
+- CI run 40882783640 passed (backend and frontend jobs).
