@@ -4,10 +4,12 @@ import {
   Activity01Icon,
   ChartBarLineIcon,
   ChartHistogramIcon,
+  ChartScatterIcon,
   DatabaseIcon,
   GitBranchIcon,
   Layers01Icon,
   PercentCircleIcon,
+  Search01Icon,
   Target02Icon,
 } from "@hugeicons/core-free-icons";
 
@@ -21,6 +23,8 @@ const SECTIONS: BranchedMenuItem[] = [
       { value: "accuracy", label: "Accuracy", icon: Target02Icon },
       { value: "algorithms", label: "Algorithms", icon: ChartBarLineIcon },
       { value: "ranges", label: "Prediction ranges", icon: ChartHistogramIcon },
+      { value: "check", label: "Check the predictions", icon: ChartScatterIcon },
+      { value: "explorer", label: "Prediction history", icon: Search01Icon },
     ],
   },
   {

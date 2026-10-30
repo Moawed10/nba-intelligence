@@ -5,13 +5,20 @@ import { InfoHint } from "@/components/data/info-hint";
 import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
-import type { LiveAccuracy, ModelReleaseDetail, ModelReleaseSummary, TargetMetrics } from "@/lib/api/types";
+import type {
+  LiveAccuracy,
+  ModelAnalytics,
+  ModelReleaseDetail,
+  ModelReleaseSummary,
+  TargetMetrics,
+} from "@/lib/api/types";
 import { formatGameDate, formatPercent } from "@/lib/format";
 import { algorithmLabel, TARGET_ORDER, targetLabel } from "@/lib/models";
 import { param, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
 import { AlgorithmComparison } from "./algorithms";
+import { PredictionCheck, PredictionHistoryExplorer } from "./analytics";
 import { ModelsNav } from "./models-nav";
 
 const VERSION = /^\d{4}\.\d{2}\.\d{2}-\d{1,3}$/;
@@ -336,9 +343,10 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
   const requested = param(query, "version");
   const known = requested && VERSION.test(requested) && releases.some((r) => r.version === requested);
   const version = known ? requested : (releases.find((r) => r.status === "active") ?? releases[0]).version;
-  const [result, liveResult] = await Promise.all([
+  const [result, liveResult, analytics] = await Promise.all([
     serverTry<ModelReleaseDetail>(`/models/${version}`),
     serverTry<LiveAccuracy>(`/models/${version}/live`),
+    serverTry<ModelAnalytics>(`/models/${version}/analytics`, { stat: "pts", kind: "backtest" }),
   ]);
   const live = liveResult.data;
   if (result.error) return <ApiErrorView error={result.error} />;
@@ -440,6 +448,19 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
           ) : (
             <Unavailable kind="not_built" title="No interval calibration stored for this release" />
           )}
+        </Panel>
+
+        <Panel
+          id="check"
+          kicker="Every prediction, scored"
+          title="Check the predictions"
+          className="lg:col-span-12"
+        >
+          <PredictionCheck version={release.version} testSeason={testSeason} initial={analytics.data} />
+        </Panel>
+
+        <Panel id="explorer" kicker="Game by game" title="Prediction history" className="lg:col-span-12">
+          <PredictionHistoryExplorer testSeason={testSeason} />
         </Panel>
 
         <Panel id="live" kicker="After release" title="Live accuracy" className="lg:col-span-7">

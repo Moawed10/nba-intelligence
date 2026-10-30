@@ -51,3 +51,6 @@ export type GameForecastResult = Schemas["GameForecastResult"];
 export type PlayerCareer = Schemas["PlayerCareer"];
 export type CareerSeason = Schemas["CareerSeason"];
 export type CareerLine = Schemas["CareerLine"];
+export type ModelAnalytics = Schemas["ModelAnalytics"];
+export type PredictionHistory = Schemas["PredictionHistory"];
+export type HistoryEntry = Schemas["HistoryEntry"];

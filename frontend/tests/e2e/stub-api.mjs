@@ -346,6 +346,27 @@ createServer((req, res) => {
       double_double: { n: 6, brier: 0.07 },
     });
   }
+  if (path === `/models/${RELEASE.version}/analytics`) {
+    const stat = q.get("stat") ?? "pts";
+    const kind = q.get("kind") ?? "backtest";
+    if (kind === "pregame") {
+      return send(res, 200, { version: RELEASE.version, kind, stat, algorithm: "xgboost", n: 0, first_game: null,
+        last_game: null, mae: null, rmse: null, bias: null, interval_level: 0.8, coverage: null,
+        calibration: [], residuals: [], coverage_by_bin: [] });
+    }
+    const scale = stat === "pts" ? 1 : 0.4;
+    return send(res, 200, {
+      version: RELEASE.version, kind, stat, algorithm: "xgboost", n: 1000, first_game: "2096-10-22",
+      last_game: "2097-04-14", mae: 4.5 * scale, rmse: 5.9 * scale, bias: -0.1, interval_level: 0.8, coverage: 0.8,
+      calibration: Array.from({ length: 10 }, (_, i) => ({ predicted: (3 + i * 2.5) * scale, actual: (3.2 + i * 2.5) * scale, n: 100 })),
+      residuals: [{ lower: -6, upper: -2, n: 150 }, { lower: -2, upper: 2, n: 700 }, { lower: 2, upper: 6, n: 150 }],
+      coverage_by_bin: [
+        { minutes_from: null, minutes_to: 18.5, n: 300, coverage: 0.79 },
+        { minutes_from: 18.5, minutes_to: 28.3, n: 400, coverage: 0.8 },
+        { minutes_from: 28.3, minutes_to: null, n: 300, coverage: 0.81 },
+      ],
+    });
+  }
   if (path.startsWith("/models/")) return error(res, 404, "model_not_found", "No such model version.");
   // Predictions are stateless here: GET lists none, POST returns a fixed synthetic forecast whose
   // points depend on the game, so switching games visibly changes the numbers.
@@ -386,6 +407,19 @@ createServer((req, res) => {
       }));
     });
     return;
+  }
+  if (path === "/predictions/history") {
+    const player = PLAYERS.find((p) => p.id === Number(q.get("player_id")));
+    if (!player) return error(res, 404, "player_not_found", "No such player.");
+    const kind = q.get("kind") ?? "backtest";
+    const value = (point, actual) => ({ point, lower: point - 8, upper: point + 8, actual, within_interval: Math.abs(actual - point) <= 8 });
+    const entries = kind === "pregame" ? [] : [
+      { prediction_id: "b1", kind, release_version: RELEASE.version, game_id: "0099600002", game_date: "2097-04-14",
+        opponent: ref(TEAMS[1]), is_home: true, values: { pts: value(24, 30), reb: value(7, 5), ast: value(5, 6) } },
+      { prediction_id: "b2", kind, release_version: RELEASE.version, game_id: "0099600001", game_date: "2097-04-12",
+        opponent: ref(TEAMS[1]), is_home: false, values: { pts: value(22, 35), reb: value(6, 6), ast: value(4, 3) } },
+    ];
+    return send(res, 200, { player_id: player.id, kind, entries });
   }
   if (path === "/predictions" && req.method === "GET") return send(res, 200, []);
   if ((path === "/predictions" || path === "/predictions/upcoming") && req.method === "POST") {

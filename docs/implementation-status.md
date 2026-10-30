@@ -17,7 +17,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 7 | Prediction API & Inference | Complete | 100% (15/15) | None |
 | 7B | Player Photos & Team History | Complete | 100% (7/7) | None |
 | 8 | Prediction Center | Complete | 100% (12/12) | None |
-| 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
+| 9 | Model Analytics | Complete | 100% (10/10) | None |
 | 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
 | 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
 | 12 | Accessibility Audit | Not Started | 0% (0/10) | Core screens |
@@ -25,7 +25,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 126 / 182 verified deliverables = **69%**.
+**Overall:** 131 / 182 verified deliverables = **72%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -545,18 +545,18 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 9 — Model Analytics & Historical Evaluation
 
-**Status:** In Progress · **Progress:** 50% (5/10) · **Dependencies:** Phases 6, 7
+**Status:** Complete · **Progress:** 100% (10/10) · **Dependencies:** Phases 6, 7
 
 #### Deliverables
 
 - [x] `/models` screen
 - [x] Metrics from `/models/metrics`
 - [x] Baseline vs advanced comparison
-- [ ] Actual-vs-predicted chart
-- [ ] Residual distributions
-- [ ] Interval coverage per target and bin
-- [ ] Historical prediction explorer
-- [ ] Backtest vs pregame labelling
+- [x] Actual-vs-predicted chart
+- [x] Residual distributions
+- [x] Interval coverage per target and bin
+- [x] Historical prediction explorer
+- [x] Backtest vs pregame labelling
 - [x] Release selection
 - [x] Methodology explanation
 
@@ -564,16 +564,16 @@ The "recent games" block from the original design was folded into the game log, 
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Displayed metrics traceable to evaluation records | 100% | Not measured | Not Verified |
-| Fabricated performance values | 0 | Not measured | Not Verified |
-| Comparisons on consistent test observations | 100% | Not measured | Not Verified |
-| Evaluation records cite model + period | 100% | Not measured | Not Verified |
-| Primary targets show MAE and RMSE | All | Not measured | Not Verified |
-| Coverage shown for calibrated targets | All | Not measured | Not Verified |
-| Backtests distinguished from pregame | Yes | Not measured | Not Verified |
-| Analytics integration tests passing | ≥ 95% (100% critical) | Not measured | Not Verified |
+| Displayed metrics traceable to evaluation records | 100% | Stored backtests reproduce the registry's test n, MAE and coverage exactly for all 7 stats; analytics are computed from stored evaluations (asserted in tests) | Pass |
+| Fabricated performance values | 0 | 0: every chart comes from stored, scored predictions; empty states when none exist | Pass |
+| Comparisons on consistent test observations | 100% | Algorithms and backtests use the same 27,999 test-season player-games | Pass |
+| Evaluation records cite model + period | 100% | Analytics return release, algorithm and first/last game | Pass |
+| Primary targets show MAE and RMSE | All | All 7 statistics | Pass |
+| Coverage shown for calibrated targets | All | Overall and per predicted-minutes bin, all 7 statistics | Pass |
+| Backtests distinguished from pregame | Yes | Stored `kind`, separate toggle and a stated note on both panels | Pass |
+| Analytics integration tests passing | ≥ 95% (100% critical) | 100% (6 backend, 2 new E2E × 4 viewports) | Pass |
 
-**Evidence:** `frontend/src/app/models/`, `tests/e2e/models.spec.ts`. Metrics come from `/models/{version}` (registry evaluation records) rather than a separate `/models/metrics`. Coverage is shown per target; per-bin coverage is in the training report but not yet exposed by the API. · **Decision:** Not Verified (actual-vs-predicted, residuals, history and backtest labels need stored predictions)
+**Evidence:** `backend/app/ml/backtest.py` (`app.cli backtest <version>`), `GET /models/{version}/analytics`, `GET /predictions/history`, `backend/tests/api/test_model_analytics.py`, `frontend/src/app/models/analytics.tsx`, `tests/e2e/models.spec.ts`. Backtests come from the release's held-out models (trained before the test season, calibrated on validation) and are labelled as such; live pregame forecasts are a separate kind. · **Decision:** Pass
 
 ---
 
@@ -1007,3 +1007,20 @@ The "recent games" block from the original design was folded into the game log, 
 **Render time:** p95 8 ms from the forecast response to the forecast on screen, over 20 game switches (`predict.spec.ts`). Phase 8 is complete.
 
 **Next step:** Phase 9 (Model Analytics).
+
+### Session — 2026-10-29 (Phase 9)
+
+**Completed:**
+- Backtests: `app.cli backtest 2026.10.29-3` stored and scored 27,999 test-season predictions (1,321 games, 2025-10-21 to 2026-06-13) in 20 s. These come from the held-out models, which never saw that season. For all 7 stats they reproduce the registry's held-out n, MAE and 80% coverage exactly.
+- `GET /models/{version}/analytics` (predicted vs actual by tenth, misses, coverage per minutes bin) and `GET /predictions/history` (a player's predictions next to the box score, labelled backtest or pregame).
+- Models page:
+  - **"Check the predictions":** three charts, each with a table view and a plain-language summary.
+  - **"Prediction history":** search any player, then switch between test-season backtests and live forecasts.
+
+**Real data:**
+- Points, 2025-26: average miss 4.5, RMSE 5.9, 80.1% inside the range. Coverage by minutes bin: 79.3%, 80.4%, 80.5%. Calibration is within 0.5 points in every tenth.
+- Nikola Jokić: points inside the range in 23 of his last 30 backtested games.
+
+**Tests run:** backend 259 passed; Playwright 266 passed, 10 skipped; lint, 38 unit tests and contrast clean.
+
+**Next step:** Phase 10 (Player Comparison: radar chart and a dedicated endpoint).

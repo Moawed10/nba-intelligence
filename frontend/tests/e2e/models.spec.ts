@@ -58,6 +58,35 @@ test.describe("models", () => {
     await expect(page.getByRole("heading", { name: "Releases" })).toBeInViewport();
   });
 
+  test("checks every stored prediction against the result, labelled as a backtest", async ({ page }) => {
+    await page.goto("/models");
+    const check = page.getByRole("region", { name: "Check the predictions" });
+    await expect(check.getByText(/Backtest: made after the fact/)).toBeVisible();
+    await expect(check.getByText("1,000")).toBeVisible();
+    await expect(check.getByText("80%").first()).toBeVisible();
+    await expect(check.getByRole("region", { name: "Predicted vs. actual" })).toBeVisible();
+    await expect(check.getByText(/never more than 0\.2 points/)).toBeVisible();
+    await expect(check.getByText(/at least 79% in every group/)).toBeVisible();
+    await check.getByRole("radio", { name: "REB" }).click();
+    await expect(check.getByText(/never more than 0\.1 rebounds/)).toBeVisible();
+    await check.getByRole("radio", { name: "Live" }).click();
+    await expect(check.getByText("No live predictions scored yet")).toBeVisible();
+  });
+
+  test("history explorer shows a player's predictions next to the results", async ({ page }) => {
+    await page.goto("/models");
+    const explorer = page.getByRole("region", { name: "Prediction history" });
+    await expect(explorer.getByText("Pick a player")).toBeVisible();
+    await explorer.getByRole("combobox").fill("zed");
+    await page.getByRole("option", { name: /Zed Fixture/ }).click();
+    await expect(explorer.getByText(/inside the predicted range in 1 of the 2 scored games/)).toBeVisible();
+    const table = explorer.getByRole("table");
+    await expect(table.locator("tbody tr")).toHaveCount(2);
+    await expect(table.locator("tbody tr").first()).toContainText("inside the range");
+    await explorer.getByRole("radio", { name: "Live" }).click();
+    await expect(explorer.getByText("No pregame predictions for Zed Fixture")).toBeVisible();
+  });
+
   test("is accessible in both themes without horizontal overflow", async ({ page }) => {
     await page.goto("/models");
     await expect(page.getByRole("region", { name: "Accuracy against the baseline" })).toBeVisible();
