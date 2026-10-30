@@ -51,7 +51,7 @@ export function GamePicker({
     <div aria-busy={pending} className={cn("space-y-3 transition-opacity", pending && "opacity-70")}>
       {anyForecast && (
         <p className="flex items-center justify-between gap-3 text-footnote text-muted-foreground">
-          <span>Our predicted stat line for each game</span>
+          <span>Predicted stat line for each game</span>
           <span className="kicker shrink-0 text-primary">Predicted</span>
         </p>
       )}
