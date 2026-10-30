@@ -270,6 +270,30 @@
         "title": "BoxStats",
         "type": "object"
       },
+      "CalibrationPoint": {
+        "description": "One tenth of the predictions, ordered by predicted value: average predicted vs actual.",
+        "properties": {
+          "actual": {
+            "title": "Actual",
+            "type": "number"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "predicted": {
+            "title": "Predicted",
+            "type": "number"
+          }
+        },
+        "required": [
+          "predicted",
+          "actual",
+          "n"
+        ],
+        "title": "CalibrationPoint",
+        "type": "object"
+      },
       "CareerLine": {
         "description": "Per-game averages and shooting percentages. A statistic the league did not record yet\n(e.g. steals before 1973-74, 3-pointers before 1979-80) is null.",
         "properties": {
@@ -506,6 +530,56 @@
           "partial"
         ],
         "title": "CareerTable",
+        "type": "object"
+      },
+      "CoverageBin": {
+        "description": "Interval coverage for predictions in one predicted-minutes bin of the calibration.",
+        "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "minutes_from": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes From"
+          },
+          "minutes_to": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes To"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "minutes_from",
+          "minutes_to",
+          "n",
+          "coverage"
+        ],
+        "title": "CoverageBin",
         "type": "object"
       },
       "DataFreshness": {
@@ -1382,6 +1456,109 @@
         "title": "HistoricSeason",
         "type": "object"
       },
+      "HistoryEntry": {
+        "description": "A stored prediction for one game next to what happened.",
+        "properties": {
+          "game_date": {
+            "format": "date",
+            "title": "Game Date",
+            "type": "string"
+          },
+          "game_id": {
+            "title": "Game Id",
+            "type": "string"
+          },
+          "is_home": {
+            "title": "Is Home",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "backtest",
+              "pregame"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "opponent": {
+            "$ref": "#/components/schemas/TeamRef"
+          },
+          "prediction_id": {
+            "title": "Prediction Id",
+            "type": "string"
+          },
+          "release_version": {
+            "title": "Release Version",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/HistoryValue"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": [
+          "prediction_id",
+          "kind",
+          "release_version",
+          "game_id",
+          "game_date",
+          "opponent",
+          "is_home",
+          "values"
+        ],
+        "title": "HistoryEntry",
+        "type": "object"
+      },
+      "HistoryValue": {
+        "properties": {
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "lower": {
+            "title": "Lower",
+            "type": "number"
+          },
+          "point": {
+            "title": "Point",
+            "type": "number"
+          },
+          "upper": {
+            "title": "Upper",
+            "type": "number"
+          },
+          "within_interval": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Within Interval"
+          }
+        },
+        "required": [
+          "point",
+          "lower",
+          "upper",
+          "actual",
+          "within_interval"
+        ],
+        "title": "HistoryValue",
+        "type": "object"
+      },
       "Leader": {
         "properties": {
           "full_name": {
@@ -1716,6 +1893,154 @@
           "data_freshness"
         ],
         "title": "Meta",
+        "type": "object"
+      },
+      "ModelAnalytics": {
+        "description": "Stored predictions of one release and kind for one statistic, scored against box scores.\nBacktests come from the held-out models on the test season; pregame rows are live forecasts.",
+        "properties": {
+          "algorithm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Algorithm"
+          },
+          "bias": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bias"
+          },
+          "calibration": {
+            "items": {
+              "$ref": "#/components/schemas/CalibrationPoint"
+            },
+            "title": "Calibration",
+            "type": "array"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "coverage_by_bin": {
+            "items": {
+              "$ref": "#/components/schemas/CoverageBin"
+            },
+            "title": "Coverage By Bin",
+            "type": "array"
+          },
+          "first_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Game"
+          },
+          "interval_level": {
+            "title": "Interval Level",
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "backtest",
+              "pregame"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_game": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Game"
+          },
+          "mae": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mae"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "residuals": {
+            "items": {
+              "$ref": "#/components/schemas/ResidualBin"
+            },
+            "title": "Residuals",
+            "type": "array"
+          },
+          "rmse": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rmse"
+          },
+          "stat": {
+            "title": "Stat",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "kind",
+          "stat",
+          "algorithm",
+          "n",
+          "first_game",
+          "last_game",
+          "mae",
+          "rmse",
+          "bias",
+          "interval_level",
+          "coverage",
+          "calibration",
+          "residuals",
+          "coverage_by_bin"
+        ],
+        "title": "ModelAnalytics",
         "type": "object"
       },
       "ModelReleaseDetail": {
@@ -2913,6 +3238,19 @@
         "title": "PlayerTrends",
         "type": "object"
       },
+      "PredictedStat": {
+        "enum": [
+          "pts",
+          "reb",
+          "ast",
+          "fg3m",
+          "stl",
+          "blk",
+          "min"
+        ],
+        "title": "PredictedStat",
+        "type": "string"
+      },
       "PredictedValue": {
         "properties": {
           "interval_level": {
@@ -3152,6 +3490,44 @@
         "title": "PredictionExplanation",
         "type": "object"
       },
+      "PredictionHistory": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "backtest",
+              "pregame"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_id",
+          "kind",
+          "entries"
+        ],
+        "title": "PredictionHistory",
+        "type": "object"
+      },
+      "PredictionKind": {
+        "enum": [
+          "pregame",
+          "backtest"
+        ],
+        "title": "PredictionKind",
+        "type": "string"
+      },
       "PredictionRequest": {
         "properties": {
           "game_id": {
@@ -3213,6 +3589,30 @@
           "losses"
         ],
         "title": "Record",
+        "type": "object"
+      },
+      "ResidualBin": {
+        "description": "Games whose miss (actual minus predicted) fell in [lower, upper).",
+        "properties": {
+          "lower": {
+            "title": "Lower",
+            "type": "number"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "upper": {
+            "title": "Upper",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lower",
+          "upper",
+          "n"
+        ],
+        "title": "ResidualBin",
         "type": "object"
       },
       "SeasonAverages": {
@@ -5231,6 +5631,113 @@
         ]
       }
     },
+    "/api/v1/models/{version}/analytics": {
+      "get": {
+        "description": "Stored predictions scored against box scores: predicted vs actual by tenth, the spread of\nmisses, and interval coverage per predicted-minutes bin.",
+        "operationId": "get_analytics_api_v1_models__version__analytics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}\\.\\d{2}\\.\\d{2}-\\d{1,3}$",
+              "title": "Version",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stat",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PredictedStat",
+              "default": "pts"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "default": "backtest",
+              "enum": [
+                "backtest",
+                "pregame"
+              ],
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelAnalytics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Analytics",
+        "tags": [
+          "models"
+        ]
+      }
+    },
     "/api/v1/models/{version}/live": {
       "get": {
         "operationId": "get_live_accuracy_api_v1_models__version__live_get",
@@ -6756,6 +7263,111 @@
           }
         },
         "summary": "Game Forecasts ",
+        "tags": [
+          "predictions"
+        ]
+      }
+    },
+    "/api/v1/predictions/history": {
+      "get": {
+        "description": "A player's stored predictions next to what happened. \"backtest\" rows were made after the\nfact by models that never saw that season; \"pregame\" rows were stored before tip-off.",
+        "operationId": "prediction_history_api_v1_predictions_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Player Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PredictionKind",
+              "default": "backtest"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionHistory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Prediction History",
         "tags": [
           "predictions"
         ]

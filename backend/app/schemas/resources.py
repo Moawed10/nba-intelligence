@@ -459,3 +459,76 @@ class PlayerCareer(BaseModel):
     regular: CareerTable
     playoffs: CareerTable
     meta: Meta
+
+
+class CalibrationPoint(BaseModel):
+    """One tenth of the predictions, ordered by predicted value: average predicted vs actual."""
+
+    predicted: float
+    actual: float
+    n: int
+
+
+class ResidualBin(BaseModel):
+    """Games whose miss (actual minus predicted) fell in [lower, upper)."""
+
+    lower: float
+    upper: float
+    n: int
+
+
+class CoverageBin(BaseModel):
+    """Interval coverage for predictions in one predicted-minutes bin of the calibration."""
+
+    minutes_from: float | None
+    minutes_to: float | None
+    n: int
+    coverage: float | None
+
+
+class ModelAnalytics(BaseModel):
+    """Stored predictions of one release and kind for one statistic, scored against box scores.
+    Backtests come from the held-out models on the test season; pregame rows are live forecasts."""
+
+    version: str
+    kind: Literal["backtest", "pregame"]
+    stat: str
+    algorithm: str | None
+    n: int
+    first_game: date | None
+    last_game: date | None
+    mae: float | None
+    rmse: float | None
+    bias: float | None
+    interval_level: float
+    coverage: float | None
+    calibration: list[CalibrationPoint]
+    residuals: list[ResidualBin]
+    coverage_by_bin: list[CoverageBin]
+
+
+class HistoryValue(BaseModel):
+    point: float
+    lower: float
+    upper: float
+    actual: float | None
+    within_interval: bool | None
+
+
+class HistoryEntry(BaseModel):
+    """A stored prediction for one game next to what happened."""
+
+    prediction_id: str
+    kind: Literal["backtest", "pregame"]
+    release_version: str
+    game_id: str
+    game_date: date
+    opponent: TeamRef
+    is_home: bool
+    values: dict[str, HistoryValue]
+
+
+class PredictionHistory(BaseModel):
+    player_id: int
+    kind: Literal["backtest", "pregame"]
+    entries: list[HistoryEntry]

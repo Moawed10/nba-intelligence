@@ -149,6 +149,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("predictions", help="Score finished games and refresh stale forecasts once")
     activate = sub.add_parser("activate", help="Verify a release's artifacts and make it serve")
     activate.add_argument("version")
+    backtest = sub.add_parser(
+        "backtest", help="Store and score a release's held-out test-season predictions"
+    )
+    backtest.add_argument("version")
 
     args = parser.parse_args(argv)
     if args.command == "openapi":
@@ -158,6 +162,12 @@ def main(argv: list[str] | None = None) -> int:
         return train_command(args)
     if args.command == "activate":
         return activate_command(args.version)
+    if args.command == "backtest":
+        from app.ml.backtest import run_backtest
+
+        configure_logging()
+        print(json.dumps(run_backtest(get_engine(), get_settings().artifacts_dir, args.version)))
+        return 0
     if args.command == "predictions":
         result = worker.maintain_predictions(
             get_engine(), datetime.now(UTC), get_settings().artifacts_dir

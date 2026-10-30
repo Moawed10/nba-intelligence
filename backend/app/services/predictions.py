@@ -2,13 +2,24 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
+from sqlalchemy.orm import aliased
 
 from app.api.deps import Context
 from app.api.errors import ApiError, not_found
 from app.ml.artifacts import ArtifactMismatch
 from app.ml.inference import ActiveRelease, active_release
-from app.models import ModelRelease, Player, Prediction, PredictionEvaluation, PredictionValue
+from app.models import (
+    Game,
+    ModelRelease,
+    Player,
+    PlayerGameStats,
+    Prediction,
+    PredictionEvaluation,
+    PredictionKind,
+    PredictionValue,
+    Team,
+)
 from app.models.predictions import PredictedStat
 from app.schemas.predictions import (
     PredictedValue,
@@ -17,7 +28,9 @@ from app.schemas.predictions import (
     UpcomingForecast,
 )
 from app.schemas.predictions import Prediction as PredictionOut
+from app.schemas.resources import HistoryEntry, HistoryValue, PredictionHistory
 from app.services import games as games_service
+from app.services.common import team_ref
 from app.services.prediction_lifecycle import Freshness, FreshnessState, forecast, freshness
 
 HISTORY_LIMIT = 20
@@ -135,3 +148,67 @@ def upcoming(ctx: Context, player_id: int, days: int) -> list[UpcomingForecast]:
             UpcomingForecast(game=game, prediction=_out(ctx, row, current), unavailable=None)
         )
     return out
+
+
+def explorer(ctx: Context, player_id: int, kind: PredictionKind, limit: int) -> PredictionHistory:
+    """A player's stored predictions of one kind, newest game first, each next to the result."""
+    player = ctx.session.get(Player, player_id)
+    if player is None:
+        raise not_found("player", player_id)
+    newer = aliased(Prediction)  # a later forecast replacing this one
+    team_in_game = (
+        select(PlayerGameStats.team_id)
+        .where(
+            PlayerGameStats.game_id == Prediction.game_id,
+            PlayerGameStats.player_id == Prediction.player_id,
+        )  # fmt: skip
+        .scalar_subquery()
+    )
+    rows = ctx.session.execute(
+        select(Prediction, Game, ModelRelease.version, team_in_game)
+        .join(Game, Game.id == Prediction.game_id)
+        .join(ModelRelease, ModelRelease.id == Prediction.release_id)
+        .where(
+            Prediction.player_id == player_id,
+            Prediction.kind == kind,
+            ~exists().where(newer.supersedes_prediction_id == Prediction.id),
+        )  # fmt: skip
+        .order_by(Game.game_date.desc(), Prediction.created_at.desc())
+        .limit(limit)
+    ).all()
+    ids = [r[0].id for r in rows]
+    values = ctx.session.scalars(
+        select(PredictionValue).where(PredictionValue.prediction_id.in_(ids))
+    )
+    evaluations = {
+        (e.prediction_id, e.stat.value): e
+        for e in ctx.session.scalars(
+            select(PredictionEvaluation).where(PredictionEvaluation.prediction_id.in_(ids))
+        )
+    }
+    by_prediction: dict[uuid.UUID, dict[str, HistoryValue]] = {}
+    for v in values:
+        e = evaluations.get((v.prediction_id, v.stat.value))
+        by_prediction.setdefault(v.prediction_id, {})[v.stat.value] = HistoryValue(
+            point=v.point, lower=v.lower, upper=v.upper,
+            actual=e.actual if e else None, within_interval=e.within_interval if e else None,
+        )  # fmt: skip
+    teams = {t.id: t for t in ctx.session.scalars(select(Team))}
+    entries = []
+    for prediction, game, version, team_id in rows:
+        own = team_id or player.current_team_id
+        is_home = own == game.home_team_id
+        opponent = teams[game.away_team_id if is_home else game.home_team_id]
+        entries.append(
+            HistoryEntry(
+                prediction_id=str(prediction.id),
+                kind=prediction.kind.value,
+                release_version=version,
+                game_id=game.id,
+                game_date=game.game_date,
+                opponent=team_ref(opponent),
+                is_home=is_home,
+                values=by_prediction.get(prediction.id, {}),
+            )  # fmt: skip
+        )
+    return PredictionHistory(player_id=player_id, kind=kind.value, entries=entries)

@@ -157,6 +157,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/models/{version}/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Analytics
+         * @description Stored predictions scored against box scores: predicted vs actual by tenth, the spread of
+         *     misses, and interval coverage per predicted-minutes bin.
+         */
+        get: operations["get_analytics_api_v1_models__version__analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/models/{version}/live": {
         parameters: {
             query?: never;
@@ -390,6 +411,27 @@ export interface paths {
          *     inputs are unchanged); a game that can't be forecast says why.
          */
         post: operations["game_forecasts__api_v1_predictions_games_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/predictions/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Prediction History
+         * @description A player's stored predictions next to what happened. "backtest" rows were made after the
+         *     fact by models that never saw that season; "pregame" rows were stored before tip-off.
+         */
+        get: operations["prediction_history_api_v1_predictions_history_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -643,6 +685,18 @@ export interface components {
             tov: number;
         };
         /**
+         * CalibrationPoint
+         * @description One tenth of the predictions, ordered by predicted value: average predicted vs actual.
+         */
+        CalibrationPoint: {
+            /** Actual */
+            actual: number;
+            /** N */
+            n: number;
+            /** Predicted */
+            predicted: number;
+        };
+        /**
          * CareerLine
          * @description Per-game averages and shooting percentages. A statistic the league did not record yet
          *     (e.g. steals before 1973-74, 3-pointers before 1979-80) is null.
@@ -704,6 +758,20 @@ export interface components {
             /** Seasons */
             seasons: components["schemas"]["CareerSeason"][];
             totals: components["schemas"]["CareerLine"] | null;
+        };
+        /**
+         * CoverageBin
+         * @description Interval coverage for predictions in one predicted-minutes bin of the calibration.
+         */
+        CoverageBin: {
+            /** Coverage */
+            coverage: number | null;
+            /** Minutes From */
+            minutes_from: number | null;
+            /** Minutes To */
+            minutes_to: number | null;
+            /** N */
+            n: number;
         };
         /** DataFreshness */
         DataFreshness: {
@@ -958,6 +1026,48 @@ export interface components {
             /** Wins */
             wins: number;
         };
+        /**
+         * HistoryEntry
+         * @description A stored prediction for one game next to what happened.
+         */
+        HistoryEntry: {
+            /**
+             * Game Date
+             * Format: date
+             */
+            game_date: string;
+            /** Game Id */
+            game_id: string;
+            /** Is Home */
+            is_home: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "backtest" | "pregame";
+            opponent: components["schemas"]["TeamRef"];
+            /** Prediction Id */
+            prediction_id: string;
+            /** Release Version */
+            release_version: string;
+            /** Values */
+            values: {
+                [key: string]: components["schemas"]["HistoryValue"];
+            };
+        };
+        /** HistoryValue */
+        HistoryValue: {
+            /** Actual */
+            actual: number | null;
+            /** Lower */
+            lower: number;
+            /** Point */
+            point: number;
+            /** Upper */
+            upper: number;
+            /** Within Interval */
+            within_interval: boolean | null;
+        };
         /** Leader */
         Leader: {
             /** Full Name */
@@ -1057,6 +1167,46 @@ export interface components {
         /** Meta */
         Meta: {
             data_freshness: components["schemas"]["DataFreshness"];
+        };
+        /**
+         * ModelAnalytics
+         * @description Stored predictions of one release and kind for one statistic, scored against box scores.
+         *     Backtests come from the held-out models on the test season; pregame rows are live forecasts.
+         */
+        ModelAnalytics: {
+            /** Algorithm */
+            algorithm: string | null;
+            /** Bias */
+            bias: number | null;
+            /** Calibration */
+            calibration: components["schemas"]["CalibrationPoint"][];
+            /** Coverage */
+            coverage: number | null;
+            /** Coverage By Bin */
+            coverage_by_bin: components["schemas"]["CoverageBin"][];
+            /** First Game */
+            first_game: string | null;
+            /** Interval Level */
+            interval_level: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "backtest" | "pregame";
+            /** Last Game */
+            last_game: string | null;
+            /** Mae */
+            mae: number | null;
+            /** N */
+            n: number;
+            /** Residuals */
+            residuals: components["schemas"]["ResidualBin"][];
+            /** Rmse */
+            rmse: number | null;
+            /** Stat */
+            stat: string;
+            /** Version */
+            version: string;
         };
         /** ModelReleaseDetail */
         ModelReleaseDetail: {
@@ -1434,6 +1584,11 @@ export interface components {
              */
             stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
         };
+        /**
+         * PredictedStat
+         * @enum {string}
+         */
+        PredictedStat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
         /** PredictedValue */
         PredictedValue: {
             /** Interval Level */
@@ -1532,6 +1687,23 @@ export interface components {
              */
             prediction_id: string;
         };
+        /** PredictionHistory */
+        PredictionHistory: {
+            /** Entries */
+            entries: components["schemas"]["HistoryEntry"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "backtest" | "pregame";
+            /** Player Id */
+            player_id: number;
+        };
+        /**
+         * PredictionKind
+         * @enum {string}
+         */
+        PredictionKind: "pregame" | "backtest";
         /** PredictionRequest */
         PredictionRequest: {
             /** Game Id */
@@ -1557,6 +1729,18 @@ export interface components {
             losses: number;
             /** Wins */
             wins: number;
+        };
+        /**
+         * ResidualBin
+         * @description Games whose miss (actual minus predicted) fell in [lower, upper).
+         */
+        ResidualBin: {
+            /** Lower */
+            lower: number;
+            /** N */
+            n: number;
+            /** Upper */
+            upper: number;
         };
         /** SeasonAverages */
         SeasonAverages: {
@@ -2433,6 +2617,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelReleaseDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_analytics_api_v1_models__version__analytics_get: {
+        parameters: {
+            query?: {
+                stat?: components["schemas"]["PredictedStat"];
+                kind?: "backtest" | "pregame";
+            };
+            header?: never;
+            path: {
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAnalytics"];
                 };
             };
             /** @description Bad Request */
@@ -3399,6 +3653,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameForecastResult"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    prediction_history_api_v1_predictions_history_get: {
+        parameters: {
+            query: {
+                player_id: number;
+                kind?: components["schemas"]["PredictionKind"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionHistory"];
                 };
             };
             /** @description Bad Request */

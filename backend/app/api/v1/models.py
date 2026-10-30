@@ -1,9 +1,15 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path
 
 from app.api.deps import Ctx
-from app.schemas.resources import LiveAccuracy, ModelReleaseDetail, ModelReleaseSummary
+from app.models.predictions import PredictedStat
+from app.schemas.resources import (
+    LiveAccuracy,
+    ModelAnalytics,
+    ModelReleaseDetail,
+    ModelReleaseSummary,
+)
 from app.services import registry
 
 router = APIRouter(prefix="/models", tags=["models"])
@@ -29,3 +35,16 @@ def get_live_accuracy(
 ) -> LiveAccuracy:
     ctx.cache_for(120)
     return registry.live(ctx, version)
+
+
+@router.get("/{version}/analytics", response_model=ModelAnalytics)
+def get_analytics(
+    ctx: Ctx,
+    version: Annotated[str, Path(pattern=r"^\d{4}\.\d{2}\.\d{2}-\d{1,3}$")],
+    stat: PredictedStat = PredictedStat.pts,
+    kind: Literal["backtest", "pregame"] = "backtest",
+) -> ModelAnalytics:
+    """Stored predictions scored against box scores: predicted vs actual by tenth, the spread of
+    misses, and interval coverage per predicted-minutes bin."""
+    ctx.cache_for(300)
+    return registry.analytics(ctx, version, stat.value, kind)

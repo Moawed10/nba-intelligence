@@ -1,6 +1,8 @@
 """Read-only views of the model registry (model_releases, model_versions, model_evaluations)."""
 
-from sqlalchemy import select
+import numpy as np
+import pandas as pd
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import Context
@@ -15,10 +17,14 @@ from app.models import (
 )
 from app.schemas.resources import (
     AlgorithmMetrics,
+    CalibrationPoint,
+    CoverageBin,
     LiveAccuracy,
+    ModelAnalytics,
     ModelReleaseDetail,
     ModelReleaseSummary,
     ModelSnapshot,
+    ResidualBin,
     TargetMetrics,
 )
 from app.services import prediction_lifecycle
@@ -158,3 +164,105 @@ def live(ctx: Context, version: str) -> LiveAccuracy:
         )
 
     return ctx.cached("model_live", LIVE_TTL, version, compute)
+
+
+RESIDUAL_WIDTH = {"pts": 2.0, "min": 2.0, "reb": 1.0, "ast": 1.0, "fg3m": 0.5, "stl": 0.5,
+                  "blk": 0.5}  # fmt: skip
+CALIBRATION_BINS = 10
+
+ANALYTICS_SQL = """
+    SELECT v.point, v.lower, v.upper, e.actual, e.within_interval, m.point AS minutes, g.game_date
+    FROM predictions p
+    JOIN prediction_values v ON v.prediction_id = p.id AND v.stat::text = :stat
+    JOIN prediction_evaluations e
+      ON e.prediction_id = p.id AND e.stat::text = :stat
+    JOIN prediction_values m ON m.prediction_id = p.id AND m.stat = 'min'
+    JOIN games g ON g.id = p.game_id
+    WHERE p.release_id = :release AND p.kind::text = :kind"""
+# Only scored predictions have evaluations: every backtest, and for live forecasts the final one
+# made before tip-off.
+
+
+def _analytics_version(versions: list[ModelVersion], kind: str, stat: str) -> ModelVersion | None:
+    """Backtests come from the chosen held-out model; pregame forecasts from the production one."""
+    for v in versions:
+        if v.target.value != stat:
+            continue
+        fit = (v.hyperparameters or {}).get("fit")
+        if kind == "backtest" and fit == "held_out" and v.artifact_sha256:
+            return v
+        if kind == "pregame" and v.is_selected and fit == "production":
+            return v
+    return None
+
+
+def analytics(ctx: Context, version: str, stat: str, kind: str) -> ModelAnalytics:
+    def compute() -> ModelAnalytics:
+        release = ctx.session.scalar(select(ModelRelease).where(ModelRelease.version == version))
+        if release is None:
+            raise not_found("model_release", version)
+        model = _analytics_version(_versions(ctx.session, release), kind, stat)
+        frame = pd.read_sql(
+            text(ANALYTICS_SQL),
+            ctx.session.connection(),
+            params={"stat": stat, "kind": kind, "release": release.id},
+        )
+        empty = ModelAnalytics(
+            version=version, kind=kind, stat=stat,
+            algorithm=model.algorithm.value if model else None, n=0, first_game=None,
+            last_game=None, mae=None, rmse=None, bias=None, interval_level=0.8, coverage=None,
+            calibration=[], residuals=[], coverage_by_bin=[],
+        )  # fmt: skip
+        if frame.empty:
+            return empty
+        residual = frame["actual"] - frame["point"]
+        order = frame["point"].rank(method="first")
+        decile = np.ceil(order / len(frame) * CALIBRATION_BINS).clip(1, CALIBRATION_BINS)
+        calibration = [
+            CalibrationPoint(
+                predicted=float(g["point"].mean()), actual=float(g["actual"].mean()), n=len(g)
+            )  # fmt: skip
+            for _, g in frame.groupby(decile)
+        ]
+        width = RESIDUAL_WIDTH.get(stat, 1.0)
+        low = np.floor(residual.min() / width) * width
+        index = np.floor((residual - low) / width).astype(int)
+        counts = index.value_counts().sort_index()
+        residuals = [
+            ResidualBin(
+                lower=float(low + i * width),
+                upper=float(low + (i + 1) * width),
+                n=int(counts.get(i, 0)),
+            )  # fmt: skip
+            for i in range(int(index.max()) + 1)
+        ]
+        edges = list((model.interval_calibration or {}).get("edges", [])) if model else []
+        bins = np.digitize(frame["minutes"], edges) if edges else np.zeros(len(frame), int)
+        bounds = [None, *edges, None]
+        by_bin = [
+            CoverageBin(
+                minutes_from=bounds[b],
+                minutes_to=bounds[b + 1],
+                n=int((bins == b).sum()),
+                coverage=float(frame.loc[bins == b, "within_interval"].mean())
+                if (bins == b).any()
+                else None,
+            )  # fmt: skip
+            for b in range(len(edges) + 1)
+        ]
+        return empty.model_copy(
+            update={
+                "n": len(frame),
+                "first_game": frame["game_date"].min(),
+                "last_game": frame["game_date"].max(),
+                "mae": float(residual.abs().mean()),
+                "rmse": float(np.sqrt((residual**2).mean())),
+                "bias": float(residual.mean()),
+                "coverage": float(frame["within_interval"].mean()),
+                "calibration": calibration,
+                "residuals": residuals,
+                "coverage_by_bin": by_bin,
+            }
+        )
+
+    return ctx.cached("model_analytics", REGISTRY_TTL, (version, stat, kind), compute)

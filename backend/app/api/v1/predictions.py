@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Response
 
 from app.api.deps import Ctx
+from app.models import PredictionKind
 from app.schemas.predictions import (
     GameForecastRequest,
     GameForecastResult,
@@ -13,6 +14,7 @@ from app.schemas.predictions import (
     UpcomingForecast,
     UpcomingRequest,
 )
+from app.schemas.resources import PredictionHistory
 from app.services import game_forecasts, predictions
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
@@ -38,6 +40,19 @@ def game_forecasts_(ctx: Ctx, body: GameForecastRequest) -> list[GameForecastRes
     """Predicted final score and home win chance for scheduled games (stored, reused while the
     inputs are unchanged); a game that can't be forecast says why."""
     return game_forecasts.forecasts(ctx, body.game_ids)
+
+
+@router.get("/history", response_model=PredictionHistory)
+def prediction_history(
+    ctx: Ctx,
+    player_id: Annotated[int, Query(ge=1)],
+    kind: PredictionKind = PredictionKind.backtest,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> PredictionHistory:
+    """A player's stored predictions next to what happened. "backtest" rows were made after the
+    fact by models that never saw that season; "pregame" rows were stored before tip-off."""
+    ctx.cache_for(300)
+    return predictions.explorer(ctx, player_id, kind, limit)
 
 
 @router.get("", response_model=list[Prediction])
