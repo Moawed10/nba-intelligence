@@ -532,3 +532,28 @@ class PredictionHistory(BaseModel):
     player_id: int
     kind: Literal["backtest", "pregame"]
     entries: list[HistoryEntry]
+
+
+class PercentileAxis(BaseModel):
+    """One radar axis: each player's season value and league percentile (0–100, higher is
+    better). A percentile is null when the player has no value for it."""
+
+    key: str
+    label: str
+    values: list[float | None]
+    percentiles: list[float | None]
+
+
+class PlayerComparison(BaseModel):
+    """Two players in the same regular season. `season` is null when they never shared one."""
+
+    players: list[PlayerSummary]
+    season: str | None
+    common_seasons: list[str]
+    lines: list[SeasonLine]
+    axes: list[PercentileAxis]
+    qualified_players: int
+    qualification: str
+    # Whether each player met the qualification themselves (they are ranked either way).
+    qualified: list[bool]
+    meta: Meta

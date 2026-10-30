@@ -18,14 +18,14 @@ The authoritative ledger of development progress. A status here is only as good 
 | 7B | Player Photos & Team History | Complete | 100% (7/7) | None |
 | 8 | Prediction Center | Complete | 100% (12/12) | None |
 | 9 | Model Analytics | Complete | 100% (10/10) | None |
-| 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
+| 10 | Player Comparison | Complete | 100% (9/9) | None |
 | 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
 | 12 | Accessibility Audit | Not Started | 0% (0/10) | Core screens |
 | 13 | Performance & Security | Not Started | 0% (0/12) | Core functionality |
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 131 / 182 verified deliverables = **72%**.
+**Overall:** 133 / 182 verified deliverables = **73%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -579,14 +579,14 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 10 — Player Comparison
 
-**Status:** In Progress · **Progress:** 78% (7/9) · **Dependencies:** Phases 4, 5
+**Status:** Complete · **Progress:** 100% (9/9) · **Dependencies:** Phases 4, 5
 
 #### Deliverables
 
 - [x] Dual player selection (`?p1=&p2=`)
-- [ ] `GET /compare/players` endpoint + integration
+- [x] `GET /compare/players` endpoint + integration
 - [x] Side-by-side stats
-- [ ] Radar chart (league-percentile normalized)
+- [x] Radar chart (league-percentile normalized)
 - [x] Trend overlays
 - [x] Season selection
 - [x] Swap players
@@ -597,16 +597,16 @@ The "recent games" block from the original design was folded into the game log, 
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Matching season definitions | 100% | Not measured | Not Verified |
-| Values match API | 100% | Not measured | Not Verified |
-| Swap without page reload | Yes | Not measured | Not Verified |
-| Interaction response p95 (non-network) | ≤ 200 ms | Not measured | Not Verified |
-| Chart alternatives | All charts | Not measured | Not Verified |
-| Critical accessibility violations | 0 | Not measured | Not Verified |
-| Mobile overflow outside scroll regions | None | Not measured | Not Verified |
-| Comparison workflows passing | ≥ 95% | Not measured | Not Verified |
+| Matching season definitions | 100% | Both lines come from the same regular-season aggregation as `/players/{id}/stats` (asserted equal) | Pass |
+| Values match API | 100% | Radar table percentiles asserted against `/compare/players` | Pass |
+| Swap without page reload | Yes | Swap and season change are client navigations (E2E) | Pass |
+| Interaction response p95 (non-network) | ≤ 200 ms | 69 ms (chart/table toggle, 20 runs) | Pass |
+| Chart alternatives | All charts | Radar and form chart each have a table view and a text summary | Pass |
+| Critical accessibility violations | 0 | 0 (axe, both themes, 4 viewports) | Pass |
+| Mobile overflow outside scroll regions | None | None | Pass |
+| Comparison workflows passing | ≥ 95% | 155/155 (Compare suite × 5 runs × 4 viewports) | Pass |
 
-**Evidence:** `frontend/src/app/compare/`, `tests/e2e/compare.spec.ts` (24 runs across 4 viewports). Composed from `/players/{id}`, `/players/{id}/stats` and `/players/{id}/trends`, so both sides use the same season definitions; no dedicated endpoint yet. · **Decision:** Not Verified (radar chart and endpoint open)
+**Evidence:** `backend/app/services/compare.py`, `GET /compare/players`, `backend/tests/api/test_compare.py`, `frontend/src/app/compare/`, `tests/e2e/compare.spec.ts`. Percentiles rank players with at least 40% of their team's games and 10 minutes per game that season; the page states the rule and the pool size, and flags a player below it. · **Decision:** Pass
 
 ---
 
@@ -1024,3 +1024,15 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 259 passed; Playwright 266 passed, 10 skipped; lint, 38 unit tests and contrast clean.
 
 **Next step:** Phase 10 (Player Comparison: radar chart and a dedicated endpoint).
+
+### Session — 2026-10-29 (Phase 10)
+
+**Completed:**
+- `GET /compare/players?p1=&p2=&season=`: both players' season lines (the same aggregation as the player pages), their common seasons, and league percentiles on seven axes. The axes are scoring, rebounding, playmaking, 3-point shooting, steals, blocks and efficiency (true shooting). It refuses the same player twice and an unshared season.
+- The Compare page now loads from this endpoint. It adds a "Strengths" panel: a radar chart with a plain-language summary, a table view, and the qualification rule.
+
+**Real data:** Dončić vs Jokić opens on 2025-26 (the latest season both played 10+ games), ranked against 374 qualified players. Dončić leads 3 areas, Jokić 4. The biggest gap is 3-point shooting, where Dončić is in the 100th percentile.
+
+**Tests run:** backend 267 passed; Playwright 273 passed; Compare suite 155/155 repeated; toggle p95 69 ms; lint, unit and contrast clean.
+
+**Next step:** Phase 11 (Overview, Games and supporting screens).

@@ -7,14 +7,14 @@ import { CompareBar } from "@/components/data/compare-bar";
 import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
-import type { PlayerProfile, PlayerSeasonStats, SeasonLine } from "@/lib/api/types";
+import type { PlayerComparison, PlayerProfile, SeasonLine } from "@/lib/api/types";
 import { formatPercent, formatStat } from "@/lib/format";
 import { param, SEASON_LABEL, type SearchParams } from "@/lib/url";
 
-import { ComparePicker, CompareTrend, type Picked, SeasonPicker } from "./compare-client";
+import { ComparePicker, CompareTrend, PercentileRadar, type Picked, SeasonPicker } from "./compare-client";
 
 const PLAYER_ID = /^\d{1,10}$/;
-/** Without a season in the URL, start from the latest season where both have a meaningful sample. */
+/** Without a season in the URL, the API opens on the latest season where both played this many. */
 const MIN_DEFAULT_GAMES = 10;
 
 interface Row {
@@ -73,11 +73,16 @@ function leadCounts(lines: [SeasonLine, SeasonLine]): [number, number, number] {
 
 async function load(id: string | undefined) {
   if (!id) return null;
-  const [profile, stats] = await Promise.all([
-    serverTry<PlayerProfile>(`/players/${id}`),
-    serverTry<PlayerSeasonStats>(`/players/${id}/stats`),
-  ]);
-  return { id, profile, stats };
+  return { id, profile: await serverTry<PlayerProfile>(`/players/${id}`) };
+}
+
+/** Both players in one season from GET /compare/players; an unshared season falls back to the default. */
+async function comparison(p1: string, p2: string, season: string | undefined) {
+  const result = await serverTry<PlayerComparison>("/compare/players", { p1, p2, season });
+  if (season && result.error?.code === "no_common_season") {
+    return serverTry<PlayerComparison>("/compare/players", { p1, p2 });
+  }
+  return result;
 }
 
 function toPicked(profile: PlayerProfile): Picked {
@@ -164,23 +169,17 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
     Picked | null,
   ];
 
-  const both = picked[0] && picked[1] ? ([picked[0], picked[1]] as [Picked, Picked]) : null;
-  const statsError = sides.find((s) => s?.stats.error)?.stats.error;
-  const seasonsOf = (i: number) => sides[i]?.stats.data?.seasons.map((l) => l.season) ?? [];
-  const gamesIn = (i: number, s: string) =>
-    sides[i]?.stats.data?.seasons.find((l) => l.season === s)?.games_played ?? 0;
-  const common = both ? seasonsOf(0).filter((s) => seasonsOf(1).includes(s)) : [];
-  const season =
-    requested && SEASON_LABEL.test(requested) && common.includes(requested)
-      ? requested
-      : (common.find((c) => [0, 1].every((i) => gamesIn(i, c) >= MIN_DEFAULT_GAMES)) ?? common[0]);
-  const lines =
-    both && season
-      ? ([0, 1].map((i) => sides[i]!.stats.data!.seasons.find((l) => l.season === season)!) as [
-          SeasonLine,
-          SeasonLine,
-        ])
-      : null;
+  const pair = picked[0] && picked[1] ? ([picked[0], picked[1]] as [Picked, Picked]) : null;
+  const same = pair != null && pair[0].id === pair[1].id;
+  const both = same ? null : pair;
+  const compared = both
+    ? await comparison(ids[0]!, ids[1]!, requested && SEASON_LABEL.test(requested) ? requested : undefined)
+    : null;
+  const statsError = compared?.error ?? null;
+  const data = compared?.data ?? null;
+  const common = data?.common_seasons ?? [];
+  const season = data?.season ?? undefined;
+  const lines = data?.season ? (data.lines as [SeasonLine, SeasonLine]) : null;
 
   return (
     <div className="space-y-5">
@@ -190,7 +189,11 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
           No player has id {missing.join(" or ")}. Pick someone with the search above.
         </Unavailable>
       )}
-      {!both ? (
+      {same ? (
+        <Unavailable kind="empty" title="Pick two different players">
+          Both slots hold {pair![0].full_name}. Swap one of them using the search above.
+        </Unavailable>
+      ) : !both ? (
         <Unavailable
           kind="empty"
           title={picked[0] || picked[1] ? "Pick a second player" : "Pick two players"}
@@ -242,6 +245,14 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
               double-doubles are context and aren&apos;t counted as leads. Shooting percentages are made over
               attempted for the whole season.
             </p>
+          </Panel>
+          <Panel id="ranking" kicker={`${season} regular season`} title="Strengths">
+            <PercentileRadar
+              players={both}
+              axes={data!.axes}
+              qualification={data!.qualification}
+              qualified={data!.qualified}
+            />
           </Panel>
           <Panel id="form" kicker="Game by game" title="Form">
             <CompareTrend players={both} season={season} />

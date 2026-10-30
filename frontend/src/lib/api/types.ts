@@ -54,3 +54,5 @@ export type CareerLine = Schemas["CareerLine"];
 export type ModelAnalytics = Schemas["ModelAnalytics"];
 export type PredictionHistory = Schemas["PredictionHistory"];
 export type HistoryEntry = Schemas["HistoryEntry"];
+export type PlayerComparison = Schemas["PlayerComparison"];
+export type PercentileAxis = Schemas["PercentileAxis"];

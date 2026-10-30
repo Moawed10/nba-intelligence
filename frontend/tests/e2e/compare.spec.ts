@@ -2,6 +2,8 @@ import { expect, type Page, test } from "@playwright/test";
 
 import { expectAccessible } from "./helpers";
 
+const STUB = `http://127.0.0.1:${process.env.STUB_API_PORT ?? 8799}/api/v1`;
+
 // Players 1000 ("Zed Fixture") and 1001 come from tests/e2e/stub-api.mjs; 1990 is a former player with no seasons.
 
 async function pick(page: Page, slot: "Player 1" | "Player 2", query: string, name: string) {
@@ -67,6 +69,44 @@ test.describe("compare", () => {
     await expect(form.getByText(/rebounds per game, over 30 and 30 games/)).toBeVisible();
     await form.getByRole("radio", { name: "Table" }).click();
     await expect(form.getByRole("table").getByRole("row")).toHaveCount(31);
+  });
+
+  test("ranks both players against the league with a table equivalent", async ({ page, request }) => {
+    const api = await (await request.get(`${STUB}/compare/players?p1=1000&p2=1001`)).json();
+    await page.goto("/compare?p1=1000&p2=1001");
+    const radar = page.getByRole("region", { name: "League ranking by area" });
+    await expect(radar.getByText(/ranks higher in \d of 7 areas/)).toBeVisible();
+    await expect(page.getByText(/Ranked against the 30 players/)).toBeVisible();
+    await radar.getByRole("radio", { name: "Table" }).click();
+    const table = radar.getByRole("table");
+    await expect(table.locator("tbody tr")).toHaveCount(7);
+    const scoring = api.axes[0];
+    const ordinal = (n: number) => {
+      const r = Math.round(n);
+      const suffix = r % 100 >= 11 && r % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][r % 10] ?? "th");
+      return `${r}${suffix} percentile`;
+    };
+    await expect(table.locator("tbody tr").first()).toContainText(ordinal(scoring.percentiles[0]));
+    await expect(table.locator("tbody tr").first()).toContainText(ordinal(scoring.percentiles[1]));
+  });
+
+  test("chart and table toggles respond within 200 ms (p95 over 20)", async ({ page, isMobile }) => {
+    test.skip(isMobile, "timed once, on desktop");
+    await page.goto("/compare?p1=1000&p2=1001");
+    const radar = page.getByRole("region", { name: "League ranking by area" });
+    await radar.getByRole("figure").waitFor();
+    const timings: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      const toTable = i % 2 === 0;
+      const started = await page.evaluate(() => performance.now());
+      await radar.getByRole("radio", { name: toTable ? "Table" : "Chart" }).click();
+      await (toTable ? radar.getByRole("table") : radar.getByRole("figure")).waitFor();
+      timings.push((await page.evaluate(() => performance.now())) - started);
+    }
+    timings.sort((x, y) => x - y);
+    const p95 = timings[Math.ceil(timings.length * 0.95) - 1];
+    test.info().annotations.push({ type: "toggle p95 ms", description: p95.toFixed(0) });
+    expect(p95).toBeLessThanOrEqual(200);
   });
 
   test("is accessible in both themes without horizontal overflow", async ({ page }) => {

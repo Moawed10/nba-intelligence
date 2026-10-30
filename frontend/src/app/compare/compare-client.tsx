@@ -5,7 +5,20 @@ import { ArrowLeftRight, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { ChartFrame } from "@/components/data/chart-frame";
@@ -14,8 +27,8 @@ import { SegmentedControl } from "@/components/data/segmented-control";
 import { Unavailable } from "@/components/data/unavailable";
 import { clientGet } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
-import type { PlayerTrends, TeamRef } from "@/lib/api/types";
-import { formatGameValue, formatStat } from "@/lib/format";
+import type { PercentileAxis, PlayerTrends, TeamRef } from "@/lib/api/types";
+import { formatGameValue, formatPercent, formatStat } from "@/lib/format";
 import { hrefWith } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
@@ -356,6 +369,146 @@ export function CompareTrend({ players, season }: { players: [Picked, Picked]; s
             </Link>
           </span>
         ))}
+      </p>
+    </div>
+  );
+}
+
+function ordinal(n: number): string {
+  const r = Math.round(n);
+  const suffix = r % 100 >= 11 && r % 100 <= 13 ? "th" : (["th", "st", "nd", "rd"][r % 10] ?? "th");
+  return `${r}${suffix}`;
+}
+
+function rawValue(axis: PercentileAxis, i: number): string {
+  const v = axis.values[i];
+  if (v == null) return "—";
+  return axis.key === "ts_pct" ? `${formatPercent(v)} true shooting` : `${formatStat(v)} per game`;
+}
+
+/** Where each player ranks in the league this season, area by area (percentile, higher is better). */
+export function PercentileRadar({
+  players,
+  axes,
+  qualification,
+  qualified,
+}: {
+  players: [Picked, Picked];
+  axes: PercentileAxis[];
+  qualification: string;
+  qualified: boolean[];
+}) {
+  const data = axes.map((a) => ({ label: a.label, a: a.percentiles[0] ?? 0, b: a.percentiles[1] ?? 0 }));
+  const ahead = axes.filter((a) => (a.percentiles[0] ?? -1) > (a.percentiles[1] ?? -1)).length;
+  const behind = axes.filter((a) => (a.percentiles[1] ?? -1) > (a.percentiles[0] ?? -1)).length;
+  const gap = axes.reduce<PercentileAxis | null>((best, a) => {
+    const d = Math.abs((a.percentiles[0] ?? 0) - (a.percentiles[1] ?? 0));
+    return !best || d > Math.abs((best.percentiles[0] ?? 0) - (best.percentiles[1] ?? 0)) ? a : best;
+  }, null);
+  const [first, second] = players.map((p) => p.full_name.split(" ").at(-1));
+  const leader = gap && (gap.percentiles[0] ?? 0) >= (gap.percentiles[1] ?? 0) ? 0 : 1;
+  const summary =
+    `${first} ranks higher in ${ahead} of ${axes.length} areas and ${second} in ${behind}.` +
+    (gap
+      ? ` The biggest gap is ${gap.label.toLowerCase()}: ${players[leader].full_name} is in the ${ordinal(gap.percentiles[leader] ?? 0)} percentile.`
+      : "");
+  const unqualified = players.filter((_, i) => !qualified[i]);
+
+  return (
+    <div className="space-y-3">
+      <ChartFrame
+        title="League ranking by area"
+        unit="Percentile among qualified players this season (100 = best)"
+        summary={summary}
+        chart={
+          <div>
+            <ul className="mb-2 flex flex-wrap gap-x-5 gap-y-1 text-footnote text-muted-foreground">
+              {players.map((p, i) => (
+                <li key={p.id} className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="size-2.5 rounded-full"
+                    style={{ background: SLOT_COLORS[i] }}
+                  />
+                  {p.full_name}
+                </li>
+              ))}
+            </ul>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={data} outerRadius="72%">
+                  <PolarGrid stroke="var(--border)" />
+                  <PolarAngleAxis dataKey="label" tick={AXIS} />
+                  <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 12,
+                      color: "var(--foreground)",
+                    }}
+                    formatter={(v, name) => [`${ordinal(Number(v))} percentile`, String(name)]}
+                  />
+                  {players.map((p, i) => (
+                    <Radar
+                      key={p.id}
+                      name={p.full_name}
+                      dataKey={i === 0 ? "a" : "b"}
+                      stroke={SLOT_COLORS[i]}
+                      fill={SLOT_COLORS[i]}
+                      fillOpacity={0.18}
+                      strokeWidth={2}
+                    />
+                  ))}
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        }
+        table={
+          <div
+            role="region"
+            aria-label="League ranking by area, table"
+            tabIndex={0}
+            className="overflow-x-auto"
+          >
+            <table className="w-full text-subhead">
+              <caption className="sr-only">Percentile and season value for each area</caption>
+              <thead>
+                <tr className="border-b border-border text-footnote text-muted-foreground">
+                  <th scope="col" className="px-3 py-2 text-left font-medium">
+                    Area
+                  </th>
+                  {players.map((p) => (
+                    <th key={p.id} scope="col" className="px-3 py-2 text-right font-medium">
+                      {p.full_name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {axes.map((a) => (
+                  <tr key={a.key} className="border-b border-border/60 last:border-0">
+                    <th scope="row" className="px-3 py-2 text-left font-normal">
+                      {a.label}
+                    </th>
+                    {players.map((p, i) => (
+                      <td key={p.id} className="px-3 py-2 text-right tabular-nums">
+                        {a.percentiles[i] == null ? "—" : `${ordinal(a.percentiles[i]!)} percentile`}
+                        <span className="block text-footnote text-muted-foreground">{rawValue(a, i)}</span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        }
+      />
+      <p className="text-footnote text-muted-foreground">
+        {qualification} A 90th percentile means better than 9 in 10 of them.
+        {unqualified.length > 0 &&
+          ` ${unqualified.map((p) => p.full_name).join(" and ")} played less than that, so treat ${unqualified.length === 1 ? "that ranking" : "those rankings"} with care.`}
       </p>
     </div>
   );

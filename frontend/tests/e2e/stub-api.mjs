@@ -493,6 +493,41 @@ createServer((req, res) => {
       }));
     return send(res, 200, results);
   }
+  if (path === "/compare/players") {
+    const [a, b] = [q.get("p1"), q.get("p2")].map((v) => PLAYERS.find((p) => p.id === Number(v)));
+    if (!a || !b) return error(res, 404, "player_not_found", "No such player.");
+    if (a.id === b.id) return error(res, 400, "invalid_parameter", "Pick two different players.");
+    const seasonsOf = (p) => (p.is_active ? SEASONS : []);
+    const common = seasonsOf(a).filter((x) => seasonsOf(b).includes(x));
+    const requested = q.get("season");
+    if (requested && !common.includes(requested)) return error(res, 422, "no_common_season", "Not a shared season.");
+    const season = requested ?? common[0] ?? null;
+    const summaryOf = (p) => ({ id: p.id, full_name: p.full_name, position: p.position, is_active: p.is_active, team: p.team, from_year: p.from_year, to_year: p.to_year });
+    if (!season) {
+      return send(res, 200, { players: [summaryOf(a), summaryOf(b)], season: null, common_seasons: [], lines: [], axes: [],
+        qualified_players: 0, qualification: "", qualified: [false, false], meta: META });
+    }
+    const line = (p) => ({ ...summary(gameLines(p, season)), season, season_type: "regular" });
+    const pool = PLAYERS.filter((p) => p.is_active).map(line);
+    const rank = (key, v) => {
+      const values = pool.map((l) => (key === "ts_pct" ? l.ts_pct : l.per_game[key]));
+      const below = values.filter((x) => x < v).length;
+      const equal = values.filter((x) => x === v).length;
+      return ((below + 0.5 * equal) / values.length) * 100;
+    };
+    const lines = [line(a), line(b)];
+    const labels = { pts: "Scoring", reb: "Rebounding", ast: "Playmaking", fg3m: "3-point shooting", stl: "Steals", blk: "Blocks", ts_pct: "Efficiency" };
+    const axes = Object.entries(labels).map(([key, label]) => {
+      const values = lines.map((l) => (key === "ts_pct" ? l.ts_pct : l.per_game[key]));
+      return { key, label, values, percentiles: values.map((v) => rank(key, v)) };
+    });
+    return send(res, 200, {
+      players: [summaryOf(a), summaryOf(b)], season, common_seasons: common, lines, axes,
+      qualified_players: pool.length,
+      qualification: `Ranked against the ${pool.length} players with at least 12 games and 10 minutes per game in ${season}.`,
+      qualified: [true, true], meta: META,
+    });
+  }
   const careerMatch = path.match(/^\/players\/(\d+)\/career$/);
   if (careerMatch) {
     const player = PLAYERS.find((p) => p.id === Number(careerMatch[1]));

@@ -4,6 +4,27 @@
  */
 
 export interface paths {
+    "/api/v1/compare/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare Players
+         * @description Two players in one regular season with league percentiles. Without a season, the latest
+         *     regular season in which both played at least 10 games (or their latest shared one).
+         */
+        get: operations["compare_players_api_v1_compare_players_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/data-status": {
         parameters: {
             query?: never;
@@ -1415,6 +1436,21 @@ export interface components {
             /** Tov */
             tov: number | null;
         };
+        /**
+         * PercentileAxis
+         * @description One radar axis: each player's season value and league percentile (0–100, higher is
+         *     better). A percentile is null when the player has no value for it.
+         */
+        PercentileAxis: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Percentiles */
+            percentiles: (number | null)[];
+            /** Values */
+            values: (number | null)[];
+        };
         /** Performance */
         Performance: {
             box: components["schemas"]["BoxStats"];
@@ -1453,6 +1489,29 @@ export interface components {
             player_id: number;
             playoffs: components["schemas"]["CareerTable"];
             regular: components["schemas"]["CareerTable"];
+        };
+        /**
+         * PlayerComparison
+         * @description Two players in the same regular season. `season` is null when they never shared one.
+         */
+        PlayerComparison: {
+            /** Axes */
+            axes: components["schemas"]["PercentileAxis"][];
+            /** Common Seasons */
+            common_seasons: string[];
+            /** Lines */
+            lines: components["schemas"]["SeasonLine"][];
+            meta: components["schemas"]["Meta"];
+            /** Players */
+            players: components["schemas"]["PlayerSummary"][];
+            /** Qualification */
+            qualification: string;
+            /** Qualified */
+            qualified: boolean[];
+            /** Qualified Players */
+            qualified_players: number;
+            /** Season */
+            season: string | null;
         };
         /** PlayerGameLine */
         PlayerGameLine: {
@@ -2060,6 +2119,75 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    compare_players_api_v1_compare_players_get: {
+        parameters: {
+            query: {
+                p1: number;
+                p2: number;
+                season?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerComparison"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     data_status_api_v1_data_status_get: {
         parameters: {
             query?: never;

@@ -24,6 +24,7 @@ ENDPOINTS = {
     "/api/v1/predictions/upcoming", "/api/v1/predictions/games", "/api/v1/predictions/history",
     "/api/v1/predictions/{prediction_id}", "/api/v1/predictions/{prediction_id}/explanation",
     "/api/v1/models/{version}/live", "/api/v1/models/{version}/analytics",
+    "/api/v1/compare/players",
 }  # fmt: skip
 # The only write: an append-only pregame forecast. Ingestion, training and activation stay offline.
 WRITES = {

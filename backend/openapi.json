@@ -2605,6 +2605,55 @@
         "title": "PerGame",
         "type": "object"
       },
+      "PercentileAxis": {
+        "description": "One radar axis: each player's season value and league percentile (0\u2013100, higher is\nbetter). A percentile is null when the player has no value for it.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "percentiles": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Percentiles",
+            "type": "array"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "values",
+          "percentiles"
+        ],
+        "title": "PercentileAxis",
+        "type": "object"
+      },
       "Performance": {
         "properties": {
           "box": {
@@ -2710,6 +2759,81 @@
           "meta"
         ],
         "title": "PlayerCareer",
+        "type": "object"
+      },
+      "PlayerComparison": {
+        "description": "Two players in the same regular season. `season` is null when they never shared one.",
+        "properties": {
+          "axes": {
+            "items": {
+              "$ref": "#/components/schemas/PercentileAxis"
+            },
+            "title": "Axes",
+            "type": "array"
+          },
+          "common_seasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Common Seasons",
+            "type": "array"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/SeasonLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerSummary"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "qualification": {
+            "title": "Qualification",
+            "type": "string"
+          },
+          "qualified": {
+            "items": {
+              "type": "boolean"
+            },
+            "title": "Qualified",
+            "type": "array"
+          },
+          "qualified_players": {
+            "title": "Qualified Players",
+            "type": "integer"
+          },
+          "season": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season"
+          }
+        },
+        "required": [
+          "players",
+          "season",
+          "common_seasons",
+          "lines",
+          "axes",
+          "qualified_players",
+          "qualification",
+          "qualified",
+          "meta"
+        ],
+        "title": "PlayerComparison",
         "type": "object"
       },
       "PlayerGameLine": {
@@ -4759,6 +4883,119 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/compare/players": {
+      "get": {
+        "description": "Two players in one regular season with league percentiles. Without a season, the latest\nregular season in which both played at least 10 games (or their latest shared one).",
+        "operationId": "compare_players_api_v1_compare_players_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "p1",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "P1",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "p2",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "P2",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerComparison"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Compare Players",
+        "tags": [
+          "compare"
+        ]
+      }
+    },
     "/api/v1/data-status": {
       "get": {
         "operationId": "data_status_api_v1_data_status_get",
