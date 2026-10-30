@@ -153,7 +153,8 @@ def test_analytics_change_as_soon_as_a_result_is_scored(league, client, backtest
     with league.begin() as conn:
         conn.execute(
             text(
-                "UPDATE prediction_evaluations SET actual = actual + 100, abs_error = abs_error + 100, "
+                "UPDATE prediction_evaluations "
+                "SET actual = actual + 100, abs_error = abs_error + 100, "
                 "evaluated_at = now() + interval '1 minute' "
                 "WHERE stat = 'pts' AND prediction_id = (SELECT prediction_id "
                 "FROM prediction_evaluations WHERE stat = 'pts' LIMIT 1)"

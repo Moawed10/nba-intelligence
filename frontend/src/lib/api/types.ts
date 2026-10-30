@@ -56,3 +56,4 @@ export type PredictionHistory = Schemas["PredictionHistory"];
 export type HistoryEntry = Schemas["HistoryEntry"];
 export type PlayerComparison = Schemas["PlayerComparison"];
 export type PercentileAxis = Schemas["PercentileAxis"];
+export type GameForecastReview = Schemas["GameForecastReview"];

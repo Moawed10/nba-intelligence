@@ -11,18 +11,25 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select, text
+from sqlalchemy import exists, select, text
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
 from app.api.errors import ApiError, not_found
 from app.ml.conformal import MondrianConformal
 from app.ml.inference import ActiveRelease, snapshot_hash
 from app.ml.team_model import MIN_PRIOR_GAMES, TEAM_FEATURES, TEAM_GAMES_SQL, team_frame
-from app.models import Game, GamePrediction
-from app.schemas.predictions import GameForecast, GameForecastResult, TeamScore, Unavailable
+from app.models import Game, GamePrediction, GameStatus, ModelRelease
+from app.schemas.predictions import (
+    GameForecast,
+    GameForecastResult,
+    GameForecastReview,
+    TeamScore,
+    Unavailable,
+)
 from app.services.prediction_lifecycle import (
+    REFRESH_WINDOW,
     inference_slot,
     model_unavailable,
     serving_release,
@@ -189,3 +196,57 @@ def forecasts(ctx: Context, game_ids: list[str]) -> list[GameForecastResult]:
         forecast = _out(row, ctx.session.get_one(Game, game_id), version)
         out.append(GameForecastResult(game_id=game_id, forecast=forecast, unavailable=None))
     return out
+
+
+def store_upcoming(session: Session, artifacts_dir: Path, now: datetime) -> dict[str, int]:
+    """Store a score forecast for every scheduled game tipping off in the refresh window, so each
+    game has a pregame prediction to compare with its final score. Same inputs store nothing."""
+    games = session.scalars(
+        select(Game.id).where(
+            Game.status == GameStatus.scheduled,
+            Game.tipoff_at > now,
+            Game.tipoff_at <= now + REFRESH_WINDOW,
+        )
+    ).all()
+    counts = {"game_forecasts": 0, "game_forecasts_skipped": 0}
+    for game_id in games:
+        try:
+            _, _, created = forecast_game(session, artifacts_dir, now, game_id)
+        except ApiError:
+            session.rollback()
+            counts["game_forecasts_skipped"] += 1
+            continue
+        counts["game_forecasts"] += created
+    return counts
+
+
+def review(ctx: Context, game_id: str) -> GameForecastReview:
+    """The last score forecast stored before tip-off, next to the final score once there is one."""
+    game = ctx.session.get(Game, game_id)
+    if game is None:
+        raise not_found("game", game_id)
+    newer = aliased(GamePrediction)
+    row = ctx.session.execute(
+        select(GamePrediction, ModelRelease.version)
+        .join(ModelRelease, ModelRelease.id == GamePrediction.release_id)
+        .where(
+            GamePrediction.game_id == game_id,
+            ~exists().where(newer.supersedes_prediction_id == GamePrediction.id),
+        )
+        .order_by(GamePrediction.created_at.desc())
+        .limit(1)
+    ).first()
+    final = game.status == GameStatus.final and game.home_score is not None
+    forecast = _out(row[0], game, row[1]) if row else None
+    picked = None
+    if forecast and final:
+        predicted_home = forecast.home_win_probability >= 0.5
+        picked = predicted_home == (game.home_score > game.away_score)  # type: ignore[operator]
+    return GameForecastReview(
+        game_id=game_id,
+        status=game.status.value,
+        forecast=forecast,
+        home_score=game.home_score if final else None,
+        away_score=game.away_score if final else None,
+        picked_winner=picked,
+    )

@@ -74,6 +74,18 @@ test.describe("games", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Game not found");
   });
 
+  test("a finished game shows the final score next to the pregame prediction", async ({ page }) => {
+    await page.goto("/games/0099000101");
+    const review = page.getByRole("region", { name: "How our prediction did" });
+    await expect(review.getByText("✓ Picked the winner")).toBeVisible();
+    await expect(review.getByText("Before tip-off we gave the Bears a 62% chance to win.")).toBeVisible();
+    await expect(review.getByRole("listitem").filter({ hasText: "Bears" })).toContainText("112");
+    await expect(review.getByRole("listitem").filter({ hasText: "Bears" })).toContainText("Predicted 108");
+    await expect(review.getByRole("listitem").filter({ hasText: "Ants" })).toContainText("101");
+    await page.goto("/games?date=2099-11-09");
+    await expect(page.getByRole("region", { name: "How our prediction did" })).toBeVisible();
+  });
+
   test("ignores a malformed date", async ({ page }) => {
     await page.goto("/games?date=not-a-date");
     await expect(page.getByRole("region", { name: "Games by date" })).toBeVisible();

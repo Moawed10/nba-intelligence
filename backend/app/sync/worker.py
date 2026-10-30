@@ -32,7 +32,7 @@ from app.models import (
     SyncEventType,
     SyncSchedule,
 )
-from app.services import prediction_lifecycle
+from app.services import game_forecasts, prediction_lifecycle
 
 log = logging.getLogger(__name__)
 
@@ -202,21 +202,29 @@ HANDLERS: dict[SyncEventType, EventHandler] = {
 def maintain_predictions(
     engine: Engine, now: datetime, artifacts_dir: Path
 ) -> dict[str, int] | None:
-    """Score pending finals, then refresh stale forecasts. None when another worker holds it."""
+    """Score pending finals, refresh stale player forecasts and store score forecasts for the
+    next 48 hours of games. None when another worker holds it."""
     key = func.hashtextextended("predictions", 0)
-    with Session(engine) as s:
-        if not s.scalar(select(func.pg_try_advisory_lock(key))):
+    # The lock belongs to one database connection, so the session is pinned to it: commits and
+    # rollbacks inside the job must not hand it back to the pool before the unlock.
+    with engine.connect() as conn:
+        if not conn.scalar(select(func.pg_try_advisory_lock(key))):
+            conn.rollback()
             return None
+        conn.commit()
         try:
-            scored = prediction_lifecycle.score_pending(s, now)
-            s.commit()
-            counts = prediction_lifecycle.refresh_due(s, artifacts_dir, now)
-            s.commit()
-            return {"scored": scored, **counts}
+            with Session(bind=conn) as s:
+                scored = prediction_lifecycle.score_pending(s, now)
+                s.commit()
+                counts = prediction_lifecycle.refresh_due(s, artifacts_dir, now)
+                s.commit()
+                games = game_forecasts.store_upcoming(s, artifacts_dir, now)
+                s.commit()
+                return {"scored": scored, **counts, **games}
         finally:
-            s.rollback()
-            s.execute(select(func.pg_advisory_unlock(key)))
-            s.commit()
+            conn.rollback()
+            conn.execute(select(func.pg_advisory_unlock(key)))
+            conn.commit()
 
 
 def drain_events(engine: Engine, now: datetime, batch: int = 500) -> int:

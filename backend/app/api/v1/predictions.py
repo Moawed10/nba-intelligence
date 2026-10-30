@@ -2,12 +2,14 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Query, Response
+from fastapi import Path as PathParam
 
 from app.api.deps import Ctx
 from app.models import PredictionKind
 from app.schemas.predictions import (
     GameForecastRequest,
     GameForecastResult,
+    GameForecastReview,
     Prediction,
     PredictionExplanation,
     PredictionRequest,
@@ -40,6 +42,15 @@ def game_forecasts_(ctx: Ctx, body: GameForecastRequest) -> list[GameForecastRes
     """Predicted final score and home win chance for scheduled games (stored, reused while the
     inputs are unchanged); a game that can't be forecast says why."""
     return game_forecasts.forecasts(ctx, body.game_ids)
+
+
+@router.get("/games/{game_id}", response_model=GameForecastReview)
+def game_forecast_review(
+    ctx: Ctx, game_id: Annotated[str, PathParam(pattern=r"^\d{10}$")]
+) -> GameForecastReview:
+    """The last score forecast stored before tip-off and, once the game is final, the result."""
+    ctx.always_revalidate()
+    return game_forecasts.review(ctx, game_id)
 
 
 @router.get("/history", response_model=PredictionHistory)

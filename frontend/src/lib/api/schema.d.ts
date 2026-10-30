@@ -441,6 +441,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/predictions/games/{game_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Game Forecast Review
+         * @description The last score forecast stored before tip-off and, once the game is final, the result.
+         */
+        get: operations["game_forecast_review_api_v1_predictions_games__game_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/predictions/history": {
         parameters: {
             query?: never;
@@ -962,6 +982,23 @@ export interface components {
             /** Game Id */
             game_id: string;
             unavailable: components["schemas"]["Unavailable"] | null;
+        };
+        /**
+         * GameForecastReview
+         * @description The last score forecast stored before tip-off and, once the game is final, the result.
+         */
+        GameForecastReview: {
+            /** Away Score */
+            away_score: number | null;
+            forecast: components["schemas"]["GameForecast"] | null;
+            /** Game Id */
+            game_id: string;
+            /** Home Score */
+            home_score: number | null;
+            /** Picked Winner */
+            picked_winner: boolean | null;
+            /** Status */
+            status: string;
         };
         /**
          * GameStatus
@@ -3785,6 +3822,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameForecastResult"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    game_forecast_review_api_v1_predictions_games__game_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                game_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameForecastReview"];
                 };
             };
             /** @description Bad Request */

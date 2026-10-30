@@ -126,3 +126,40 @@ def test_games_that_cannot_be_forecast_say_why(scoring, monkeypatch):  # noqa: F
 @pytest.mark.parametrize("ids", [[], ["123"], [str(i).zfill(10) for i in range(31)]])
 def test_invalid_requests_are_refused(scoring, ids):  # noqa: F811
     assert scoring.post(URL, json={"game_ids": ids}).status_code == 422
+
+
+def test_worker_stores_a_score_forecast_for_games_in_the_next_48_hours(league, tmp_path, scoring):  # noqa: F811
+    from app.sync.worker import maintain_predictions
+    from tests.api.conftest import NOW
+
+    result = maintain_predictions(league, NOW, tmp_path)
+    assert result["game_forecasts"] >= 1
+    with Session(league) as s:
+        stored = set(s.scalars(select(GamePrediction.game_id)))
+    assert NEXT_GAME.id in stored and LATER_GAME.id not in stored  # 2099-11-25 is outside 48 h
+    again = maintain_predictions(league, NOW, tmp_path)
+    assert again["game_forecasts"] == 0  # same inputs, nothing new stored
+
+
+def test_review_shows_the_pregame_forecast_next_to_the_final_score(league, scoring):  # noqa: F811
+    forecast = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    before = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert before["forecast"]["id"] == forecast["id"]
+    assert before["home_score"] is None and before["picked_winner"] is None
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE games SET status = 'final', home_score = 90, away_score = 120 WHERE id = :g"
+            ),
+            {"g": NEXT_GAME.id},
+        )
+    after = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert (after["home_score"], after["away_score"]) == (90, 120)
+    assert after["forecast"]["id"] == forecast["id"]
+    assert after["picked_winner"] == (forecast["home_win_probability"] < 0.5)
+
+
+def test_review_without_a_stored_forecast_says_so(scoring):  # noqa: F811
+    body = scoring.get(f"{URL}/{FINAL[0].id}").json()
+    assert body["forecast"] is None and body["status"] == "final"
+    assert scoring.get(f"{URL}/0099999999").status_code == 404

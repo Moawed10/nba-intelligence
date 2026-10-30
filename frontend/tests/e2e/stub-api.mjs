@@ -392,6 +392,24 @@ createServer((req, res) => {
     };
   };
   const tooFew = { code: "insufficient_data", message: "Forecasts need at least 5 games this season or last; this player has 2." };
+  const reviewMatch = path.match(/^\/predictions\/games\/(\d{10})$/);
+  if (reviewMatch) {
+    const g = GAMES.find((x) => x.id === reviewMatch[1]);
+    if (!g) return error(res, 404, "game_not_found", "No such game.");
+    const final = g.status === "final";
+    const side = (team, points) => ({ team_id: team.id, points, lower: points - 15, upper: points + 15 });
+    const forecast = g.id === "0099000101" ? {
+      id: "00000000-0000-4000-8000-0000000000bb", game_id: g.id, release_version: "2099.11.01-1",
+      home: side(g.home.team, 108.2), away: side(g.away.team, 104.6), home_win_probability: 0.62,
+      interval_level: 0.8, created_at: "2099-11-09T12:00:00Z", data_cutoff_at: "2099-11-09T12:00:00Z",
+      supersedes_prediction_id: null,
+    } : null;
+    return send(res, 200, {
+      game_id: g.id, status: g.status, forecast,
+      home_score: final ? g.home.score : null, away_score: final ? g.away.score : null,
+      picked_winner: forecast && final ? (forecast.home_win_probability >= 0.5) === (g.home.score > g.away.score) : null,
+    });
+  }
   if (path === "/predictions/games" && req.method === "POST") {
     let raw = "";
     req.on("data", (chunk) => (raw += chunk));

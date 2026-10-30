@@ -399,12 +399,15 @@ def test_inference_is_bounded(serving, monkeypatch):
 
 def test_worker_job_scores_and_refreshes(league, tmp_path, serving):
     _post(serving)
-    assert maintain_predictions(league, NOW, tmp_path) == {
+    result = maintain_predictions(league, NOW, tmp_path)
+    assert {k: result[k] for k in ("scored", "checked", "refreshed", "skipped")} == {
         "scored": 0,
         "checked": 1,
         "refreshed": 0,
         "skipped": 0,
     }
+    # This release has no game score model, so no score forecasts are stored.
+    assert result["game_forecasts"] == 0
 
 
 def test_upcoming_forecasts_every_scheduled_game_once(serving):

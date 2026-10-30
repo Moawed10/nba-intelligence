@@ -107,3 +107,15 @@ class GameForecastResult(BaseModel):
     game_id: str
     forecast: GameForecast | None
     unavailable: Unavailable | None
+
+
+class GameForecastReview(BaseModel):
+    """The last score forecast stored before tip-off and, once the game is final, the result."""
+
+    game_id: str
+    status: str
+    forecast: GameForecast | None
+    home_score: int | None
+    away_score: int | None
+    # Whether the side given the higher win chance won; null until the game is final.
+    picked_winner: bool | None

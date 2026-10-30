@@ -18,6 +18,7 @@ import type {
   BoxScorePlayer,
   GameForecast,
   GameForecastResult,
+  GameForecastReview,
   GamePage,
   GameSummary,
   Leaders,
@@ -182,6 +183,7 @@ function Matchup({
       </div>
 
       {game.status === "scheduled" && forecast && <ScoreForecast game={game} {...forecast} />}
+      {game.status === "final" && <PredictionReview game={game} />}
       {game.status === "scheduled" && <PlayerShortcuts game={game} />}
 
       {stats.error ? (
@@ -374,6 +376,62 @@ function ScoreForecast({
         scored and allowed, efficiency, pace), its record this season, days of rest and home court, and only
         at games played before this one.
       </p>
+    </section>
+  );
+}
+
+/** A finished game: the score predicted before tip-off next to the final score. */
+function PredictionReview({ game }: { game: GameSummary }) {
+  const review = useQuery({
+    queryKey: ["game-review", game.id],
+    queryFn: ({ signal }) =>
+      clientGet<GameForecastReview>(`/predictions/games/${game.id}`, undefined, signal),
+  });
+  const data = review.data;
+  if (!data?.forecast || data.home_score == null || data.away_score == null) return null;
+  const f = data.forecast;
+  const sides = [
+    { team: game.away.team, predicted: f.away, actual: data.away_score },
+    { team: game.home.team, predicted: f.home, actual: data.home_score },
+  ];
+  const favorite = f.home_win_probability >= 0.5 ? game.home.team : game.away.team;
+  const chance = Math.round(Math.max(f.home_win_probability, 1 - f.home_win_probability) * 100);
+  return (
+    <section aria-labelledby={`review-${game.id}`} className="space-y-4 rounded-xl border border-border p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id={`review-${game.id}`} className="kicker text-primary">
+          How our prediction did
+        </h3>
+        <p
+          className={cn("text-subhead font-semibold", data.picked_winner ? "text-positive" : "text-negative")}
+        >
+          {data.picked_winner ? "✓ Picked the winner" : "✗ Missed the winner"}
+        </p>
+      </div>
+      <p className="text-subhead">
+        Before tip-off we gave the {favorite.name} a {chance}% chance to win.
+      </p>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {sides.map(({ team, predicted, actual }) => {
+          const inside = actual >= predicted.lower && actual <= predicted.upper;
+          return (
+            <li key={team.id} className="flex items-center gap-3 rounded-xl bg-muted/40 p-3">
+              <TeamMark team={team} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{team.name}</p>
+                <p className="text-footnote text-muted-foreground">
+                  Predicted {Math.round(predicted.points)} (usually {Math.round(predicted.lower)}–
+                  {Math.round(predicted.upper)}) · {inside ? "inside the range" : "outside the range"}
+                </p>
+              </div>
+              <p className="text-right">
+                <span className="numeral block text-title2">{actual}</span>
+                <span className="kicker">Final</span>
+              </p>
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
