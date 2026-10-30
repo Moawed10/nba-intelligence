@@ -66,5 +66,5 @@ def data_status(ctx: Context) -> DataStatus:
             row_counts=counts,
         )  # fmt: skip
 
-    ctx.cache_for(DATA_STATUS_TTL)
+    ctx.always_revalidate()
     return ctx.cached("data_status", DATA_STATUS_TTL, None, compute)

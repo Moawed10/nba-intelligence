@@ -13,7 +13,7 @@ SeasonLabel = Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}$")]
 
 @router.get("/overview", response_model=Overview)
 def get_overview(ctx: Ctx) -> Overview:
-    ctx.cache_for(60)
+    ctx.always_revalidate()
     return insights.overview(ctx)
 
 
@@ -26,11 +26,11 @@ def get_leaders(
     team_id: Annotated[int | None, Query(ge=1)] = None,
 ) -> Leaders:
     """League leaders per game; with `team_id`, the leaders on that team's current roster."""
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return insights.leaders(ctx, stat, season, limit, team_id)
 
 
 @router.get("/standouts", response_model=Standouts)
 def get_standouts(ctx: Ctx, limit: Annotated[int, Query(ge=1, le=25)] = 8) -> Standouts:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return insights.standouts(ctx, limit)

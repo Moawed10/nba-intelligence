@@ -20,5 +20,5 @@ def compare_players(
 ) -> PlayerComparison:
     """Two players in one regular season with league percentiles. Without a season, the latest
     regular season in which both played at least 10 games (or their latest shared one)."""
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return compare.compare(ctx, p1, p2, season)

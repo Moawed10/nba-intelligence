@@ -145,3 +145,19 @@ def test_history_lists_backtests_next_to_the_box_score(league, client, backteste
 def test_unknown_release_and_player_are_404(client, backtested):  # noqa: F811
     assert client.get("/api/v1/models/2099.01.01-1/analytics").status_code == 404
     assert client.get("/api/v1/predictions/history?player_id=424242").status_code == 404
+
+
+def test_analytics_change_as_soon_as_a_result_is_scored(league, client, backtested):  # noqa: F811
+    url = f"/api/v1/models/{VERSION}/analytics?stat=pts"
+    before = client.get(url).json()["mae"]
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE prediction_evaluations SET actual = actual + 100, abs_error = abs_error + 100, "
+                "evaluated_at = now() + interval '1 minute' "
+                "WHERE stat = 'pts' AND prediction_id = (SELECT prediction_id "
+                "FROM prediction_evaluations WHERE stat = 'pts' LIMIT 1)"
+            )
+        )
+    after = client.get(url).json()["mae"]
+    assert after > before

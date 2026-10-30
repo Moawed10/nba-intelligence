@@ -15,13 +15,13 @@ SeasonLabel = Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}$")]
 
 @router.get("", response_model=list[Team])
 def list_teams(ctx: Ctx) -> list[Team]:
-    ctx.cache_for(3600)
+    ctx.always_revalidate()
     return teams.list_teams(ctx)
 
 
 @router.get("/{team_id}", response_model=TeamDetail)
 def get_team(ctx: Ctx, team_id: TeamId, season: SeasonLabel = None) -> TeamDetail:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return teams.team_detail(ctx, team_id, season)
 
 
@@ -32,11 +32,11 @@ def get_team_stats(
     season: SeasonLabel = None,
     season_type: SeasonType = SeasonType.regular,
 ) -> TeamSeasonStats:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return teams.team_stats(ctx, team_id, season, season_type)
 
 
 @router.get("/{team_id}/history", response_model=TeamHistory)
 def get_team_history(ctx: Ctx, team_id: TeamId) -> TeamHistory:
-    ctx.cache_for(1800)
+    ctx.always_revalidate()
     return teams.team_history(ctx, team_id)

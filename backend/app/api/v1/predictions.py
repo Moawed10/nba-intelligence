@@ -51,7 +51,7 @@ def prediction_history(
 ) -> PredictionHistory:
     """A player's stored predictions next to what happened. "backtest" rows were made after the
     fact by models that never saw that season; "pregame" rows were stored before tip-off."""
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return predictions.explorer(ctx, player_id, kind, limit)
 
 
@@ -71,5 +71,5 @@ def get_prediction(ctx: Ctx, prediction_id: uuid.UUID) -> Prediction:
 
 @router.get("/{prediction_id}/explanation", response_model=PredictionExplanation)
 def get_explanation(ctx: Ctx, prediction_id: uuid.UUID) -> PredictionExplanation:
-    ctx.cache_for(3600)
+    ctx.always_revalidate()
     return predictions.explanation(ctx, prediction_id)

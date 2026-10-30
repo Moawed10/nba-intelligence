@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import Context
@@ -12,6 +12,7 @@ from app.models import (
     ModelEvaluation,
     ModelRelease,
     ModelVersion,
+    PredictionEvaluation,
     ReleaseStatus,
     Season,
 )
@@ -30,8 +31,13 @@ from app.schemas.resources import (
 from app.services import prediction_lifecycle
 
 REGISTRY_TTL = 300
-# Scoring does not advance data_version, so live accuracy relies on a short TTL instead.
 LIVE_TTL = 120
+
+
+def _scored_at(session: Session):
+    """When a prediction was last scored. Scoring does not advance data_version, so views of scored
+    predictions include this in their cache key and change as soon as new results are scored."""
+    return session.scalar(select(func.max(PredictionEvaluation.evaluated_at)))
 
 
 def _versions(session: Session, release: ModelRelease) -> list[ModelVersion]:
@@ -163,7 +169,7 @@ def live(ctx: Context, version: str) -> LiveAccuracy:
             **summary,
         )
 
-    return ctx.cached("model_live", LIVE_TTL, version, compute)
+    return ctx.cached("model_live", LIVE_TTL, (version, _scored_at(ctx.session)), compute)
 
 
 RESIDUAL_WIDTH = {"pts": 2.0, "min": 2.0, "reb": 1.0, "ast": 1.0, "fg3m": 0.5, "stl": 0.5,
@@ -265,4 +271,5 @@ def analytics(ctx: Context, version: str, stat: str, kind: str) -> ModelAnalytic
             }
         )
 
-    return ctx.cached("model_analytics", REGISTRY_TTL, (version, stat, kind), compute)
+    key = (version, stat, kind, _scored_at(ctx.session))
+    return ctx.cached("model_analytics", REGISTRY_TTL, key, compute)

@@ -26,7 +26,7 @@ def list_games(
     limit: Annotated[int, Query(ge=1, le=LIMIT_MAX)] = LIMIT_DEFAULT,
     offset: Annotated[int, Query(ge=0, le=10_000)] = 0,
 ) -> Page[GameSummary]:
-    ctx.cache_for(60)
+    ctx.always_revalidate()
     return games.list_games(
         ctx, date_from=date_from, date_to=date_to, team_id=team_id, status=status,
         season_type=season_type, limit=limit, offset=offset,
@@ -39,7 +39,7 @@ def upcoming_games(
     days: Annotated[int, Query(ge=0, le=14)] = 7,
     player_id: Annotated[int | None, Query(ge=1)] = None,
 ) -> list[GameSummary]:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return games.upcoming(ctx, days, player_id)
 
 

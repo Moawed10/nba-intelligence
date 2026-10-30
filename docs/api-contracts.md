@@ -117,15 +117,17 @@ Response (`Prediction`). The values below are schema placeholders, not model out
 
 ## Caching and invalidation
 
-All caching starts in-process (`cachetools.TTLCache`, bounded size) plus HTTP headers. Redis would only be added if the API runs as more than one replica and measurements show cache misses dominate latency.
+All caching is in-process (`cachetools.TTLCache`, bounded size). Redis would only be added if the API runs as more than one replica and measurements show cache misses dominate latency.
+
+**Every refresh shows the latest stored data.** Data responses send `Cache-Control: no-cache`, so a browser may keep a copy but asks the API again on every load; nothing is served stale from the browser. The API's own cache is keyed by `data_version`, which every ingestion run advances, and the version is re-read at most every 2 s. Views of scored predictions (live accuracy, analytics) also key on the latest `evaluated_at`, because scoring does not advance `data_version`. Player photos are the exception: they keep `max-age=604800`. A refresh never calls the NBA source; new games arrive through the sync worker (every 60 s for the schedule and 10 min for box scores while games are live).
 
 | Data | Policy | Key includes | Invalidation |
 |---|---|---|---|
 | Player / team identity | TTL 24 h | id, `data_version` | New ingestion run changes `data_version` |
-| Completed games, box scores | Long-lived; `Cache-Control: public, max-age=86400` | game id, `data_version` | Source correction re-ingested → new `data_version` |
+| Completed games, box scores | Server cache by `data_version`; `Cache-Control: no-cache` | game id, `data_version` | Source correction re-ingested → new `data_version` |
 | Current-season stats, trends | TTL 30 min | player, season, stat, range, `data_version` | `data_version` |
 | Upcoming schedule | TTL 10 min | date range, team | `data_version` |
-| Game status | live 30 s, scheduled 10 min, final long | game id | Status change via ingestion |
+| Game status | Server cache by `data_version` | game id | Status change via ingestion |
 | Model metadata | Until activation | `release.version` | Activation changes the active release id |
 | Model evaluation metrics | Per release, immutable | `release.version`, target, season | Never changes for a given release |
 | Predictions | Persisted in `predictions` (the database is the cache) | player, game, release, snapshot hash | New data → new snapshot hash → new prediction |

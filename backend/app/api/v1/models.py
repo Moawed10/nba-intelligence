@@ -17,7 +17,7 @@ router = APIRouter(prefix="/models", tags=["models"])
 
 @router.get("", response_model=list[ModelReleaseSummary])
 def list_models(ctx: Ctx) -> list[ModelReleaseSummary]:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return registry.list_releases(ctx)
 
 
@@ -25,7 +25,7 @@ def list_models(ctx: Ctx) -> list[ModelReleaseSummary]:
 def get_model(
     ctx: Ctx, version: Annotated[str, Path(pattern=r"^\d{4}\.\d{2}\.\d{2}-\d{1,3}$")]
 ) -> ModelReleaseDetail:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return registry.release_detail(ctx, version)
 
 
@@ -33,7 +33,7 @@ def get_model(
 def get_live_accuracy(
     ctx: Ctx, version: Annotated[str, Path(pattern=r"^\d{4}\.\d{2}\.\d{2}-\d{1,3}$")]
 ) -> LiveAccuracy:
-    ctx.cache_for(120)
+    ctx.always_revalidate()
     return registry.live(ctx, version)
 
 
@@ -46,5 +46,5 @@ def get_analytics(
 ) -> ModelAnalytics:
     """Stored predictions scored against box scores: predicted vs actual by tenth, the spread of
     misses, and interval coverage per predicted-minutes bin."""
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return registry.analytics(ctx, version, stat.value, kind)

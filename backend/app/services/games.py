@@ -32,7 +32,6 @@ BOX_DATASET = "final_box_scores"
 MAX_WINDOW_DAYS = 31
 UPCOMING_STATUSES = (GameStatus.scheduled, GameStatus.delayed)
 UPCOMING_LIMIT = 100
-LIVE_STATUSES = (GameStatus.in_progress, GameStatus.delayed)
 
 
 def _summary_query() -> Select:
@@ -118,16 +117,10 @@ def _game_or_404(session: Session, game_id: str) -> tuple[Game, str, Team, Team]
     return tuple(row)
 
 
-def game_cache_seconds(status: GameStatus, finalized: bool) -> int:
-    if status == GameStatus.final:
-        return 86400 if finalized else 300
-    return 30 if status in LIVE_STATUSES else 300
-
-
 def game_detail(ctx: Context, game_id: str) -> GameDetail:
     row = _game_or_404(ctx.session, game_id)
     game = row[0]
-    ctx.cache_for(game_cache_seconds(game.status, game.stats_finalized_at is not None))
+    ctx.always_revalidate()
     return GameDetail(
         **_summary(*row).model_dump(),
         status_observed_at=game.status_observed_at,
@@ -186,5 +179,5 @@ def boxscore(ctx: Context, game_id: str) -> BoxScore:
         )
 
     result = ctx.cached_model("boxscore", 3600, game_id, BOX_DATASET, compute)
-    ctx.cache_for(game_cache_seconds(GameStatus.final, result.stats_finalized))
+    ctx.always_revalidate()
     return result

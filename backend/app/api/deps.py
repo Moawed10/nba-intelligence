@@ -16,7 +16,8 @@ from app.services.cache import Memo, VersionedCache
 from app.services.photos import PhotoCache
 from app.sync.freshness import DatasetFreshness, Freshness, dataset_freshness
 
-MEMO_TTL_SECONDS = 30.0
+# How long the data version and freshness are reused before checking the database again.
+MEMO_TTL_SECONDS = 2.0
 STALE = {Freshness.stale, Freshness.unavailable}
 
 
@@ -81,8 +82,10 @@ class Context:
         value = self.cached(namespace, ttl, key, compute)
         return value.model_copy(update={"meta": self.meta(dataset)})
 
-    def cache_for(self, seconds: int) -> None:
-        self.response.headers["Cache-Control"] = f"public, max-age={seconds}"
+    def always_revalidate(self) -> None:
+        """Browsers keep the response but must ask again on every load, so a refresh always shows
+        the latest stored data. Repeat requests stay cheap: the server caches by data_version."""
+        self.response.headers["Cache-Control"] = "no-cache"
 
 
 def get_state(request: Request) -> ApiState:

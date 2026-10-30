@@ -87,7 +87,7 @@ def test_upcoming_games(client):
 def test_game_detail_and_cache_headers(client):
     final = client.get(f"/api/v1/games/{FINAL[0].id}")
     assert final.json()["status"] == "final" and final.json()["stats_finalized"] is False
-    assert final.headers["Cache-Control"] == "public, max-age=300"
+    assert final.headers["Cache-Control"] == "no-cache"
     scheduled = client.get(f"/api/v1/games/{SCHEDULED[0].id}").json()
     assert scheduled["home"]["score"] is None and scheduled["status"] == "scheduled"
 
@@ -114,3 +114,23 @@ def test_game_errors(client, path, status, code):
     response = client.get(path)
     assert response.status_code == status
     assert response.json()["error"]["code"] == code
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/overview",
+        "/api/v1/leaders",
+        "/api/v1/players",
+        f"/api/v1/players/{STAR}",
+        f"/api/v1/players/{STAR}/stats",
+        f"/api/v1/players/{STAR}/career",
+        "/api/v1/teams/1/stats",
+        "/api/v1/games",
+        "/api/v1/models",
+    ],
+)
+def test_every_data_response_is_revalidated_on_refresh(client, path):
+    response = client.get(path)
+    assert response.status_code == 200
+    assert response.headers["Cache-Control"] == "no-cache"

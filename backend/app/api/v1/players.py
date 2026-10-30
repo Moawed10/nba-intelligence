@@ -42,7 +42,7 @@ def list_players(
     limit: Limit = LIMIT_DEFAULT,
     offset: Offset = 0,
 ) -> Page[DirectoryPlayer]:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.list_players(
         ctx, team_id=team_id, position=position, active=active, season=season,
         sort=sort, limit=limit, offset=offset,
@@ -55,13 +55,13 @@ def search_players(
     q: Annotated[str, Query(min_length=2, max_length=64)],
     limit: Annotated[int, Query(ge=1, le=20)] = 10,
 ) -> list[PlayerSearchResult]:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.search_players(ctx, q, limit)
 
 
 @router.get("/{player_id}", response_model=PlayerProfile)
 def get_player(ctx: Ctx, player_id: PlayerId) -> PlayerProfile:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.profile(ctx, player_id)
 
 
@@ -90,7 +90,7 @@ def get_player_photo(
 @router.get("/{player_id}/career", response_model=PlayerCareer)
 def get_player_career(ctx: Ctx, player_id: PlayerId) -> PlayerCareer:
     """Every season the player played, regular season and playoffs, back to 1946-47."""
-    ctx.cache_for(3600)
+    ctx.always_revalidate()
     return players.career(ctx, player_id)
 
 
@@ -101,7 +101,7 @@ def get_player_stats(
     season_type: SeasonType = SeasonType.regular,
     season: SeasonLabel = None,
 ) -> PlayerSeasonStats:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.season_stats(ctx, player_id, season_type, season)
 
 
@@ -117,7 +117,7 @@ def get_player_games(
     limit: Limit = LIMIT_DEFAULT,
     offset: Offset = 0,
 ) -> Page[PlayerGameLine]:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.game_log(
         ctx, player_id, season=season, season_type=season_type, date_from=date_from,
         date_to=date_to, sort=sort, limit=limit, offset=offset,
@@ -132,7 +132,7 @@ def get_player_trends(
     season: SeasonLabel = None,
     season_type: SeasonType | None = None,
 ) -> PlayerTrends:
-    ctx.cache_for(300)
+    ctx.always_revalidate()
     return players.trends(ctx, player_id, stat, season, season_type)
 
 
@@ -141,5 +141,5 @@ def get_matchup(
     ctx: Ctx, player_id: PlayerId, team_id: Annotated[int, Path(ge=1, le=2_147_483_647)]
 ) -> MatchupHistory:
     """How the player has done against one team, every stored season."""
-    ctx.cache_for(1800)
+    ctx.always_revalidate()
     return players.matchup(ctx, player_id, team_id)
