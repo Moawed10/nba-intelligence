@@ -87,6 +87,7 @@ function Charts({ data, unit }: { data: ModelAnalytics; unit: string }) {
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       <ChartFrame
+        headingLevel={3}
         title="Predicted vs. actual"
         unit={`Average ${unit} per tenth of predictions`}
         summary={`Sorted from lowest to highest prediction and split into tenths, the actual average was never more than ${formatStat(worst)} ${unit} from what was predicted.`}
@@ -141,6 +142,7 @@ function Charts({ data, unit }: { data: ModelAnalytics; unit: string }) {
         }
       />
       <ChartFrame
+        headingLevel={3}
         title="How far off"
         unit={`Share of games by miss (actual minus predicted, ${unit})`}
         summary={`${formatPercent(within / data.n)} of predictions were within ${formatStat(reach)} ${unit} of the result. On average they ran ${(data.bias ?? 0) > 0 ? "low" : "high"} by ${formatStat(Math.abs(data.bias ?? 0))}.`}
@@ -178,6 +180,7 @@ function Charts({ data, unit }: { data: ModelAnalytics; unit: string }) {
         }
       />
       <ChartFrame
+        headingLevel={3}
         title="Range hit rate"
         unit="Share of results inside the 80% range, by expected minutes"
         summary={

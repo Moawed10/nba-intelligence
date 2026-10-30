@@ -18,9 +18,10 @@
   backdrop-filter: blur(20px) saturate(1.6);
 }
 
-.animated-list:has(> .animated-list__viewport:focus-visible) {
+/* Local change: the ring sits on the focused listbox itself so the focus is visible on it. */
+.animated-list__viewport:focus-visible {
   outline: 2px solid var(--al-accent);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .animated-list__frame-rim {

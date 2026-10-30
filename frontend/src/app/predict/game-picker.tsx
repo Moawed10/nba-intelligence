@@ -52,7 +52,9 @@ export function GamePicker({
       {anyForecast && (
         <p className="flex items-center justify-between gap-3 text-footnote text-muted-foreground">
           <span>Predicted stat line for each game</span>
-          <span className="kicker shrink-0 text-primary">Predicted</span>
+          <span aria-hidden className="kicker shrink-0 text-primary">
+            Predicted
+          </span>
         </p>
       )}
       <AnimatedList
