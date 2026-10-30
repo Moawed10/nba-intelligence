@@ -19,13 +19,13 @@ The authoritative ledger of development progress. A status here is only as good 
 | 8 | Prediction Center | Complete | 100% (12/12) | None |
 | 9 | Model Analytics | Complete | 100% (10/10) | None |
 | 10 | Player Comparison | Complete | 100% (9/9) | None |
-| 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
+| 11 | Overview & Games | Complete | 100% (9/9) | None |
 | 12 | Accessibility Audit | Not Started | 0% (0/10) | Core screens |
 | 13 | Performance & Security | Not Started | 0% (0/12) | Core functionality |
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 133 / 182 verified deliverables = **73%**.
+**Overall:** 136 / 182 verified deliverables = **75%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -612,33 +612,33 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 11 — Overview, Games & Supporting Screens
 
-**Status:** In Progress · **Progress:** 67% (6/9) · **Dependencies:** Phases 4, 5
+**Status:** Complete · **Progress:** 100% (9/9) · **Dependencies:** Phases 4, 5
 
 #### Deliverables
 
 - [x] `GET /overview` + `/` screen
 - [x] Featured players and recent performances
 - [x] Upcoming matchups
-- [ ] Prediction shortcuts
+- [x] Prediction shortcuts (each upcoming game lists both teams' leading scorers, linked to their forecast for that game)
 - [x] `/games` with date navigation
-- [ ] `/games/[id]` matchup detail
+- [x] `/games/[id]` matchup detail
 - [x] Completed results and box scores
-- [ ] `/about` methodology, data sources, limitations, repository link
+- [x] `/about` methodology, data sources, limitations, repository link (shown when `NEXT_PUBLIC_REPOSITORY_URL` is set; the repository is private for now)
 - [x] All routes connected
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Planned routes implemented | 100% | Not measured | Not Verified |
-| Broken internal links | 0 | Not measured | Not Verified |
-| Game results traceable to stored records | 100% | Not measured | Not Verified |
-| Status labels match backend | 100% | Not measured | Not Verified |
-| Actual results distinguished from predictions | 100% | Not measured | Not Verified |
-| Supporting-screen E2E passing | ≥ 95% | Not measured | Not Verified |
-| Loading, empty and error states on all pages | All | Not measured | Not Verified |
+| Planned routes implemented | 100% | `/`, `/players`, `/players/[id]`, `/predict`, `/compare`, `/models`, `/games`, `/games/[id]`, `/about` | Pass |
+| Broken internal links | 0 | 0 of 56 crawled links (`shell.spec.ts`) | Pass |
+| Game results traceable to stored records | 100% | Scores and box scores render from `/games` and `/games/{id}/boxscore` (asserted in E2E) | Pass |
+| Status labels match backend | 100% | Labels map each backend status (final, in progress, postponed, cancelled, scheduled time) | Pass |
+| Actual results distinguished from predictions | 100% | Predicted scores are labelled "Our prediction" and announced as predicted; finals show the real score | Pass |
+| Supporting-screen E2E passing | ≥ 95% | 100% (overview, games, shell suites) | Pass |
+| Loading, empty and error states on all pages | All | Each page has loading, empty and error views (covered by E2E) | Pass |
 
-**Evidence:** `frontend/src/app/page.tsx`, `frontend/src/app/_overview/`, `frontend/src/app/games/`, `tests/e2e/{overview,games}.spec.ts`. No route renders a placeholder any more. · **Decision:** Not Verified (prediction shortcuts, `/games/[id]` and the About repository link open)
+**Evidence:** `frontend/src/app/page.tsx`, `frontend/src/app/_overview/`, `frontend/src/app/games/`, `frontend/src/app/about/`, `GET /leaders?team_id=`, `tests/e2e/{overview,games,shell}.spec.ts`. · **Decision:** Pass
 
 ---
 
@@ -1036,3 +1036,18 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 267 passed; Playwright 273 passed; Compare suite 155/155 repeated; toggle p95 69 ms; lint, unit and contrast clean.
 
 **Next step:** Phase 11 (Overview, Games and supporting screens).
+
+### Session — 2026-10-29 (Phase 11)
+
+**Completed:**
+- Prediction shortcuts: every upcoming matchup lists both teams' three leading scorers (`GET /leaders?team_id=`), each linking to that player's forecast for that game.
+- A `/games/[id]` page with the matchup, score prediction, shortcuts and full box score, a not-found page, and a "Game page" link from every matchup.
+- About rewritten to match what the app does now: data sources, career coverage back to 1946-47, game score predictions, model checking, and stats that weren't recorded yet. It also adds a "Built with" note and a repository link that appears only once `NEXT_PUBLIC_REPOSITORY_URL` is set.
+
+**Real data:** Portland @ Utah (Oct 31): Trail Blazers favored by about 7 (123–115, 74%). Portland's shortcuts are Deni Avdija, Damian Lillard and Ja Morant.
+
+**Career backfill:** stats.nba.com throttled again; the job stopped cleanly at 785 of 5,197 players and was resumed with a 4 s interval.
+
+**Tests run:** backend 268 passed; Playwright 288 passed; 56 internal links crawled with none broken; lint, unit and contrast clean.
+
+**Next step:** Phase 12 (Accessibility & Usability Audit).

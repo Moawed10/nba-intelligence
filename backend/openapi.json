@@ -5591,6 +5591,7 @@
     },
     "/api/v1/leaders": {
       "get": {
+        "description": "League leaders per game; with `team_id`, the leaders on that team's current roster.",
         "operationId": "get_leaders_api_v1_leaders_get",
         "parameters": [
           {
@@ -5639,6 +5640,23 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "team_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Team Id"
             }
           }
         ],

@@ -43,6 +43,43 @@ for (const route of ROUTES) {
   });
 }
 
+test("About states data sources and limitations, and hides the source link while unset", async ({ page }) => {
+  await page.goto("/about");
+  await expect(page.getByRole("heading", { name: "Where the data comes from" })).toBeVisible();
+  await expect(page.getByText(/stats\.nba\.com/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What it can't tell you" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Source code on GitHub" })).toHaveCount(0);
+});
+
+test("no internal link leads to a not-found or error page", async ({ page, isMobile }) => {
+  test.skip(isMobile, "links are the same at every width");
+  test.setTimeout(180_000);
+  const seeds = [
+    ...ROUTES.map((r) => r.path),
+    "/players/1000",
+    "/games/0099000101",
+    "/compare?p1=1000&p2=1001",
+    "/predict?player=1000",
+  ];
+  const links = new Set<string>();
+  for (const seed of seeds) {
+    await page.goto(seed);
+    await expect(page.locator("main h1")).toBeVisible();
+    const hrefs = await page
+      .locator('a[href^="/"]')
+      .evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
+    hrefs.forEach((h) => links.add(h.split("#")[0]));
+  }
+  const broken: string[] = [];
+  for (const href of links) {
+    await page.goto(href);
+    const heading = (await page.locator("main h1").first().textContent({ timeout: 15_000 })) ?? "";
+    if (/not found|something went wrong/i.test(heading)) broken.push(`${href} → ${heading}`);
+  }
+  test.info().annotations.push({ type: "links checked", description: String(links.size) });
+  expect(broken).toEqual([]);
+});
+
 test("every primary destination is reachable from the navigation", async ({ page, isMobile }) => {
   await page.goto("/about");
   const nav = page.getByRole("navigation", { name: "Primary" }).locator("visible=true");

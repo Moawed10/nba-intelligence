@@ -23,9 +23,11 @@ def get_leaders(
     stat: LeaderStat = "pts",
     season: SeasonLabel = None,
     limit: Annotated[int, Query(ge=1, le=25)] = 10,
+    team_id: Annotated[int | None, Query(ge=1)] = None,
 ) -> Leaders:
+    """League leaders per game; with `team_id`, the leaders on that team's current roster."""
     ctx.cache_for(300)
-    return insights.leaders(ctx, stat, season, limit)
+    return insights.leaders(ctx, stat, season, limit, team_id)
 
 
 @router.get("/standouts", response_model=Standouts)

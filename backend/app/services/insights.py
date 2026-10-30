@@ -101,7 +101,11 @@ def season_with_games(session: Session, label: str | None) -> Season | None:
     return session.scalar(select(Season).where(Season.id == with_games)) or latest_season(session)
 
 
-def leaders(ctx: Context, stat: LeaderStat, season: str | None, limit: int) -> Leaders:
+def leaders(
+    ctx: Context, stat: LeaderStat, season: str | None, limit: int, team_id: int | None = None
+) -> Leaders:
+    """League leaders, or with `team_id` the leaders among that team's current roster."""
+
     def compute() -> Leaders:
         current = season_with_games(ctx.session, season)
         if current is None:
@@ -111,7 +115,11 @@ def leaders(ctx: Context, stat: LeaderStat, season: str | None, limit: int) -> L
             )  # fmt: skip
         minimum = leader_minimum_games(max_team_games(ctx.session, current.id))
         totals = season_totals(current.id).subquery()
-        qualified = select(totals).where(totals.c.games >= minimum).subquery()
+        qualified = select(totals).where(totals.c.games >= minimum)
+        if team_id is not None:
+            roster = select(Player.id).where(Player.current_team_id == team_id)
+            qualified = qualified.where(totals.c.player_id.in_(roster))
+        qualified = qualified.subquery()
         count = ctx.session.scalar(select(func.count()).select_from(qualified)) or 0
         value = getattr(qualified.c, stat) / qualified.c.games
         rows = ctx.session.execute(
@@ -140,7 +148,8 @@ def leaders(ctx: Context, stat: LeaderStat, season: str | None, limit: int) -> L
             meta=ctx.meta(DATASET),
         )
 
-    return ctx.cached_model("leaders", INSIGHT_TTL, (stat, season, limit), DATASET, compute)
+    key = (stat, season, limit, team_id)
+    return ctx.cached_model("leaders", INSIGHT_TTL, key, DATASET, compute)
 
 
 def _performance(score: float, stats, game, name: str, team, opponent) -> Performance:

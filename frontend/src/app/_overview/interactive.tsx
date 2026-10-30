@@ -126,10 +126,13 @@ function Matchup({
   game,
   fullBox,
   forecast,
+  pageLink = true,
 }: {
   game: GameSummary;
   fullBox?: boolean;
   forecast?: { result: GameForecastResult | undefined; pending: boolean; error: unknown };
+  /** Show a link to the game's own page (off on that page). */
+  pageLink?: boolean;
 }) {
   const stats = useQuery({
     queryKey: ["matchup-stats", game.away.team.id, game.home.team.id, game.season],
@@ -166,11 +169,20 @@ function Matchup({
             {formatGameDate(game.game_date, true)}
             {game.arena ? ` · ${game.arena}` : ""}
           </p>
+          {pageLink && (
+            <Link
+              href={`/games/${game.id}`}
+              className="mt-2 inline-flex min-h-9 items-center text-subhead font-medium text-primary hover:underline"
+            >
+              Game page
+            </Link>
+          )}
         </div>
         <TeamColumn game={game} side="home" />
       </div>
 
       {game.status === "scheduled" && forecast && <ScoreForecast game={game} {...forecast} />}
+      {game.status === "scheduled" && <PlayerShortcuts game={game} />}
 
       {stats.error ? (
         <Unavailable kind="error" title="Team statistics couldn't load">
@@ -363,6 +375,77 @@ function ScoreForecast({
         at games played before this one.
       </p>
     </section>
+  );
+}
+
+const SHORTCUT_PLAYERS = 3;
+
+/** Each team's leading scorers, each a shortcut to that player's forecast for this game. */
+function PlayerShortcuts({ game }: { game: GameSummary }) {
+  const teams = [game.away.team, game.home.team];
+  const leaders = useQuery({
+    queryKey: ["team-leaders", teams[0].id, teams[1].id],
+    queryFn: ({ signal }) =>
+      Promise.all(
+        teams.map((t) =>
+          clientGet<Leaders>("/leaders", { stat: "pts", team_id: t.id, limit: SHORTCUT_PLAYERS }, signal),
+        ),
+      ),
+    staleTime: 5 * 60_000,
+  });
+  if (leaders.error || (leaders.data && leaders.data.every((l) => l.leaders.length === 0))) return null;
+  return (
+    <section aria-labelledby={`shortcuts-${game.id}`} className="space-y-3">
+      <h3 id={`shortcuts-${game.id}`} className="kicker">
+        Predict a player in this game
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2" aria-busy={leaders.isPending}>
+        {teams.map((team, i) => (
+          <ul key={team.id} className="space-y-2" aria-label={`${team.city} ${team.name} leading scorers`}>
+            {(leaders.data?.[i].leaders ?? []).map((l) => (
+              <li key={l.player_id}>
+                <Link
+                  href={`/predict?player=${l.player_id}&game=${game.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-foreground/25"
+                >
+                  <PlayerAvatar id={l.player_id} name={l.full_name} team={team} size="sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{l.full_name}</span>
+                    <span className="text-footnote text-muted-foreground">
+                      {formatStat(l.value)} points per game
+                    </span>
+                  </span>
+                  <span className="text-subhead font-medium text-primary">Forecast</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** One game on its own page: the matchup with its score forecast when it is still to be played. */
+export function GameMatchup({ game }: { game: GameSummary }) {
+  const scheduled = game.status === "scheduled";
+  const forecasts = useQuery({
+    queryKey: ["game-forecasts", [game.id]],
+    queryFn: () => clientPost<GameForecastResult[]>("/predictions/games", { game_ids: [game.id] }),
+    enabled: scheduled,
+    staleTime: 5 * 60_000,
+  });
+  return (
+    <Matchup
+      game={game}
+      fullBox
+      pageLink={false}
+      forecast={
+        scheduled
+          ? { result: forecasts.data?.[0], pending: forecasts.isPending, error: forecasts.error }
+          : undefined
+      }
+    />
   );
 }
 

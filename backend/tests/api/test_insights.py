@@ -95,3 +95,15 @@ def test_model_registry_endpoints_report_recorded_evaluations(client, loaded, tm
 
     overview = client.get("/api/v1/overview").json()
     assert overview["model"]["release"]["version"] == version
+
+
+def test_team_leaders_only_rank_that_teams_current_roster(client):
+    body = client.get("/api/v1/leaders", params={"stat": "pts", "team_id": 2, "limit": 5}).json()
+    assert body["leaders"] and all(leader["team"]["id"] == 2 for leader in body["leaders"])
+    values = [leader["value"] for leader in body["leaders"]]
+    assert values == sorted(values, reverse=True)
+    league = client.get("/api/v1/leaders", params={"stat": "pts", "limit": 25}).json()
+    team_two = [leader for leader in league["leaders"] if leader["team"]["id"] == 2]
+    assert [leader["player_id"] for leader in body["leaders"]] == [
+        leader["player_id"] for leader in team_two
+    ][: len(body["leaders"])]

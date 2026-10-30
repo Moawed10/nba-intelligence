@@ -229,8 +229,8 @@ function boxScore(g) {
   return { game: g, stats_finalized: true, teams, meta: META };
 }
 
-function leaders(stat, limit) {
-  const rows = PLAYERS.filter((p) => p.is_active)
+function leaders(stat, limit, teamId) {
+  const rows = PLAYERS.filter((p) => p.is_active && (!teamId || p.team?.id === teamId))
     .map((p) => ({ p, s: summary(gameLines(p, "2099-00")) }))
     .map(({ p, s }) => ({ player_id: p.id, full_name: p.full_name, team: p.team, games_played: s.games_played, value: s.per_game[stat] ?? 0 }))
     .sort((a, b) => b.value - a.value || a.full_name.localeCompare(b.full_name))
@@ -299,7 +299,9 @@ createServer((req, res) => {
       leaders: leaders("pts", 5), standouts: STANDOUTS, model: SNAPSHOT, datasets: DATASETS,
     });
   }
-  if (path === "/leaders") return send(res, 200, leaders(q.get("stat") ?? "pts", Number(q.get("limit") ?? 10)));
+  if (path === "/leaders") {
+    return send(res, 200, leaders(q.get("stat") ?? "pts", Number(q.get("limit") ?? 10), Number(q.get("team_id")) || null));
+  }
   if (path === "/standouts") return send(res, 200, STANDOUTS);
   if (path === "/games/upcoming") {
     const player = PLAYERS.find((p) => String(p.id) === q.get("player_id"));
@@ -309,6 +311,12 @@ createServer((req, res) => {
   if (path === "/games") {
     const from = q.get("date_from") ?? "0000", to = q.get("date_to") ?? "9999";
     return send(res, 200, page(GAMES.filter((g) => g.game_date >= from && g.game_date <= to)));
+  }
+  const detailMatch = path.match(/^\/games\/(\d{10})$/);
+  if (detailMatch) {
+    const g = GAMES.find((x) => x.id === detailMatch[1]);
+    if (!g) return error(res, 404, "game_not_found", "No such game.");
+    return send(res, 200, { ...g, status_observed_at: null, stats_finalized: g.status === "final", meta: META });
   }
   const boxMatch = path.match(/^\/games\/(\w+)\/boxscore$/);
   if (boxMatch) {

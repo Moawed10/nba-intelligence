@@ -41,6 +41,39 @@ test.describe("games", () => {
     await expect(page.getByText(/need 10 earlier games/)).toBeVisible();
   });
 
+  test("an upcoming game has its own page with score forecast and player shortcuts", async ({ page }) => {
+    await page.goto("/games?date=2099-11-10");
+    const schedule = page.getByRole("region", { name: "Games by date" });
+    await schedule.getByRole("link", { name: "Game page" }).click();
+    await expect(page).toHaveURL(/\/games\/0099000102$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bravo Bears at Alpha Ants");
+    await expect(page.getByRole("region", { name: "Our prediction" })).toContainText(
+      "Ants favored by about 6",
+    );
+    await expect(page.getByRole("link", { name: "Game page" })).toHaveCount(0);
+    const shortcuts = page.getByRole("region", { name: "Predict a player in this game" });
+    const alpha = shortcuts.getByRole("list", { name: "Alpha Ants leading scorers" });
+    await expect(alpha.getByRole("link")).toHaveCount(3);
+    const first = alpha.getByRole("link").first();
+    await expect(first).toHaveAttribute("href", /\/predict\?player=\d+&game=0099000102$/);
+    await first.click();
+    await expect(page).toHaveURL(/\/predict\?player=\d+&game=0099000102$/);
+    await expect(page.getByRole("option", { name: /vs Bravo Bears/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("a final game page shows the full box score; unknown games are not found", async ({ page }) => {
+    await page.goto("/games/0099000101");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Alpha Ants at Bravo Bears");
+    await expect(page.getByRole("table", { name: "Alpha Ants" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Predict a player in this game" })).toHaveCount(0);
+    await expectAccessible(page);
+    await page.goto("/games/0000000001");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Game not found");
+  });
+
   test("ignores a malformed date", async ({ page }) => {
     await page.goto("/games?date=not-a-date");
     await expect(page.getByRole("region", { name: "Games by date" })).toBeVisible();

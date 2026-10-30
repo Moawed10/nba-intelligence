@@ -134,7 +134,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Leaders */
+        /**
+         * Get Leaders
+         * @description League leaders per game; with `team_id`, the leaders on that team's current roster.
+         */
         get: operations["get_leaders_api_v1_leaders_get"];
         put?: never;
         post?: never;
@@ -2599,6 +2602,7 @@ export interface operations {
                 stat?: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
                 season?: string | null;
                 limit?: number;
+                team_id?: number | null;
             };
             header?: never;
             path?: never;
