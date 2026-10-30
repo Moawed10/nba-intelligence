@@ -1,6 +1,18 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 import { expectAccessible } from "./helpers";
+
+const STUB = `http://127.0.0.1:${process.env.STUB_API_PORT ?? 8799}/api/v1`;
+
+/** Presses Tab until the target has focus, as a keyboard-only user would. */
+async function tabTo(page: Page, target: Locator, limit = 60) {
+  for (let i = 0; i < limit; i++) {
+    if (await target.evaluate((el) => el === document.activeElement || el.contains(document.activeElement)))
+      return;
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("target never received focus from the keyboard");
+}
 
 // tests/e2e/stub-api.mjs: Zed Fixture (1000) plays for Alpha, scheduled vs Bravo on 2099-11-10 and at Bravo on 2099-11-12.
 
@@ -63,6 +75,53 @@ test.describe("predictions", () => {
     );
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/game=0099000103/);
+  });
+
+  test("plots the forecast range over the player's real recent games", async ({ page, request }) => {
+    const log = await (await request.get(`${STUB}/players/1000/games?season_type=regular&limit=20`)).json();
+    const points: number[] = log.items.map((g: { box: { pts: number } }) => g.box.pts);
+    const inside = points.filter((v) => v >= 16 && v <= 32).length;
+    await page.goto("/predict?player=1000");
+    const chart = page.getByRole("region", { name: `This forecast vs. the last ${points.length} games` });
+    await expect(
+      chart.getByText(
+        `Zed finished between 16 and 32 points, the range expected for this game, in ${inside} of the last ${points.length} games.`,
+      ),
+    ).toBeVisible();
+    await expect(chart.locator("circle")).toHaveCount(points.length);
+    await chart.getByRole("radio", { name: "Rebounds" }).click();
+    await expect(chart.getByText(/between 4 and 10 rebounds/)).toBeVisible();
+  });
+
+  test("the whole workflow works with the keyboard alone", async ({ page, isMobile }) => {
+    test.skip(isMobile, "keyboard flow is covered on pointer devices");
+    await page.goto("/predict");
+    const search = page.getByRole("combobox", { name: "Player" });
+    await tabTo(page, search);
+    await page.keyboard.type("zed");
+    await expect(page.getByRole("option", { name: /Zed Fixture/ })).toBeVisible();
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/predict\?player=1000$/);
+
+    const list = page.getByRole("listbox", { name: "Upcoming games" });
+    await tabTo(page, list);
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/game=0099000103/);
+    const forecast = page.getByRole("region", { name: "Forecast @ BBB" });
+    await expect(forecast.getByText(/about 26 points/)).toBeVisible();
+
+    const points = forecast.getByRole("radio", { name: "Points" });
+    await tabTo(page, points);
+    await page.keyboard.press("ArrowRight");
+    await expect(forecast.getByRole("radio", { name: "Rebounds" })).toBeChecked();
+    await expect(forecast.getByText(/rebounds, the range expected/)).toBeVisible();
+
+    const details = forecast.getByText("What is this based on?");
+    await tabTo(page, details);
+    await page.keyboard.press("Enter");
+    await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });
 
   test("explains when a player has too few games for a forecast", async ({ page }) => {

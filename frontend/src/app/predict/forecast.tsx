@@ -5,9 +5,11 @@ import { useState, useTransition } from "react";
 import { Unavailable, kindForError } from "@/components/data/unavailable";
 import { clientPost } from "@/lib/api/client";
 import { ApiError, describeError, networkError } from "@/lib/api/errors";
-import type { Prediction } from "@/lib/api/types";
+import type { PlayerGameLine, Prediction } from "@/lib/api/types";
 import { formatRelativeTime, formatStat } from "@/lib/format";
 import { targetLabel } from "@/lib/models";
+
+import { RecentRange } from "./recent-range";
 
 const ERROR_TITLES: Record<string, string> = {
   insufficient_data: "Not enough recent games for a forecast",
@@ -27,12 +29,14 @@ function ForecastView({
   opponentName,
   onRefresh,
   pending,
+  history,
 }: {
   prediction: Prediction;
   playerName: string;
   opponentName: string;
   onRefresh: () => void;
   pending: boolean;
+  history: PlayerGameLine[];
 }) {
   const value = Object.fromEntries(prediction.values.map((v) => [v.stat, v]));
   const pts = value.pts;
@@ -89,6 +93,7 @@ function ForecastView({
           );
         })}
       </dl>
+      <RecentRange games={history} values={value} firstName={playerName.split(" ")[0]} />
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SECONDARY.map((stat) => {
           const v = value[stat];
@@ -158,6 +163,7 @@ export function Forecast({
   gameId,
   playerName,
   opponentName,
+  history,
 }: {
   initial: Prediction | null;
   unavailable?: { code: string; message: string } | null;
@@ -165,6 +171,8 @@ export function Forecast({
   gameId: string;
   playerName: string;
   opponentName: string;
+  /** The player's most recent regular-season games, newest first. */
+  history: PlayerGameLine[];
 }) {
   const [prediction, setPrediction] = useState(initial);
   const [error, setError] = useState<ApiError | null>(null);
@@ -189,6 +197,7 @@ export function Forecast({
         opponentName={opponentName}
         onRefresh={request}
         pending={pending}
+        history={history}
       />
     );
   }

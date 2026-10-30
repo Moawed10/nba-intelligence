@@ -11,6 +11,7 @@ import type {
   Leaders,
   ModelReleaseSummary,
   PlayerGameLine,
+  PlayerGameLinePage,
   MatchupHistory,
   PlayerProfile,
   TeamSeasonStats,
@@ -27,6 +28,8 @@ import { PredictPicker } from "./predict-client";
 const PLAYER_ID = /^\d{1,10}$/;
 const LOOKAHEAD_DAYS = 14;
 const FORM_GAMES = 5;
+/** Recent games plotted behind the forecast range. */
+const RANGE_GAMES = 20;
 
 const DAY_MS = 86_400_000;
 const daysBetween = (from: string, to: string) =>
@@ -175,10 +178,11 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
     return <div className="grid gap-5 lg:grid-cols-12">{picker}</div>;
   }
 
-  const [profile, upcoming, releases] = await Promise.all([
+  const [profile, upcoming, releases, history] = await Promise.all([
     serverTry<PlayerProfile>(`/players/${id}`),
     serverTry<GameSummary[]>("/games/upcoming", { player_id: id, days: LOOKAHEAD_DAYS }),
     serverTry<ModelReleaseSummary[]>("/models"),
+    serverTry<PlayerGameLinePage>(`/players/${id}/games`, { season_type: "regular", limit: RANGE_GAMES }),
   ]);
   if (profile.error && profile.error.status !== 404) return <ApiErrorView error={profile.error} />;
   if (!profile.data) {
@@ -287,6 +291,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                 gameId={game.id}
                 playerName={player.full_name}
                 opponentName={opponent.name}
+                history={history.data?.items ?? []}
               />
             ) : (
               <Unavailable

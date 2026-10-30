@@ -2,7 +2,7 @@
 
 The authoritative ledger of development progress. A status here is only as good as its evidence. When this document and executable evidence disagree, the evidence wins and this document is corrected (see [data-ownership.md](data-ownership.md#evidence-hierarchy-for-progress-claims)).
 
-**Last updated:** 2026-10-28
+**Last updated:** 2026-10-29
 
 ## Master status
 
@@ -16,7 +16,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 6 | Machine Learning Pipeline | Complete | 100% (13/13) | None |
 | 7 | Prediction API & Inference | Complete | 100% (15/15) | None |
 | 7B | Player Photos & Team History | Complete | 100% (7/7) | None |
-| 8 | Prediction Center | In Progress | 83% (10/12) | Distribution chart; keyboard workflow not yet verified |
+| 8 | Prediction Center | Verification Pending | 100% (12/12) | Render-time p95 not yet measured |
 | 9 | Model Analytics | In Progress | 50% (5/10) | Phase 7 (stored predictions for actual-vs-predicted, residuals, history) |
 | 10 | Player Comparison | In Progress | 78% (7/9) | None (radar chart and a dedicated endpoint remain) |
 | 11 | Overview & Games | In Progress | 67% (6/9) | Prediction shortcuts need Phase 7 |
@@ -25,7 +25,7 @@ The authoritative ledger of development progress. A status here is only as good 
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 124 / 182 verified deliverables = **68%**.
+**Overall:** 126 / 182 verified deliverables = **69%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -508,7 +508,7 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 8 — Prediction Center Frontend
 
-**Status:** In Progress · **Progress:** 83% (10/12) · **Dependencies:** Phases 2, 7
+**Status:** Verification Pending · **Progress:** 100% (12/12) · **Dependencies:** Phases 2, 7
 
 #### Deliverables
 
@@ -518,28 +518,28 @@ The "recent games" block from the original design was folded into the game log, 
 - [x] Predicted values (`StatTile`)
 - [x] Interval display (`IntervalBar`) labelled "likely range (80%)"
 - [x] Last-5 and season comparisons
-- [ ] Prediction distribution visualization
+- [x] Prediction distribution visualization (forecast range over the player's real last 20 games)
 - [x] Explanation panel
 - [x] Model release and data cutoff display
 - [x] Loading, error and named unavailable states
-- [ ] Keyboard-only workflow
+- [x] Keyboard-only workflow
 - [x] Mobile layout
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Workflow steps functional | 100% | Not measured | Not Verified |
-| Successful automated workflows (100 runs) | ≥ 95% | Not measured | Not Verified |
-| Displayed values match API | 100% | Not measured | Not Verified |
-| Intervals state their meaning | 100% | Not measured | Not Verified |
-| Unavailable predictions explained | 100% | Not measured | Not Verified |
+| Workflow steps functional | 100% | Pick player, pick game, forecast, range chart, explanation all pass | Pass |
+| Successful automated workflows (100 runs) | ≥ 95% | 200/200 (keyboard workflow and forecast workflow, 100 each) | Pass |
+| Displayed values match API | 100% | Forecast values and chart counts asserted against the API | Pass |
+| Intervals state their meaning | 100% | "Usually 16–32", "about 4 games out of 5", chart caption | Pass |
+| Unavailable predictions explained | 100% | Too few games, no serving release, unknown player | Pass |
 | Render after API response p95 | ≤ 500 ms | Not measured | Not Verified |
-| Critical accessibility violations | 0 | Not measured | Not Verified |
-| Full keyboard workflow | Yes | Not measured | Not Verified |
-| Horizontal overflow at 375 px | None | Not measured | Not Verified |
+| Critical accessibility violations | 0 | 0 (axe, both themes, 4 viewports) | Pass |
+| Full keyboard workflow | Yes | Search → game → statistic → explanation, keys only | Pass |
+| Horizontal overflow at 375 px | None | None | Pass |
 
-**Evidence:** `frontend/src/app/predict/`, `tests/e2e/predict.spec.ts` (16 runs across 4 viewports; axe serious/critical 0 in both themes; no overflow at 375 px). The forecast panel states that no release is serving predictions instead of showing a number. Forecasts render with `IntervalBar` ranges; the explanation shows the averages the model received, labelled as inputs rather than attributions. · **Decision:** Not Verified (distribution chart and keyboard workflow open)
+**Evidence:** `frontend/src/app/predict/`, `tests/e2e/predict.spec.ts` (16 runs across 4 viewports; axe serious/critical 0 in both themes; no overflow at 375 px). The forecast panel states that no release is serving predictions instead of showing a number. Forecasts render with `IntervalBar` ranges; the explanation shows the averages the model received, labelled as inputs rather than attributions. The range chart plots real games only, with the forecast and its 80% band on top; nothing is simulated. · **Decision:** Verification Pending (render-time p95 not measured)
 
 ---
 
@@ -993,3 +993,15 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 251 passed; frontend lint, type-check and 38 unit tests clean; Playwright 248 passed, 8 skipped.
 
 **Next step:** finish the all-player career backfill (running) and confirm CI.
+
+### Session — 2026-10-29 (Phase 8)
+
+**Completed:**
+- Prediction distribution view: the forecast and its 80% range drawn over the player's last 20 real games, with points, rebounds and assists. It says in plain words how many of those games landed in the range. It uses real game logs only; the model gives a point and an interval, so no distribution is invented.
+- A keyboard-only workflow, verified end to end: search, choose a game, switch statistic, open the explanation.
+
+**Real data:** Luka Dončić @ Golden State: forecast 31.2 points, range 22–40. He finished inside that range in 11 of his last 20 games.
+
+**Tests run:** Playwright 255 passed, 9 skipped; the keyboard and forecast workflows passed 200/200 repeated runs; frontend lint and 38 unit tests clean.
+
+**Next step:** measure render time after the API response (the last Phase 8 criterion), then Phase 9.
