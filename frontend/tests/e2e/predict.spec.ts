@@ -124,6 +124,33 @@ test.describe("predictions", () => {
     await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });
 
+  test("a forecast renders within 500 ms of its response (p95 over 20 switches)", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "timed once, on desktop");
+    test.setTimeout(120_000);
+    await page.goto("/predict?player=1000");
+    const list = page.getByRole("listbox", { name: "Upcoming games" });
+    const timings: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      const [name, region, text, id] =
+        i % 2 === 0
+          ? [/@ Bravo Bears/, "Forecast @ BBB", /about 26 points/, "0099000103"]
+          : [/vs Bravo Bears/, "Forecast vs BBB", /about 24 points/, "0099000102"];
+      const response = page.waitForResponse((r) => r.url().includes(`game=${id}`));
+      await list.getByRole("option", { name }).click();
+      await response;
+      const received = await page.evaluate(() => performance.now());
+      await page.getByRole("region", { name: region }).getByText(text).waitFor();
+      timings.push((await page.evaluate(() => performance.now())) - received);
+    }
+    timings.sort((a, b) => a - b);
+    const p95 = timings[Math.ceil(timings.length * 0.95) - 1];
+    test.info().annotations.push({ type: "render p95 ms", description: p95.toFixed(0) });
+    expect(p95).toBeLessThanOrEqual(500);
+  });
+
   test("explains when a player has too few games for a forecast", async ({ page }) => {
     await page.goto("/predict?player=1001");
     const forecast = page.getByRole("region", { name: /^Forecast/ });
