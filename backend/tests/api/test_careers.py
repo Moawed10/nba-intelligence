@@ -7,10 +7,11 @@ import pandas as pd
 import pytest
 
 from app.ingestion import jobs
-from app.ingestion.client import FetchResult
+from app.ingestion.client import FetchResult, RetryableSourceError
 from app.ingestion.transforms import transform_player_career
-from app.models import SeasonType
-from tests.api.conftest import RETIRED
+from app.models import RunStatus, SeasonType
+from tests.api.conftest import RETIRED, STAR
+from tests.fixtures import player_id
 
 pytestmark = pytest.mark.integration
 
@@ -113,3 +114,32 @@ def test_player_without_stored_seasons_has_an_empty_career(client, loaded):
 def test_unknown_player_is_404(client, loaded):
     response = client.get("/api/v1/players/123456789/career")
     assert response.json()["error"]["code"] == "player_not_found"
+
+
+@dataclass
+class FlakySource(CareerSource):
+    """Fails for the listed players, as stats.nba.com does when it starts timing out."""
+
+    failing: set[int] = field(default_factory=set)
+
+    def fetch(self, endpoint_cls: type, *, cacheable: bool = False, **params: Any) -> FetchResult:
+        if params["player_id"] in self.failing:
+            raise RetryableSourceError("ReadTimeout")
+        return super().fetch(endpoint_cls, cacheable=cacheable, **params)
+
+
+def test_a_failing_player_is_rejected_and_the_rest_of_the_batch_is_kept(loaded):
+    source = FlakySource(failing={STAR})
+    run = jobs.run_job(loaded, "player_careers", {"first": STAR, "count": 2},
+                       jobs.ingest_player_careers(source, [STAR, RETIRED]))  # fmt: skip
+    assert run is not None and run.status == RunStatus.succeeded
+    assert run.rows_rejected == 1 and run.rows_valid == 5
+
+
+def test_repeated_failures_stop_the_batch_early(loaded):
+    ids = [player_id(1, slot) for slot in range(5)] + [RETIRED]
+    source = FlakySource(failing=set(ids[:5]))
+    run = jobs.run_job(loaded, "player_careers", {"first": ids[0], "count": len(ids)},
+                       jobs.ingest_player_careers(source, ids))  # fmt: skip
+    assert run is not None and run.rows_rejected == jobs.CAREER_FAILURE_LIMIT
+    assert len(source.calls) == 0  # stopped before reaching the player who would have worked

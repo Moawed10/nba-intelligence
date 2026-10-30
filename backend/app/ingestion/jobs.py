@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion.client import FetchResult, StatsSource
+from app.ingestion.client import FetchResult, StatsSource, StatsSourceError
 from app.ingestion.lifecycle import resolve_status
 from app.ingestion.transforms import (
     ADVANCED_FIRST_SEASON,
@@ -229,19 +229,36 @@ def ingest_team_history(client: StatsSource) -> Callable[[RunContext], None]:
 
 # PlayerCareerStats result sets, in the source's response order.
 CAREER_FRAMES = {SeasonType.regular: 0, SeasonType.playoffs: 2}
+# This many failed players in a row means the source is refusing requests: stop the batch early.
+CAREER_FAILURE_LIMIT = 5
 
 
 def ingest_player_careers(
     client: StatsSource, player_ids: list[int]
 ) -> Callable[[RunContext], None]:
     """Every season of each player's career, regular season and playoffs (one request each).
-    Finished careers are cached on disk, so re-running a batch only refetches active players."""
+    Finished careers are cached on disk, so re-running a batch only refetches active players.
+    A player the source fails on is rejected and the rest of the batch is kept; after
+    CAREER_FAILURE_LIMIT failures in a row the batch stops, and a re-run picks up the rest."""
 
     def body(ctx: RunContext) -> None:
         active = set(ctx.session.scalars(select(Player.id).where(Player.is_active)).all())
+        failures = 0
         for player_id in player_ids:
-            result = client.fetch(PlayerCareerStats, player_id=player_id, per_mode36="Totals",
-                                  cacheable=player_id not in active)  # fmt: skip
+            try:
+                result = client.fetch(PlayerCareerStats, player_id=player_id, per_mode36="Totals",
+                                      cacheable=player_id not in active)  # fmt: skip
+            except StatsSourceError as error:
+                ctx.reject(
+                    [Rejection({"player_id": player_id}, f"{type(error).__name__}: {error}")]
+                )
+                failures += 1
+                if failures >= CAREER_FAILURE_LIMIT:
+                    log.warning("career source refusing requests; batch stopped early",
+                                extra={"player_id": player_id})  # fmt: skip
+                    return
+                continue
+            failures = 0
             ctx.retries += max(0, result.attempts - 1)
             rows: list[dict[str, Any]] = []
             for season_type, index in CAREER_FRAMES.items():
