@@ -24,6 +24,7 @@ from app.models import (
     Game,
     GameStatus,
     IngestionRun,
+    Player,
     PlayerGameStats,
     RunStatus,
     SeasonType,
@@ -37,6 +38,7 @@ log = logging.getLogger(__name__)
 
 LEASE = timedelta(minutes=15)
 RECENT_GAME_WINDOW = timedelta(hours=36)
+CAREER_BATCH = 200
 NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 
 
@@ -52,6 +54,8 @@ JOBS: dict[str, JobSpec] = {
     "game_logs": JobSpec(interval=timedelta(hours=6), active_interval=timedelta(minutes=10)),
     "metadata": JobSpec(interval=timedelta(hours=24)),
     "corrections": JobSpec(interval=timedelta(days=7)),
+    # Active players' season-by-season careers (one request per player, about ten minutes).
+    "careers": JobSpec(interval=timedelta(hours=24)),
     # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
     # no NBA data, so it runs outside ingestion runs and does not advance data_version.
     "predictions": JobSpec(interval=timedelta(minutes=15)),
@@ -140,6 +144,14 @@ def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -
             ("teams", {"season": season}, jobs.ingest_teams(client, season)),
             ("players", {"season": season}, jobs.ingest_players(client, season)),
         ]
+    if job == "careers":
+        with Session(engine) as s:
+            active = list(s.scalars(select(Player.id).where(Player.is_active).order_by(Player.id)))
+        return [
+            ("player_careers", {"first": batch[0], "count": len(batch)},
+             jobs.ingest_player_careers(client, batch))
+            for batch in (active[i : i + CAREER_BATCH] for i in range(0, len(active), CAREER_BATCH))
+        ]  # fmt: skip
     raise KeyError(job)
 
 

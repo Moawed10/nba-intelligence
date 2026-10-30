@@ -459,6 +459,29 @@ createServer((req, res) => {
       }));
     return send(res, 200, results);
   }
+  const careerMatch = path.match(/^\/players\/(\d+)\/career$/);
+  if (careerMatch) {
+    const player = PLAYERS.find((p) => p.id === Number(careerMatch[1]));
+    if (!player) return error(res, 404, "player_not_found", "No player with that id.");
+    const line = (games, pts, reb, ast, extra = {}) => ({
+      games, games_started: games, fg_pct: 0.47, fg3_pct: 0.35, ft_pct: 0.8,
+      per_game: { pts, reb, ast, stl: 1.1, blk: 0.4, fg3m: 1.5, tov: 2.0, min: 31.0, ...extra },
+    });
+    const stint = (t) => ({ abbreviation: t.abbreviation, team: ref(t) });
+    const seasons = player.is_active
+      ? [{ ...line(60, 21.4, 5.1, 6.3), season: "2099-00", age: 27, teams: [stint(TEAMS[player.id % 2])] }]
+      : [
+          { ...line(70, 12.5, 3.0, 2.1, { stl: null }), season: "2080-81", age: 22, teams: [stint(TEAMS[0])] },
+          { ...line(75, 18.2, 4.4, 3.9), season: "2081-82", age: 23, teams: [stint(TEAMS[1]), { abbreviation: "OLD", team: null }] },
+        ];
+    const totals = player.is_active ? line(60, 21.4, 5.1, 6.3) : line(145, 15.5, 3.7, 3.0);
+    return send(res, 200, {
+      player_id: player.id,
+      regular: { seasons, totals, partial: player.is_active ? {} : { stl: "2081-82" } },
+      playoffs: { seasons: [], totals: null, partial: {} },
+      meta: META,
+    });
+  }
   const match = path.match(/^\/players\/(\d+)(?:\/(stats|trends|games))?$/);
   if (match) return playerRoute(res, Number(match[1]), match[2], q, page);
   return error(res, 404, "not_found", "Resource not found.");

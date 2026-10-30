@@ -108,6 +108,47 @@ class TeamSeason(Provenance, Base):
     net_rating: Mapped[float | None] = mapped_column(Float)
 
 
+class PlayerSeason(Provenance, Base):
+    """A player's season totals for one team as published by the source (PlayerCareerStats), every
+    season back to 1946-47. A player traded mid-season has one row per team plus a combined row
+    with team "TOT". Counting columns are NULL when the league did not record them that season.
+    """
+
+    __tablename__ = "player_seasons"
+
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="RESTRICT"), primary_key=True
+    )
+    season_type: Mapped[SeasonType] = mapped_column(
+        pg_enum(SeasonType, "season_type"), primary_key=True
+    )
+    season_id: Mapped[int] = mapped_column(
+        ForeignKey("seasons.id", ondelete="RESTRICT"), primary_key=True
+    )
+    team_abbreviation: Mapped[str] = mapped_column(String(8), primary_key=True)
+    # No foreign key: defunct franchises (e.g. the Baltimore Bullets) are not in `teams`.
+    team_id: Mapped[int | None] = mapped_column(Integer)
+    age: Mapped[int | None] = mapped_column(SmallInteger)
+    games: Mapped[int] = mapped_column(SmallInteger)
+    games_started: Mapped[int | None] = mapped_column(SmallInteger)
+    minutes: Mapped[int | None] = mapped_column(Integer)
+    fgm: Mapped[int | None] = mapped_column(Integer)
+    fga: Mapped[int | None] = mapped_column(Integer)
+    fg3m: Mapped[int | None] = mapped_column(Integer)
+    fg3a: Mapped[int | None] = mapped_column(Integer)
+    ftm: Mapped[int | None] = mapped_column(Integer)
+    fta: Mapped[int | None] = mapped_column(Integer)
+    oreb: Mapped[int | None] = mapped_column(Integer)
+    dreb: Mapped[int | None] = mapped_column(Integer)
+    reb: Mapped[int | None] = mapped_column(Integer)
+    ast: Mapped[int | None] = mapped_column(Integer)
+    stl: Mapped[int | None] = mapped_column(Integer)
+    blk: Mapped[int | None] = mapped_column(Integer)
+    tov: Mapped[int | None] = mapped_column(Integer)
+    pf: Mapped[int | None] = mapped_column(Integer)
+    pts: Mapped[int] = mapped_column(Integer)
+
+
 class Player(Provenance, Base):
     __tablename__ = "players"
     __table_args__ = (

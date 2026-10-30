@@ -242,6 +242,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/players/{player_id}/career": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Player Career
+         * @description Every season the player played, regular season and playoffs, back to 1946-47.
+         */
+        get: operations["get_player_career_api_v1_players__player_id__career_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/players/{player_id}/games": {
         parameters: {
             query?: never;
@@ -621,6 +641,69 @@ export interface components {
             stl: number;
             /** Tov */
             tov: number;
+        };
+        /**
+         * CareerLine
+         * @description Per-game averages and shooting percentages. A statistic the league did not record yet
+         *     (e.g. steals before 1973-74, 3-pointers before 1979-80) is null.
+         */
+        CareerLine: {
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Ft Pct */
+            ft_pct: number | null;
+            /** Games */
+            games: number;
+            /** Games Started */
+            games_started: number | null;
+            /** Per Game */
+            per_game: {
+                [key: string]: number | null;
+            };
+        };
+        /** CareerSeason */
+        CareerSeason: {
+            /** Age */
+            age: number | null;
+            /** Fg3 Pct */
+            fg3_pct: number | null;
+            /** Fg Pct */
+            fg_pct: number | null;
+            /** Ft Pct */
+            ft_pct: number | null;
+            /** Games */
+            games: number;
+            /** Games Started */
+            games_started: number | null;
+            /** Per Game */
+            per_game: {
+                [key: string]: number | null;
+            };
+            /** Season */
+            season: string;
+            /** Teams */
+            teams: components["schemas"]["CareerStint"][];
+        };
+        /**
+         * CareerStint
+         * @description A team the player appeared for that season; `team` is null for defunct franchises.
+         */
+        CareerStint: {
+            /** Abbreviation */
+            abbreviation: string;
+            team: components["schemas"]["TeamRef"] | null;
+        };
+        /** CareerTable */
+        CareerTable: {
+            /** Partial */
+            partial: {
+                [key: string]: string;
+            };
+            /** Seasons */
+            seasons: components["schemas"]["CareerSeason"][];
+            totals: components["schemas"]["CareerLine"] | null;
         };
         /** DataFreshness */
         DataFreshness: {
@@ -1209,6 +1292,17 @@ export interface components {
             result: ("W" | "L") | null;
             shooting: components["schemas"]["Shooting"];
             team: components["schemas"]["TeamRef"];
+        };
+        /**
+         * PlayerCareer
+         * @description Every season of a player's career as published by the league, oldest first.
+         */
+        PlayerCareer: {
+            meta: components["schemas"]["Meta"];
+            /** Player Id */
+            player_id: number;
+            playoffs: components["schemas"]["CareerTable"];
+            regular: components["schemas"]["CareerTable"];
         };
         /** PlayerGameLine */
         PlayerGameLine: {
@@ -2679,6 +2773,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerProfile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_player_career_api_v1_players__player_id__career_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                player_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerCareer"];
                 };
             };
             /** @description Bad Request */

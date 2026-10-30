@@ -270,6 +270,244 @@
         "title": "BoxStats",
         "type": "object"
       },
+      "CareerLine": {
+        "description": "Per-game averages and shooting percentages. A statistic the league did not record yet\n(e.g. steals before 1973-74, 3-pointers before 1979-80) is null.",
+        "properties": {
+          "fg3_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3 Pct"
+          },
+          "fg_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg Pct"
+          },
+          "ft_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ft Pct"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "games_started": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games Started"
+          },
+          "per_game": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Per Game",
+            "type": "object"
+          }
+        },
+        "required": [
+          "games",
+          "games_started",
+          "per_game",
+          "fg_pct",
+          "fg3_pct",
+          "ft_pct"
+        ],
+        "title": "CareerLine",
+        "type": "object"
+      },
+      "CareerSeason": {
+        "properties": {
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          },
+          "fg3_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3 Pct"
+          },
+          "fg_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg Pct"
+          },
+          "ft_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ft Pct"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "games_started": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Games Started"
+          },
+          "per_game": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Per Game",
+            "type": "object"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/CareerStint"
+            },
+            "title": "Teams",
+            "type": "array"
+          }
+        },
+        "required": [
+          "games",
+          "games_started",
+          "per_game",
+          "fg_pct",
+          "fg3_pct",
+          "ft_pct",
+          "season",
+          "age",
+          "teams"
+        ],
+        "title": "CareerSeason",
+        "type": "object"
+      },
+      "CareerStint": {
+        "description": "A team the player appeared for that season; `team` is null for defunct franchises.",
+        "properties": {
+          "abbreviation": {
+            "title": "Abbreviation",
+            "type": "string"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "abbreviation",
+          "team"
+        ],
+        "title": "CareerStint",
+        "type": "object"
+      },
+      "CareerTable": {
+        "properties": {
+          "partial": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Partial",
+            "type": "object"
+          },
+          "seasons": {
+            "items": {
+              "$ref": "#/components/schemas/CareerSeason"
+            },
+            "title": "Seasons",
+            "type": "array"
+          },
+          "totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CareerLine"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "seasons",
+          "totals",
+          "partial"
+        ],
+        "title": "CareerTable",
+        "type": "object"
+      },
       "DataFreshness": {
         "properties": {
           "data_version": {
@@ -2121,6 +2359,32 @@
           "double_double"
         ],
         "title": "Performance",
+        "type": "object"
+      },
+      "PlayerCareer": {
+        "description": "Every season of a player's career as published by the league, oldest first.",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "playoffs": {
+            "$ref": "#/components/schemas/CareerTable"
+          },
+          "regular": {
+            "$ref": "#/components/schemas/CareerTable"
+          }
+        },
+        "required": [
+          "player_id",
+          "regular",
+          "playoffs",
+          "meta"
+        ],
+        "title": "PlayerCareer",
         "type": "object"
       },
       "PlayerGameLine": {
@@ -5497,6 +5761,91 @@
           }
         },
         "summary": "Get Player",
+        "tags": [
+          "players"
+        ]
+      }
+    },
+    "/api/v1/players/{player_id}/career": {
+      "get": {
+        "description": "Every season the player played, regular season and playoffs, back to 1946-47.",
+        "operationId": "get_player_career_api_v1_players__player_id__career_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "player_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Player Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerCareer"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Player Career",
         "tags": [
           "players"
         ]

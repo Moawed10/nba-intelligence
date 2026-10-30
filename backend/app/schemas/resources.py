@@ -418,3 +418,44 @@ class MatchupHistory(BaseModel):
     last_season: str | None
     meetings: list[PlayerGameLine]
     meta: Meta
+
+
+class CareerStint(BaseModel):
+    """A team the player appeared for that season; `team` is null for defunct franchises."""
+
+    abbreviation: str
+    team: TeamRef | None
+
+
+class CareerLine(BaseModel):
+    """Per-game averages and shooting percentages. A statistic the league did not record yet
+    (e.g. steals before 1973-74, 3-pointers before 1979-80) is null."""
+
+    games: int
+    games_started: int | None
+    per_game: dict[str, float | None]
+    fg_pct: float | None
+    fg3_pct: float | None
+    ft_pct: float | None
+
+
+class CareerSeason(CareerLine):
+    season: str
+    age: int | None
+    teams: list[CareerStint]
+
+
+class CareerTable(BaseModel):
+    seasons: list[CareerSeason]
+    totals: CareerLine | None
+    # Statistics whose career average leaves out seasons before the league recorded them.
+    partial: dict[str, str]
+
+
+class PlayerCareer(BaseModel):
+    """Every season of a player's career as published by the league, oldest first."""
+
+    player_id: int
+    regular: CareerTable
+    playoffs: CareerTable
+    meta: Meta

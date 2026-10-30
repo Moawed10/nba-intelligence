@@ -1,12 +1,20 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useId, useOptimistic, useTransition } from "react";
+import { useId, useOptimistic, useState, useTransition } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { type Column, DataTable } from "@/components/data/data-table";
 import { SegmentedControl } from "@/components/data/segmented-control";
-import type { PlayerGameLine, Split, TrendPoint } from "@/lib/api/types";
+import { TeamMark } from "@/components/brand/team-mark";
+import type {
+  CareerLine,
+  CareerSeason,
+  PlayerCareer,
+  PlayerGameLine,
+  Split,
+  TrendPoint,
+} from "@/lib/api/types";
 import { formatGameDate, formatGameValue, formatPercent, formatStat } from "@/lib/format";
 
 import { TREND_STATS, type TrendStat } from "./stats";
@@ -277,4 +285,162 @@ const SPLIT_COLUMNS: Column<Split>[] = [
 
 export function SplitsTable({ splits, caption }: { splits: Split[]; caption: string }) {
   return <DataTable caption={caption} columns={SPLIT_COLUMNS} rows={splits} rowKey={(s) => s.key} />;
+}
+
+type CareerRow = CareerLine & Partial<Pick<CareerSeason, "season" | "age" | "teams">>;
+
+const PER_GAME_COLUMNS = [
+  { key: "min", header: "MIN", description: "Minutes per game" },
+  { key: "pts", header: "PTS", description: "Points per game" },
+  { key: "reb", header: "REB", description: "Rebounds per game" },
+  { key: "ast", header: "AST", description: "Assists per game" },
+  { key: "stl", header: "STL", description: "Steals per game" },
+  { key: "blk", header: "BLK", description: "Blocks per game" },
+  { key: "fg3m", header: "3PM", description: "3-pointers made per game" },
+] as const;
+
+const CAREER_COLUMNS: Column<CareerRow>[] = [
+  {
+    key: "season",
+    header: "Season",
+    cell: (r) => r.season ?? "Career",
+    sortValue: (r) => r.season ?? null,
+  },
+  {
+    key: "team",
+    header: "Team",
+    cell: (r) =>
+      r.teams ? (
+        <span className="flex items-center gap-1.5">
+          {r.teams.map((t) =>
+            t.team ? (
+              <span
+                key={t.abbreviation}
+                className="inline-flex items-center gap-1"
+                title={`${t.team.city} ${t.team.name}`}
+              >
+                <TeamMark team={t.team} size="xs" />
+                <span>{t.abbreviation}</span>
+              </span>
+            ) : (
+              <span key={t.abbreviation} title="Franchise no longer in the league">
+                {t.abbreviation}
+              </span>
+            ),
+          )}
+        </span>
+      ) : null,
+  },
+  { key: "age", header: "Age", numeric: true, cell: (r) => r.age ?? "", sortValue: (r) => r.age ?? null },
+  {
+    key: "gp",
+    header: "GP",
+    description: "Games played",
+    numeric: true,
+    cell: (r) => r.games,
+    sortValue: (r) => r.games,
+  },
+  ...PER_GAME_COLUMNS.map((c) => ({
+    ...c,
+    numeric: true,
+    cell: (r: CareerRow) => formatStat(r.per_game[c.key]),
+    sortValue: (r: CareerRow) => r.per_game[c.key] ?? null,
+  })),
+  {
+    key: "fg",
+    header: "FG%",
+    description: "Field goal percentage",
+    numeric: true,
+    cell: (r) => formatPercent(r.fg_pct),
+    sortValue: (r) => r.fg_pct,
+  },
+  {
+    key: "fg3",
+    header: "3P%",
+    description: "3-point percentage",
+    numeric: true,
+    cell: (r) => formatPercent(r.fg3_pct),
+    sortValue: (r) => r.fg3_pct,
+  },
+  {
+    key: "ft",
+    header: "FT%",
+    description: "Free throw percentage",
+    numeric: true,
+    cell: (r) => formatPercent(r.ft_pct),
+    sortValue: (r) => r.ft_pct,
+  },
+];
+
+const PARTIAL_NAMES: Record<string, string> = {
+  stl: "Steals",
+  blk: "Blocks",
+  fg3m: "3-pointers",
+  tov: "Turnovers",
+  min: "Minutes",
+  reb: "Rebounds",
+  ast: "Assists",
+};
+
+/** Every season of a career, regular season or playoffs, with career averages underneath. */
+export function CareerHistory({ career, name }: { career: PlayerCareer; name: string }) {
+  const [kind, setKind] = useState<"regular" | "playoffs">("regular");
+  const table = career[kind];
+  const label = kind === "regular" ? "regular season" : "playoffs";
+  const notes = Object.entries(table.partial)
+    .filter(([key]) => PER_GAME_COLUMNS.some((c) => c.key === key))
+    .map(
+      ([key, since]) =>
+        `${PARTIAL_NAMES[key] ?? key} weren't tracked until ${since}, so the career average counts from then.`,
+    );
+  const best = table.seasons.reduce<CareerSeason | null>(
+    (top, s) => ((s.per_game.pts ?? -1) > (top?.per_game.pts ?? -1) ? s : top),
+    null,
+  );
+  return (
+    <section aria-labelledby="career-heading" className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 id="career-heading" className="text-title2 font-semibold">
+            Career
+          </h2>
+          <p className="text-footnote text-muted-foreground">
+            {table.seasons.length > 0
+              ? `${table.seasons.length} ${table.seasons.length === 1 ? "season" : "seasons"}, ${table.seasons[0].season} to ${table.seasons.at(-1)!.season} · per game`
+              : `No ${label} games`}
+            {best?.per_game.pts != null &&
+              ` · best scoring season ${best.season} (${formatStat(best.per_game.pts)} points)`}
+          </p>
+        </div>
+        {career.playoffs.seasons.length > 0 && (
+          <SegmentedControl
+            label="Season type"
+            segments={[
+              { value: "regular", label: "Regular season" },
+              { value: "playoffs", label: "Playoffs" },
+            ]}
+            value={kind}
+            onChange={setKind}
+          />
+        )}
+      </div>
+      {table.seasons.length > 0 && (
+        <DataTable<CareerRow>
+          key={kind}
+          caption={`${name}, career ${label} averages by season`}
+          columns={CAREER_COLUMNS}
+          rows={table.seasons}
+          rowKey={(r) => r.season ?? "career"}
+          footer={table.totals ?? undefined}
+        />
+      )}
+      {notes.length > 0 && (
+        <ul className="space-y-1 text-footnote text-muted-foreground">
+          {notes.map((n) => (
+            <li key={n}>{n}</li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }

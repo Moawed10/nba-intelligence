@@ -48,3 +48,6 @@ export type UpcomingForecast = Schemas["UpcomingForecast"];
 export type MatchupHistory = Schemas["MatchupHistory"];
 export type GameForecast = Schemas["GameForecast"];
 export type GameForecastResult = Schemas["GameForecastResult"];
+export type PlayerCareer = Schemas["PlayerCareer"];
+export type CareerSeason = Schemas["CareerSeason"];
+export type CareerLine = Schemas["CareerLine"];

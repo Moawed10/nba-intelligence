@@ -5,6 +5,8 @@ import json
 import sys
 from datetime import UTC, datetime
 
+from sqlalchemy import exists, select
+
 from app.config import get_settings
 from app.db import get_engine, session_scope
 from app.ingestion import jobs
@@ -12,7 +14,7 @@ from app.ingestion.client import NBAStatsClient
 from app.ingestion.integrity import integrity_report, recent_runs
 from app.ingestion.transforms import current_season_start_year
 from app.logging import configure_logging
-from app.models import SeasonType
+from app.models import Player, PlayerSeason, SeasonType
 from app.sync import worker
 from app.sync.freshness import dataset_freshness
 
@@ -36,6 +38,26 @@ def ingest_season(client: NBAStatsClient, season: int, types: list[SeasonType]) 
     for st in types:
         ok &= _run("game_logs", {"season": season, "season_type": st.value},
                    jobs.ingest_game_logs(client, season, st))  # fmt: skip
+    return ok
+
+
+def ingest_careers(client: NBAStatsClient, player_ids: list[int] | None) -> bool:
+    """Career seasons in batches of worker.CAREER_BATCH players, each its own run, so an interrupted
+    backfill keeps finished batches. Without ids: players with nothing stored, plus every active
+    player (their current season keeps changing)."""
+    if player_ids is None:
+        with session_scope(get_engine()) as s:
+            player_ids = s.scalars(
+                select(Player.id)
+                .where(Player.is_active | ~exists().where(PlayerSeason.player_id == Player.id))
+                .order_by(Player.is_active.desc(), Player.id)
+            ).all()
+    print(f"career history for {len(player_ids)} players")
+    ok = True
+    for start in range(0, len(player_ids), worker.CAREER_BATCH):
+        batch = list(player_ids[start : start + worker.CAREER_BATCH])
+        ok &= _run("player_careers", {"first": batch[0], "count": len(batch)},
+                   jobs.ingest_player_careers(client, batch))  # fmt: skip
     return ok
 
 
@@ -91,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     isub.add_parser("teams")
     isub.add_parser("team-history", help="All seasons of every franchise (about 60 requests)")
     isub.add_parser("players")
+    careers = isub.add_parser("careers", help="Every season of every player (one request each)")
+    careers.add_argument("--players", help="Comma-separated player ids (default: all due)")
     for name in ("schedule", "season"):
         p = isub.add_parser(name)
         p.add_argument("--season", type=int, default=current, help="Start year, e.g. 2025")
@@ -135,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
             ok = _run("team_history", {}, jobs.ingest_team_history(client))
         elif args.target == "teams":
             ok = _run("teams", {"season": current}, jobs.ingest_teams(client, current))
+        elif args.target == "careers":
+            ids = [int(i) for i in args.players.split(",")] if args.players else None
+            ok = ingest_careers(client, ids)
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
         elif args.target == "schedule":

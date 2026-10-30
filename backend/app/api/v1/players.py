@@ -11,6 +11,7 @@ from app.schemas.common import Page
 from app.schemas.resources import (
     DirectoryPlayer,
     MatchupHistory,
+    PlayerCareer,
     PlayerGameLine,
     PlayerProfile,
     PlayerSearchResult,
@@ -84,6 +85,13 @@ def get_player_photo(
     return FileResponse(
         path, media_type="image/png", headers={"Cache-Control": "public, max-age=604800"}
     )
+
+
+@router.get("/{player_id}/career", response_model=PlayerCareer)
+def get_player_career(ctx: Ctx, player_id: PlayerId) -> PlayerCareer:
+    """Every season the player played, regular season and playoffs, back to 1946-47."""
+    ctx.cache_for(3600)
+    return players.career(ctx, player_id)
 
 
 @router.get("/{player_id}/stats", response_model=PlayerSeasonStats)

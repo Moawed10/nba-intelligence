@@ -972,3 +972,24 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 230 passed; frontend lint, type-check and 38 unit tests clean; Playwright 228 passed, 4 skipped.
 
 **Next step:** Phase 9 analytics that need scored forecasts (actual vs predicted, residuals, history explorer), and the Phase 8 distribution chart and keyboard check.
+
+### Session — 2026-10-29 (game scores and career history)
+
+**Requested:** predict team scores against each other in plain language, and show every season players have played, former players included.
+
+**Completed:**
+- Game score model (`app/ml/team_model.py`): each team's points from both teams' form before the game, plus a home win chance calibrated on the predicted margin. Registered in release `2026.10.29-3` (trained from clean commit `d29f491`), now active.
+- `POST /predictions/games`: stored, append-only score forecasts for scheduled games (snapshot dedupe, supersede on new data). For a game it can't forecast, it says why.
+- Games and Overview show predicted scores on upcoming games, and a plain-language panel: who is favored and by how much, each side's win chance, a typical range, and what the prediction looks at.
+- Career history: a `player_seasons` table from PlayerCareerStats (regular season and playoffs, back to 1946-47). The `app.cli ingest careers` command runs in resumable batches, and a daily `careers` worker job refreshes active players. `GET /players/{id}/career` serves it, with `career_history` freshness.
+- Player pages have a Career table (sortable, with team logos and a career row). Former players without box scores show career averages in the hero.
+- Fixed a sideways page scroll caused by screen-reader text escaping scroll containers (game strip, data tables).
+
+**Real data:**
+- Game model, 2025-26 test season: 9.65 points MAE vs 10.51 for the baseline. It picked the winner 66.8% of the time (55.4% for "home team wins"). Brier score 0.208 vs 0.247. 77.8% of scores landed inside the 80% ranges.
+- Kareem Abdul-Jabbar's stored career matches the record: 1,560 games, 24.6 / 11.2 / 3.6, 55.9% FG, 38,387 points.
+- Steals, blocks, turnovers and threes stay empty before the league recorded them, and career averages for them are labelled with the season they start.
+
+**Tests run:** backend 251 passed; frontend lint, type-check and 38 unit tests clean; Playwright 248 passed, 8 skipped.
+
+**Next step:** finish the all-player career backfill (running) and confirm CI.

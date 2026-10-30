@@ -36,7 +36,7 @@ def source(engine) -> FakeSource:
     with Session(engine) as s, s.begin():
         s.execute(
             update(SyncSchedule)
-            .where(SyncSchedule.job.in_(["metadata", "corrections"]))
+            .where(SyncSchedule.job.in_(["metadata", "corrections", "careers"]))
             .values(next_run_at=NOW + timedelta(days=365))
         )
     return src

@@ -21,10 +21,12 @@ interface DataTableProps<Row> {
   rows: Row[];
   rowKey: (row: Row) => string;
   initialSort?: { key: string; direction: "ascending" | "descending" };
+  /** A summary row (e.g. career totals) kept below the sorted rows. */
+  footer?: Row;
 }
 
 /** A real <table>: sticky first column and a labelled, focusable scroll region on narrow screens. */
-export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort }: DataTableProps<Row>) {
+export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, footer }: DataTableProps<Row>) {
   const [sort, setSort] = useState(initialSort);
 
   const sorted = useMemo(() => {
@@ -41,7 +43,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort }: 
   }, [rows, columns, sort]);
 
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="overflow-x-auto rounded-xl bg-card">
+    <div role="region" aria-label={caption} tabIndex={0} className="relative overflow-x-auto rounded-xl bg-card">
       <table className="w-full border-collapse text-subhead">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -106,6 +108,28 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort }: 
             </tr>
           ))}
         </tbody>
+        {footer && (
+          <tfoot>
+            <tr className="border-t-2 border-border font-semibold">
+              {columns.map((column, i) => {
+                const Cell = i === 0 ? "th" : "td";
+                return (
+                  <Cell
+                    key={column.key}
+                    scope={i === 0 ? "row" : undefined}
+                    className={cn(
+                      "whitespace-nowrap px-3 py-2.5",
+                      column.numeric ? "text-right tabular-nums" : "text-left",
+                      i === 0 && "sticky left-0 bg-card",
+                    )}
+                  >
+                    {column.cell(footer)}
+                  </Cell>
+                );
+              })}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

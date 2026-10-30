@@ -15,6 +15,8 @@ import { StatTile } from "@/components/data/stat-tile";
 import { LoadingBlock, StateView } from "@/components/data/state-view";
 import { serverTry } from "@/lib/api/server";
 import type {
+  CareerLine,
+  PlayerCareer,
   PlayerGameLinePage,
   PlayerProfile,
   PlayerSeasonStats,
@@ -24,7 +26,14 @@ import type {
 import { formatGameDate, formatGameValue, formatHeight, formatStat } from "@/lib/format";
 import { hrefWith, oneOf, param, positiveInt, type SearchParams } from "@/lib/url";
 
-import { GameLogTable, ProfileControls, SplitsTable, TrendChart, TrendTable } from "./profile-client";
+import {
+  CareerHistory,
+  GameLogTable,
+  ProfileControls,
+  SplitsTable,
+  TrendChart,
+  TrendTable,
+} from "./profile-client";
 import { TREND_STAT_VALUES, TREND_STATS, type TrendStat } from "./stats";
 
 export const LOG_PAGE_SIZE = 20;
@@ -58,9 +67,10 @@ export async function PlayerProfileView({
   const { id } = await params;
   if (!PLAYER_ID.test(id)) notFound();
   const query = await searchParams;
-  const [profile, stats] = await Promise.all([
+  const [profile, stats, career] = await Promise.all([
     getProfile(id),
     serverTry<PlayerSeasonStats>(`/players/${id}/stats`),
+    serverTry<PlayerCareer>(`/players/${id}/career`),
   ]);
   if (profile.error?.status === 404) notFound();
   if (profile.error) {
@@ -85,20 +95,37 @@ export async function PlayerProfileView({
       <ProfileHero
         profile={data}
         line={stats.data?.seasons.find((s) => s.season === season) ?? null}
+        career={career.data?.regular.totals ?? null}
         freshness={<FreshnessBadge status={freshness.status} lastSync={freshness.last_successful_sync} />}
       />
       {stats.error ? (
         <ApiErrorView error={stats.error} />
       ) : !season ? (
-        <StateView
-          kind="empty"
-          title="No regular-season games in our data"
-          message="NBA Intelligence stores box scores from the 2018-19 season onward."
-        />
+        <div className="mt-8 space-y-8">
+          {career.error ? (
+            <ApiErrorView error={career.error} />
+          ) : (
+            career.data.regular.seasons.length + career.data.playoffs.seasons.length > 0 && (
+              <CareerHistory career={career.data} name={data.player.full_name} />
+            )
+          )}
+          <StateView
+            kind="empty"
+            title="No game-by-game stats for this player"
+            message="Game logs, trends and splits start with the 2018-19 season. The career table above covers every season."
+          />
+        </div>
       ) : (
         <div className="mt-8 space-y-8">
           <ProfileControls seasons={seasons} season={season} stat={stat} />
           <SeasonAverages line={stats.data.seasons.find((s) => s.season === season)!} />
+          {career.error ? (
+            <ApiErrorView error={career.error} />
+          ) : (
+            career.data.regular.seasons.length + career.data.playoffs.seasons.length > 0 && (
+              <CareerHistory career={career.data} name={data.player.full_name} />
+            )
+          )}
           <Suspense key={`trend-${season}-${stat}`} fallback={<LoadingBlock label="Loading trend" />}>
             <Trends id={id} season={season} stat={stat} name={data.player.full_name} />
           </Suspense>
@@ -133,10 +160,13 @@ const HERO_STATS = [
 function ProfileHero({
   profile,
   line,
+  career,
   freshness,
 }: {
   profile: PlayerProfile;
   line: SeasonLine | null;
+  /** Career regular-season averages, shown when there is no recent season. */
+  career: CareerLine | null;
   freshness: React.ReactNode;
 }) {
   const { player } = profile;
@@ -179,6 +209,24 @@ function ProfileHero({
             </p>
             <div className="mt-2">{freshness}</div>
           </div>
+          {!line && career && (
+            <dl className="flex flex-wrap gap-x-8 gap-y-3" aria-label="Career regular-season averages">
+              {HERO_STATS.map((s) => (
+                <div key={s.key}>
+                  <dt className="kicker">Career {s.label}</dt>
+                  <dd className="numeral text-[clamp(2.75rem,6vw,4.5rem)]">
+                    {formatStat(career.per_game[s.key])}
+                  </dd>
+                </div>
+              ))}
+              <div>
+                <dt className="kicker">GP</dt>
+                <dd className="numeral text-[clamp(2.75rem,6vw,4.5rem)] text-muted-foreground">
+                  {career.games}
+                </dd>
+              </div>
+            </dl>
+          )}
           {line && (
             <dl
               className="flex flex-wrap gap-x-8 gap-y-3"

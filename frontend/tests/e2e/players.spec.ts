@@ -148,7 +148,21 @@ test.describe("player profile", () => {
   test("a player without games explains why", async ({ page }) => {
     await page.goto("/players/1990");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Former Fixture");
-    await expect(page.getByText("No regular-season games in our data")).toBeVisible();
+    await expect(page.getByText("No game-by-game stats for this player")).toBeVisible();
+  });
+
+  test("a former player's career lists every season with career averages", async ({ page }) => {
+    await page.goto("/players/1990");
+    const hero = page.getByRole("definition").filter({ hasText: "15.5" });
+    await expect(hero).toBeVisible();
+    const career = page.getByRole("table", { name: "Former Fixture, career regular season averages by season" });
+    await expect(career.locator("tbody tr")).toHaveCount(2);
+    await expect(career.locator("tbody tr").first()).toContainText("2080-81");
+    await expect(career.locator("tbody tr").nth(1)).toContainText("OLD");
+    await expect(career.locator("tfoot")).toContainText("Career");
+    await expect(career.locator("tfoot")).toContainText("145");
+    await expect(page.getByText("Steals weren't tracked until 2081-82")).toBeVisible();
+    await expectAccessible(page);
   });
 
   test("unknown players get a not-found page", async ({ page }) => {

@@ -12,7 +12,8 @@ pytestmark = pytest.mark.integration
 
 ENDPOINTS = {
     "/api/v1/players", "/api/v1/players/search", "/api/v1/players/{player_id}",
-    "/api/v1/players/{player_id}/stats", "/api/v1/players/{player_id}/games",
+    "/api/v1/players/{player_id}/stats", "/api/v1/players/{player_id}/career",
+    "/api/v1/players/{player_id}/games",
     "/api/v1/players/{player_id}/photo", "/api/v1/players/{player_id}/matchups/{team_id}",
     "/api/v1/players/{player_id}/trends", "/api/v1/teams", "/api/v1/teams/{team_id}",
     "/api/v1/teams/{team_id}/stats", "/api/v1/teams/{team_id}/history", "/api/v1/games",
@@ -70,7 +71,8 @@ def test_data_status(client, loaded):
     ]
     datasets = {d["dataset"]: d for d in body["datasets"]}
     assert set(datasets) == {"schedule", "final_box_scores", "player_game_logs", "season_stats",
-                             "team_stats", "player_metadata"}  # fmt: skip
+                             "team_stats", "player_metadata",
+                             "career_history"}  # fmt: skip
     assert datasets["player_game_logs"]["coverage_end"] == "2099-11-07"
 
 

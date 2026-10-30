@@ -8,11 +8,25 @@ from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
 from app.api.errors import invalid_parameter, not_found
-from app.models import Game, GameStatus, Player, PlayerGameStats, Season, SeasonType, Team
+from app.models import (
+    Game,
+    GameStatus,
+    Player,
+    PlayerGameStats,
+    PlayerSeason,
+    Season,
+    SeasonType,
+    Team,
+)
 from app.schemas.common import Page, StatSummary
 from app.schemas.resources import (
+    CareerLine,
+    CareerSeason,
+    CareerStint,
+    CareerTable,
     DirectoryPlayer,
     MatchupHistory,
+    PlayerCareer,
     PlayerGameLine,
     PlayerIdentity,
     PlayerProfile,
@@ -467,3 +481,111 @@ def matchup(ctx: Context, player_id: int, team_id: int) -> MatchupHistory:
         )
 
     return ctx.cached_model("player_matchup", 1800, (player_id, team_id), DATASET, compute)
+
+
+CAREER_DATASET = "career_history"
+CAREER_STATS = {"pts": "pts", "reb": "reb", "ast": "ast", "stl": "stl", "blk": "blk",
+                "fg3m": "fg3m", "tov": "tov", "min": "minutes"}  # fmt: skip
+
+
+def _ratio(made: int | None, attempted: int | None) -> float | None:
+    return made / attempted if made is not None and attempted else None
+
+
+def _career_line(rows: list[PlayerSeason]) -> CareerLine:
+    """Averages over the given season rows. Each statistic is averaged over the games of the
+    seasons that recorded it, so an unrecorded season never counts as zero."""
+
+    def total(column: str) -> tuple[int | None, int]:
+        recorded = [r for r in rows if getattr(r, column) is not None]
+        if not recorded:
+            return None, 0
+        return sum(getattr(r, column) for r in recorded), sum(r.games for r in recorded)
+
+    per_game: dict[str, float | None] = {}
+    for key, column in CAREER_STATS.items():
+        value, games = total(column)
+        per_game[key] = None if value is None or not games else value / games
+
+    def pct(made: str, attempted: str) -> float | None:
+        recorded = [r for r in rows if getattr(r, made) is not None and getattr(r, attempted)]
+        if not recorded:
+            return None
+        return _ratio(
+            sum(getattr(r, made) for r in recorded), sum(getattr(r, attempted) for r in recorded)
+        )
+
+    started = [r.games_started for r in rows]
+    return CareerLine(
+        games=sum(r.games for r in rows),
+        games_started=None if any(g is None for g in started) else sum(started),  # type: ignore[arg-type]
+        per_game=per_game,
+        fg_pct=pct("fgm", "fga"),
+        fg3_pct=pct("fg3m", "fg3a"),
+        ft_pct=pct("ftm", "fta"),
+    )
+
+
+def _career_table(rows: list[tuple[PlayerSeason, str]], teams: dict[int, Team]) -> CareerTable:
+    by_season: dict[int, list[tuple[PlayerSeason, str]]] = defaultdict(list)
+    for row, label in rows:
+        by_season[row.season_id].append((row, label))
+    seasons: list[CareerSeason] = []
+    chosen: list[tuple[PlayerSeason, str]] = []
+    for season_id in sorted(by_season):
+        entries = by_season[season_id]
+        combined = [e for e in entries if e[0].team_abbreviation == "TOT"]
+        stints = [e[0] for e in entries if e[0].team_abbreviation != "TOT"]
+        # A traded player's "TOT" row is the season; without one there is a single team row.
+        season_rows = [combined[0][0]] if combined else stints
+        chosen += [(r, entries[0][1]) for r in season_rows]
+        line = _career_line(season_rows)
+        seasons.append(
+            CareerSeason(
+                **line.model_dump(),
+                season=entries[0][1],
+                age=season_rows[0].age,
+                teams=[
+                    CareerStint(
+                        abbreviation=r.team_abbreviation,
+                        team=team_ref(teams[r.team_id]) if r.team_id in teams else None,
+                    )
+                    for r in stints
+                ],
+            )
+        )
+    partial: dict[str, str] = {}
+    for key, column in CAREER_STATS.items():
+        recorded = [label for r, label in chosen if getattr(r, column) is not None]
+        if recorded and len(recorded) < len(chosen):
+            partial[key] = recorded[0]
+    return CareerTable(
+        seasons=seasons,
+        totals=_career_line([r for r, _ in chosen]) if chosen else None,
+        partial=partial,
+    )
+
+
+def career(ctx: Context, player_id: int) -> PlayerCareer:
+    def compute() -> PlayerCareer:
+        _player_or_404(ctx.session, player_id)
+        rows = ctx.session.execute(
+            select(PlayerSeason, Season.label)
+            .join(Season, Season.id == PlayerSeason.season_id)
+            .where(PlayerSeason.player_id == player_id)
+            .order_by(PlayerSeason.season_id, PlayerSeason.team_abbreviation)
+        ).all()
+        team_ids = {r.team_id for r, _ in rows if r.team_id is not None}
+        teams = {t.id: t for t in ctx.session.scalars(select(Team).where(Team.id.in_(team_ids)))}
+        tables = {
+            kind: _career_table([(r, label) for r, label in rows if r.season_type == kind], teams)
+            for kind in (SeasonType.regular, SeasonType.playoffs)
+        }
+        return PlayerCareer(
+            player_id=player_id,
+            regular=tables[SeasonType.regular],
+            playoffs=tables[SeasonType.playoffs],
+            meta=ctx.meta(CAREER_DATASET),
+        )
+
+    return ctx.cached_model("player_career", PROFILE_TTL, player_id, CAREER_DATASET, compute)

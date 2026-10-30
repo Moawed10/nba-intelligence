@@ -401,3 +401,38 @@ def transform_team_advanced(frame: pd.DataFrame) -> dict[int, dict[str, float | 
 
 def _optional_float(value: Any) -> float | None:
     return None if value is None or pd.isna(value) else float(value)
+
+
+# The 3-point line arrived in 1979-80; earlier zeros mean "no such shot", not "none made".
+THREE_POINT_FIRST_SEASON = 1979
+CAREER_COUNTS = ("fgm", "fga", "fg3m", "fg3a", "ftm", "fta", "oreb", "dreb", "reb", "ast", "stl",
+                 "blk", "tov", "pf")  # fmt: skip
+
+
+def transform_player_career(frame: pd.DataFrame, season_type: SeasonType) -> list[dict[str, Any]]:
+    """PlayerCareerStats season totals (one row per team, plus "TOT" after a mid-season trade) to
+    player_seasons rows. Statistics the league did not record that season stay NULL."""
+    rows = []
+    for r in frame.to_dict("records"):
+        games = _optional_int(r.get("GP"))
+        if not games:
+            continue
+        team_id = _optional_int(r.get("TEAM_ID")) or None
+        row: dict[str, Any] = {
+            "player_id": int(r["PLAYER_ID"]),
+            "season_type": season_type,
+            "season_id": int(str(r["SEASON_ID"])[:4]),
+            "team_abbreviation": "TOT" if team_id is None else str(r["TEAM_ABBREVIATION"]),
+            "team_id": team_id,
+            "age": _optional_int(r.get("PLAYER_AGE")),
+            "games": games,
+            "games_started": _optional_int(r.get("GS")),
+            "minutes": _optional_int(r.get("MIN")) or None,
+            "pts": int(r["PTS"]),
+        }
+        for column in CAREER_COUNTS:
+            row[column] = _optional_int(r.get(column.upper()))
+        if row["season_id"] < THREE_POINT_FIRST_SEASON:
+            row["fg3m"] = row["fg3a"] = None
+        rows.append(row)
+    return rows

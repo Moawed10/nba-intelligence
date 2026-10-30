@@ -4,6 +4,8 @@ Player performance prediction and analytics for the NBA. It forecasts a player's
 
 > **Status:** in development.
 > - Real box scores from 2018-19 through the current season are ingested, verified and kept in sync automatically.
+> - Every player's season-by-season career, regular season and playoffs back to 1946-47, former players included.
+> - Predicted final scores and win chances for upcoming games, alongside per-player forecasts.
 > - A read-only API serves players, teams, games, box scores, trends and data freshness (docs at `/api/v1/docs`).
 > - Player search, a filterable directory and full player profiles (averages, trends, splits, game logs) are live.
 > - A first candidate model release is trained and evaluated on the held-out 2025-26 season (see the test report); the prediction service and the redesigned screens are next.

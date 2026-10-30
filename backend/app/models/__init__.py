@@ -23,6 +23,7 @@ from app.models.reference import (
     GameStatus,
     Player,
     PlayerGameStats,
+    PlayerSeason,
     Season,
     SeasonType,
     Team,
@@ -70,6 +71,7 @@ __all__ = [
     "SyncEventType",
     "SyncSchedule",
     "Team",
+    "PlayerSeason",
     "TeamSeason",
     "TeamGameStats",
 ]

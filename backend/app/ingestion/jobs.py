@@ -10,6 +10,7 @@ from nba_api.stats.endpoints import (
     LeagueDashTeamStats,
     LeagueGameLog,
     LeagueStandingsV3,
+    PlayerCareerStats,
     PlayerIndex,
     ScheduleLeagueV2,
     TeamYearByYearStats,
@@ -29,6 +30,7 @@ from app.ingestion.transforms import (
     Rejection,
     current_season_start_year,
     season_label,
+    transform_player_career,
     transform_player_logs,
     transform_players,
     transform_schedule,
@@ -45,6 +47,7 @@ from app.models import (
     IngestionRun,
     Player,
     PlayerGameStats,
+    PlayerSeason,
     RunStatus,
     Season,
     SeasonType,
@@ -220,6 +223,40 @@ def ingest_team_history(client: StatsSource) -> Callable[[RunContext], None]:
             upsert(ctx.session, TeamSeason, rows, ["team_id", "season_id"],
                    provenance=provenance(ctx.run_id, "TeamYearByYearStats"))
         )  # fmt: skip
+
+    return body
+
+
+# PlayerCareerStats result sets, in the source's response order.
+CAREER_FRAMES = {SeasonType.regular: 0, SeasonType.playoffs: 2}
+
+
+def ingest_player_careers(
+    client: StatsSource, player_ids: list[int]
+) -> Callable[[RunContext], None]:
+    """Every season of each player's career, regular season and playoffs (one request each).
+    Finished careers are cached on disk, so re-running a batch only refetches active players."""
+
+    def body(ctx: RunContext) -> None:
+        active = set(ctx.session.scalars(select(Player.id).where(Player.is_active)).all())
+        for player_id in player_ids:
+            result = client.fetch(PlayerCareerStats, player_id=player_id, per_mode36="Totals",
+                                  cacheable=player_id not in active)  # fmt: skip
+            ctx.retries += max(0, result.attempts - 1)
+            rows: list[dict[str, Any]] = []
+            for season_type, index in CAREER_FRAMES.items():
+                frame = result.frames[index]
+                ctx.fetched += len(frame)
+                rows += transform_player_career(frame, season_type)
+            for season in sorted({r["season_id"] for r in rows}):
+                ensure_season(ctx.session, season)
+            ctx.valid += len(rows)
+            if rows:
+                ctx.counted(
+                    upsert(ctx.session, PlayerSeason, rows,
+                           ["player_id", "season_type", "season_id", "team_abbreviation"],
+                           provenance=provenance(ctx.run_id, "PlayerCareerStats"))
+                )  # fmt: skip
 
     return body
 
