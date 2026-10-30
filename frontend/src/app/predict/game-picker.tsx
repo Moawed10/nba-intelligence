@@ -46,8 +46,15 @@ export function GamePicker({
     games.findIndex((g) => g.id === selectedId),
   );
 
+  const anyForecast = Object.values(forecasts).some(Boolean);
   return (
-    <div aria-busy={pending} className={cn("transition-opacity", pending && "opacity-70")}>
+    <div aria-busy={pending} className={cn("space-y-3 transition-opacity", pending && "opacity-70")}>
+      {anyForecast && (
+        <p className="flex items-center justify-between gap-3 text-footnote text-muted-foreground">
+          <span>Our predicted stat line for each game</span>
+          <span className="kicker shrink-0 text-primary">Predicted</span>
+        </p>
+      )}
       <AnimatedList
         label="Upcoming games"
         items={games.map((g) => ({ id: g.id, title: g.id }))}
@@ -84,6 +91,7 @@ export function GamePicker({
               </span>
               {forecasts[game.id] ? (
                 <span className="flex gap-3 text-right">
+                  <span className="sr-only">Predicted:</span>
                   {forecasts[game.id]!.map((v, i) => (
                     <span key={i}>
                       <span className="numeral block text-title3">{Math.round(v)}</span>
