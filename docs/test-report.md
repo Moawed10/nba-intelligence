@@ -374,3 +374,70 @@ Bugs this suite found, all fixed:
 
 The backend suite after these fixes: 285 passed.
 
+## Team forecast lifecycle (2026-11-02)
+
+`tests/api/test_game_forecasts.py` covers freshness, refresh, closing at tip-off, postponed and cancelled games, scoring by sync event, repeated scoring, source corrections, and live metrics compared with values calculated in the test. Headline metrics count only the forecast nothing superseded.
+
+These run against the small fixture league with the 10-game minimum lowered to 3, because the fixture has too few games for a team forecast. The real-backend suite does not exercise team forecasts for the same reason, so team forecasts have **not** been tested through a browser against the real API. The UI is covered by stub-API tests.
+
+On a copy of the real database restored on 2026-11-02, the first maintenance run scored 49 stored score forecasts. The 22 final forecasts behind them gave a score MAE of 10.63 points, winner accuracy of 63.6% and a Brier score of 0.216. That is a small early sample, not an accuracy claim, and the real database has not been scored yet.
+
+## Security and reliability (2026-11-02)
+
+| Check | Command | Result |
+|---|---|---|
+| Python advisories | `pip-audit -r requirements.lock --require-hashes --disable-pip` | No known vulnerabilities |
+| npm advisories, production dependencies | `npm audit --omit=dev` | 0 high or critical. 4 moderate and 2 low, all through the `shadcn` CLI package (`@shadcn/registry`, `@ts-morph/common`, `deepmerge`, `minimatch`, `shadcn`, `ts-morph`) |
+| Secrets in history, local | Pattern search of `git log -p --all` | No matches. A pattern search is weaker than a real scanner |
+| Secrets in history, CI | gitleaks in the `security` job | See the PR's checks |
+| Rate limiting | `tests/api/test_rate_limit.py` | Predictable 429 with `Retry-After`; per-client and global limits; reads unaffected |
+| Failure paths | `tests/api/test_failure_paths.py` | Controlled 503 for database outage, exhausted pool, missing or corrupt artifacts, no active release and inference overload; generic 500 for anything else; nothing internal in responses |
+| Source failures | `tests/integration/` (existing) | Failed runs are recorded, roll back, and leave data untouched |
+
+A real leak was found and fixed: the public `model_unavailable` message included the artifact file path and hash. It now goes to the log only.
+
+### Load test
+
+```bash
+cd backend && .venv/bin/python scripts/load_test.py --base-url http://127.0.0.1:8703 --requests 1000 --clients 20
+```
+
+- **Environment:** one uvicorn process, on a MacBook (arm64, 8 CPUs, 8 GB) shared with other running work; PostgreSQL 16.15 on the same machine; `NBA_DB_POOL_SIZE=10`, `NBA_DB_MAX_OVERFLOW=10`. No network between client and server. These numbers do not predict a hosted deployment.
+- **Data:** a restored copy of the real database, active release `2026.10.29-3`.
+- **Workload:** each scenario runs separately: 1,000 requests from 20 concurrent clients, seed 7, across 62 upcoming games and 300 distinct player-games. Rate limits were raised for this test. The first scenarios warm caches. Forecast scenarios mix first-time computation with repeats.
+- **Measured** on 2026-11-02:
+
+| Scenario | Requests | Clients | Statuses | Unexpected | p50 ms | p95 ms | p99 ms | Max ms | Requests/s |
+|---|---|---|---|---|---|---|---|---|---|
+| `read_player_profile` | 1000 | 20 | 200: 1000 | 0 | 47 | 237 | 344 | 569 | 274.0 |
+| `read_games_by_date` | 1000 | 20 | 200: 1000 | 0 | 202 | 600 | 1000 | 1159 | 81.4 |
+| `read_model_summary` | 1000 | 20 | 200: 1000 | 0 | 54 | 193 | 259 | 434 | 250.0 |
+| `forecast_player` | 1000 | 20 | 200: 640, 201: 252, 422: 108 | 0 | 1668 | 4563 | 5479 | 7133 | 10.1 |
+| `forecast_game` | 1000 | 20 | 200: 1000 | 0 | 565 | 750 | 1210 | 1523 | 34.0 |
+
+A 422 is a player with too few games, which is the correct answer. There were no 5xx responses. Forecasts handled about 10 requests per second, which is why the default global limit is 600 per minute. Under this concurrency a forecast takes seconds, far above the 69 ms p95 of the sequential run in [Phase 7](#phase-7-inference); four run at once and the rest queue. No performance gate is claimed from these numbers.
+
+### Accessibility
+
+`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 had failures that were not investigated one by one, because another session was running Playwright on the same machine and ports at the same time. CI on the pull request is the result to trust.
+
+## Deployment and operations rehearsal (2026-11-02)
+
+Everything here ran on the development Mac against the real data, in throwaway copies. The real database was only read by `pg_dump`. Nothing has been deployed.
+
+| Check | Result |
+|---|---|
+| `scripts/backup.sh nba_intelligence` | 24,004,893-byte dump with a checksum |
+| `scripts/restore_check.sh <dump> nba_intelligence` | Checksum OK; restored into a new database; row counts of 12 main tables match the source; temporary database dropped |
+| Migrate the restored copy down one step and back up | Worked |
+| First `app.cli predictions` on the copy | Scored 49 score forecasts and 272 player forecasts |
+| `app.cli ops-check` on the copy | Correctly reported overdue jobs and waiting events, because no worker runs against the copy; `scoring` went from fail to ok after maintenance; `model` ok |
+| Roll back the model release, then forward | `2026.10.29-2` verified and activated, `-3` retired; then `-3` active again |
+| `app.cli source-check` from the Mac | Reachable, 45 rows, 0.87 s. **Not** tested from any cloud host |
+| Frontend production build with no API running | Builds, so images can be built without a live API |
+| Docker images and Compose stack | Not run locally (no Docker). CI's `containers` job builds and smoke-tests them; see the PR's checks |
+
+The rehearsal found one more bug, now fixed with a test: a forecast for a player who did not play kept its game in the pending list, so the game was rescored on every maintenance run.
+
+Not demonstrated: a hosted smoke test, a real restore on a host, alert delivery, and any of the seven-day thresholds.
+

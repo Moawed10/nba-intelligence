@@ -16,7 +16,10 @@ The release-readiness audit re-checked claims in this ledger against current evi
 | Prediction workflow works end to end | Before this audit, only stub-API tests and manual checks. `npm run test:fullstack` now covers it against the real backend | Verified on synthetic data; not on a deployed host |
 | Fresh checkout installs reproducibly | Clean-room run in [test-report.md](test-report.md#release-readiness-baseline-2026-11-02) | Verified on macOS; CI verifies Ubuntu |
 | Rules in `AGENTS.md` | Only `frontend/AGENTS.md` exists (Next.js guidance); there is no root file | Noted |
-| VoiceOver check | Not performed | Not Verified |
+| VoiceOver check | Not performed; checklist in [accessibility-report.md](accessibility-report.md#manual-screen-reader-checklist) | Not Verified |
+| Performance & Security (Phase 13) | Rate limiting, failure paths, scanning and a local load test exist; no hosted measurement | Master table below predates this work; see [release-readiness.md](release-readiness.md) |
+| Testing & Integration (Phase 14) | Real-backend suite in CI | Master table below predates this work |
+| Deployment & Portfolio (Phase 15) | Packaging and runbook prepared; nothing deployed | Master table below predates this work |
 
 Release gates and blockers are tracked in [release-readiness.md](release-readiness.md).
 

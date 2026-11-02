@@ -78,9 +78,12 @@ def test_unscored_finished_games_fail_and_scoring_clears_them(serving, league): 
 
 
 def test_a_player_who_did_not_play_does_not_trigger_rescoring_on_every_run(serving, league):  # noqa: F811
-    assert serving.post(
-        "/api/v1/predictions", json={"player_id": STAR, "game_id": NEXT_GAME.id}
-    ).status_code == 201
+    assert (
+        serving.post(
+            "/api/v1/predictions", json={"player_id": STAR, "game_id": NEXT_GAME.id}
+        ).status_code
+        == 201
+    )
     with league.begin() as conn:
         conn.execute(
             text(
