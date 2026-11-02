@@ -201,6 +201,7 @@ const game = (id, date, away, home, status, scores) => ({
 });
 const GAMES = [
   { ...game("0099000100", "2099-11-07", 1, 0, "in_progress", [58, 61]), live_status: "Q3 5:12", tipoff_at: new Date(Date.now() - 3_600_000).toISOString() },
+  { ...game("0099000099", "2099-11-06", 1, 0, "in_progress", [40, 50]), live_status: "Q2 1:00", tipoff_at: new Date(Date.now() - 3_600_000).toISOString() },
   game("0099000101", "2099-11-09", 0, 1, "final", [101, 112]),
   game("0099000102", TODAY, 1, 0, "scheduled"),
   game("0099000103", "2099-11-12", 0, 1, "scheduled"),
@@ -291,6 +292,9 @@ createServer((req, res) => {
       seasons: SEASONS.map((season) => ({ season, final_games: GAMES_PER_SEASON[season], remaining_games: 0, player_lines: 0 })),
       row_counts: {},
     });
+  }
+  if (path === "/overview" || path === "/games/0099000099") {
+    GAMES.find((g) => g.id === "0099000099").home.score += 1;
   }
   if (path === "/overview") {
     return send(res, 200, {

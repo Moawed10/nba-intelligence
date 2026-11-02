@@ -25,7 +25,7 @@ import type {
   TeamSeasonStats,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
-import { isLive, liveLabel, LIVE_POLL_MS } from "@/lib/live";
+import { IDLE_POLL_MS, isLive, liveLabel, LIVE_POLL_MS, shouldFollow } from "@/lib/live";
 import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -124,7 +124,7 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
         </p>
       </div>
       {entry.score != null && (
-        <p className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
+        <p data-testid={`score-${side}`} className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
           {entry.score}
         </p>
       )}
@@ -179,7 +179,7 @@ function Matchup({
             {statusLabel(game)}
           </p>
           {isLive(game) && (
-            <p className="text-footnote text-muted-foreground">Score updates about once a minute</p>
+            <p className="text-footnote text-muted-foreground">Updates automatically</p>
           )}
           <p className="text-footnote text-muted-foreground">
             {formatGameDate(game.game_date, true)}
@@ -659,8 +659,11 @@ export function ScheduleBoard({
       ),
     initialData: date === initialDate ? initialGames : undefined,
     staleTime: 60_000,
-    refetchInterval: (query) =>
-      query.state.data?.some((g) => g.status === "in_progress") ? LIVE_POLL_MS : false,
+    refetchInterval: (query) => {
+      const day = query.state.data ?? [];
+      if (day.some(shouldFollow)) return LIVE_POLL_MS;
+      return day.some((g) => g.status === "scheduled") ? IDLE_POLL_MS : false;
+    },
   });
   const list = games.data ?? [];
   const selected = list.find((g) => g.id === selectedId) ?? list[0] ?? null;

@@ -49,7 +49,7 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
         title={title(game)}
         description={`${formatGameDate(game.game_date, true)}${game.arena ? ` · ${game.arena}` : ""}`}
       />
-      {game.status === "in_progress" && <LiveRefresh />}
+      <LiveRefresh games={[game]} />
       <div className="panel p-5">
         <GameMatchup game={game} />
       </div>

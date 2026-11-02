@@ -306,7 +306,7 @@ async function OverviewContent() {
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
-      {o.live.length > 0 && <LiveRefresh />}
+      <LiveRefresh games={tickerGames} />
       {top && (
         <div className="min-w-0 lg:col-span-12">
           <StandoutHero p={top} window={window} />

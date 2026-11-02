@@ -39,6 +39,8 @@ log = logging.getLogger(__name__)
 LEASE = timedelta(minutes=15)
 RECENT_GAME_WINDOW = timedelta(hours=36)
 CAREER_BATCH = 200
+LONGEST_GAME = timedelta(hours=6)
+CAREERS_RETRY_DURING_GAMES = timedelta(minutes=30)
 NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 
 
@@ -46,11 +48,16 @@ NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 class JobSpec:
     interval: timedelta
     active_interval: timedelta | None = None
+    live_interval: timedelta | None = None
 
 
 JOBS: dict[str, JobSpec] = {
     # Faster while any game is near or past tip-off and not yet final.
-    "schedule": JobSpec(interval=timedelta(minutes=30), active_interval=timedelta(seconds=60)),
+    "schedule": JobSpec(
+        interval=timedelta(minutes=30),
+        active_interval=timedelta(seconds=60),
+        live_interval=timedelta(seconds=5),
+    ),
     "game_logs": JobSpec(interval=timedelta(hours=6), active_interval=timedelta(minutes=10)),
     "metadata": JobSpec(interval=timedelta(hours=24)),
     "corrections": JobSpec(interval=timedelta(days=7)),
@@ -71,6 +78,14 @@ def games_active(session: Session, now: datetime) -> bool:
     ))))  # fmt: skip
 
 
+def games_live(session: Session, now: datetime) -> bool:
+    return bool(session.scalar(select(exists().where(
+        Game.tipoff_at <= now + timedelta(minutes=15),
+        Game.tipoff_at >= now - LONGEST_GAME,
+        Game.status.in_(NOT_FINAL),
+    ))))  # fmt: skip
+
+
 def stats_pending(session: Session, now: datetime) -> bool:
     """True while a recent final game's box score is not yet confirmed stable."""
     return bool(session.scalar(select(exists().where(
@@ -82,6 +97,8 @@ def stats_pending(session: Session, now: datetime) -> bool:
 
 def next_interval(job: str, session: Session, now: datetime) -> timedelta:
     spec = JOBS[job]
+    if spec.live_interval is not None and games_live(session, now):
+        return spec.live_interval
     if spec.active_interval is None:
         return spec.interval
     active = games_active(session, now) or (job == "game_logs" and stats_pending(session, now))
@@ -256,6 +273,13 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
     season = current_season_start_year(now)
     outcomes: dict[str, str] = {}
     for job in due_jobs(engine, now):
+        if job == "careers":
+            with Session(engine) as s, s.begin():
+                if games_live(s, now):
+                    s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
+                              .values(next_run_at=now + CAREERS_RETRY_DURING_GAMES))  # fmt: skip
+                    outcomes[job] = "deferred: games are live"
+                    continue
         started = datetime.now(UTC)
         outcome = "succeeded"
         if job == "predictions":
@@ -279,6 +303,8 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
             finalize_stable_box_scores(engine, started, now)
         with Session(engine) as s, s.begin():
             interval = next_interval(job, s, now)
+            if outcome == "failed" and JOBS[job].active_interval is not None:
+                interval = max(interval, JOBS[job].active_interval)
             s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
                       .values(next_run_at=now + interval))  # fmt: skip
         outcomes[job] = outcome

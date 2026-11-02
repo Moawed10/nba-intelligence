@@ -39,7 +39,7 @@ Implemented jobs (`app/sync/worker.py` `JOBS`):
 
 | Job key | Idle interval | Active interval | Active when | Source |
 |---|---|---|---|---|
-| `schedule` | 30 min | 60 s | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed), and the running score and clock text while a game is in progress |
+| `schedule` | 30 min | 60 s, or 5 s from 15 min before tip-off until final (6 h cap), falling back to 60 s after a failed fetch. The `careers` job waits while games are live, because it would block the worker for minutes | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed), and the running score and clock text while a game is in progress |
 | `game_logs` | 6 h | 10 min | A game is live, or a game from the last 36 h is final but its box score isn't confirmed stable | `LeagueGameLog` (team + player) for the current season's types |
 | `metadata` | 24 h | — | Always | `LeagueStandingsV3`, `CommonAllPlayers`, `PlayerIndex` |
 | `corrections` | 7 days | — | Always | Re-fetches the current season's game logs and logs any changed values |
