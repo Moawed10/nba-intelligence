@@ -190,6 +190,49 @@ def test_schedule_lifecycle_events_and_no_downgrade(engine, source):
     assert None not in scores
 
 
+def _with_scores(frame, home, away, text="Q3 5:12"):
+    return frame.assign(homeTeam_score=home, awayTeam_score=away, gameStatusText=text)
+
+
+def test_live_scores_follow_the_feed_and_the_box_score_has_the_last_word(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=1), 0, 0, "7:30 pm ET"))
+    with Session(engine) as s:
+        assert set(s.scalars(select(Game.home_score))) == {None}
+
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 61, 58))
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.home_score, game.away_score) == (61, 58)
+        assert game.provider_status["gameStatusText"] == "Q3 5:12"
+
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 70, 58, "Q3 1:02"))
+    with Session(engine) as s:
+        assert s.get(Game, GAMES[0].id).home_score == 70
+
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=3), 101, 99, "Final"))
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.status, game.home_score, game.away_score) == (GameStatus.final, 101, 99)
+
+    run_logs(engine, source)
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.home_score, game.away_score) == (55, 55)
+        assert s.scalar(select(func.count()).select_from(SourceCorrection)) == 0
+
+
+def test_a_late_feed_score_never_overwrites_a_finished_game(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    run_schedule(engine, source, schedule(GAMES, status=2))
+    run_logs(engine, source)
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=3), 1, 2, "Final"))
+    stale = run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 3, 4))
+    assert stale.rows_rejected == len(GAMES)
+    with Session(engine) as s:
+        assert set(s.scalars(select(Game.home_score))) == {55}
+
+
 def test_tipoff_change_emits_one_schedule_update(engine, source):
     run_schedule(engine, source, schedule(GAMES[:1], status=1, tipoff_hour=0))
     run_schedule(engine, source, schedule(GAMES[:1], status=1, tipoff_hour=2))

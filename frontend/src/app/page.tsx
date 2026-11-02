@@ -8,6 +8,7 @@ import SpotlightCard from "@/components/bits/spotlight-card";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
 import { GameTicker } from "@/components/data/game-ticker";
+import { LiveRefresh } from "@/components/data/live-refresh";
 import { InfoHint } from "@/components/data/info-hint";
 import { PageHeader } from "@/components/data/page-header";
 import { Panel } from "@/components/data/panel";
@@ -292,7 +293,7 @@ async function OverviewContent() {
   const result = await serverTry<Overview>("/overview");
   if (result.error) return <ApiErrorView error={result.error} />;
   const o = result.data;
-  const today = o.upcoming.filter((g) => g.game_date === o.today);
+  const today = [...o.live, ...o.upcoming].filter((g) => g.game_date === o.today);
   const initialDate = today.length ? o.today : (o.recent[0]?.game_date ?? o.today);
   const initialGames = today.length ? today : o.recent;
   const window =
@@ -301,10 +302,11 @@ async function OverviewContent() {
       : "Recent games";
 
   const top = o.standouts.performances[0];
-  const tickerGames = [...o.recent, ...o.upcoming];
+  const tickerGames = [...o.live, ...o.recent, ...o.upcoming];
 
   return (
     <div className="grid gap-5 lg:grid-cols-12">
+      {o.live.length > 0 && <LiveRefresh />}
       {top && (
         <div className="min-w-0 lg:col-span-12">
           <StandoutHero p={top} window={window} />

@@ -228,6 +228,7 @@ def overview(ctx: Context) -> Overview:
     return Overview(
         generated_at=ctx.now,
         today=nba_today(ctx.now),
+        live=games.live(ctx),
         upcoming=games.upcoming(ctx, days=7, player_id=None)[:RECENT_LIMIT],
         recent=recent,
         standouts=standouts(ctx, limit=6),

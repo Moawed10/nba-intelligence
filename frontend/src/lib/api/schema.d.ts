@@ -923,6 +923,8 @@ export interface components {
             home: components["schemas"]["GameTeam"];
             /** Id */
             id: string;
+            /** Live Status */
+            live_status: string | null;
             meta: components["schemas"]["Meta"];
             /** Season */
             season: string;
@@ -1018,6 +1020,8 @@ export interface components {
             home: components["schemas"]["GameTeam"];
             /** Id */
             id: string;
+            /** Live Status */
+            live_status: string | null;
             /** Season */
             season: string;
             season_type: components["schemas"]["SeasonType"];
@@ -1409,6 +1413,8 @@ export interface components {
              */
             generated_at: string;
             leaders: components["schemas"]["Leaders"] | null;
+            /** Live */
+            live: components["schemas"]["GameSummary"][];
             model: components["schemas"]["ModelSnapshot"] | null;
             /** Recent */
             recent: components["schemas"]["GameSummary"][];

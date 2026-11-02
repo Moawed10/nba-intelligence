@@ -3,10 +3,12 @@ import Link from "next/link";
 import { TeamMark } from "@/components/brand/team-mark";
 import type { GameSummary } from "@/lib/api/types";
 import { formatGameDate, formatGameTime } from "@/lib/format";
+import { isLive, liveLabel } from "@/lib/live";
 import { cn } from "@/lib/utils";
 
 function Item({ game }: { game: GameSummary }) {
   const final = game.status === "final";
+  const live = game.status === "in_progress" && game.home.score != null;
   const homeWon = final && (game.home.score ?? 0) > (game.away.score ?? 0);
   const side = (which: "away" | "home") => {
     const entry = game[which];
@@ -17,8 +19,10 @@ function Item({ game }: { game: GameSummary }) {
         <span className={cn("font-semibold", final && !won && "text-muted-foreground")}>
           {entry.team.abbreviation}
         </span>
-        {final && (
-          <span className={cn("numeral text-headline", !won && "text-muted-foreground")}>{entry.score}</span>
+        {(final || live) && (
+          <span className={cn("numeral text-headline", final && !won && "text-muted-foreground")}>
+            {entry.score}
+          </span>
         )}
       </span>
     );
@@ -31,8 +35,14 @@ function Item({ game }: { game: GameSummary }) {
       {side("away")}
       <span className="text-muted-foreground">@</span>
       {side("home")}
-      <span className="kicker">
-        {final ? "Final" : game.tipoff_at ? formatGameTime(game.tipoff_at) : formatGameDate(game.game_date)}
+      <span className={cn("kicker", isLive(game) && "text-primary")}>
+        {final
+          ? "Final"
+          : game.status === "in_progress"
+            ? liveLabel(game)
+            : game.tipoff_at 
+              ? formatGameTime(game.tipoff_at)
+              : formatGameDate(game.game_date)}
       </span>
     </Link>
   );

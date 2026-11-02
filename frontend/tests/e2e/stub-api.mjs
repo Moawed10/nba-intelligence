@@ -194,12 +194,13 @@ const HISTORY = {
 
 const TODAY = "2099-11-10";
 const game = (id, date, away, home, status, scores) => ({
-  id, season: "2099-00", season_type: "regular", game_date: date, status,
+  id, season: "2099-00", season_type: "regular", game_date: date, status, live_status: null,
   tipoff_at: `${date}T23:30:00Z`, arena: "Fixture Arena",
   away: { team: ref(TEAMS[away]), score: scores?.[0] ?? null },
   home: { team: ref(TEAMS[home]), score: scores?.[1] ?? null },
 });
 const GAMES = [
+  { ...game("0099000100", "2099-11-07", 1, 0, "in_progress", [58, 61]), live_status: "Q3 5:12", tipoff_at: new Date(Date.now() - 3_600_000).toISOString() },
   game("0099000101", "2099-11-09", 0, 1, "final", [101, 112]),
   game("0099000102", TODAY, 1, 0, "scheduled"),
   game("0099000103", "2099-11-12", 0, 1, "scheduled"),
@@ -294,6 +295,7 @@ createServer((req, res) => {
   if (path === "/overview") {
     return send(res, 200, {
       generated_at: "2099-11-10T12:00:00Z", today: TODAY,
+      live: GAMES.filter((g) => g.status === "in_progress"),
       upcoming: GAMES.filter((g) => g.status === "scheduled"),
       recent: GAMES.filter((g) => g.status === "final"),
       leaders: leaders("pts", 5), standouts: STANDOUTS, model: SNAPSHOT, datasets: DATASETS,

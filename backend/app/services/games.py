@@ -32,6 +32,7 @@ BOX_DATASET = "final_box_scores"
 MAX_WINDOW_DAYS = 31
 UPCOMING_STATUSES = (GameStatus.scheduled, GameStatus.delayed)
 UPCOMING_LIMIT = 100
+LIVE_LIMIT = 20
 
 
 def _summary_query() -> Select:
@@ -44,12 +45,19 @@ def _summary_query() -> Select:
     )
 
 
+def _live_status(game: Game) -> str | None:
+    if game.status != GameStatus.in_progress or not game.provider_status:
+        return None
+    return game.provider_status.get("gameStatusText") or None
+
+
 def _summary(game: Game, season: str, home: Team, away: Team) -> GameSummary:
     return GameSummary(
         id=game.id,
         game_date=game.game_date,
         tipoff_at=game.tipoff_at,
         status=game.status,
+        live_status=_live_status(game),
         season=season,
         season_type=game.season_type,
         home=GameTeam(team=team_ref(home), score=game.home_score),
@@ -107,6 +115,12 @@ def upcoming(ctx: Context, days: int, player_id: int | None) -> list[GameSummary
         team = player.current_team_id
         stmt = stmt.where(or_(Game.home_team_id == team, Game.away_team_id == team))
     rows = ctx.session.execute(_ordered(stmt).limit(UPCOMING_LIMIT))
+    return [_summary(*r) for r in rows]
+
+
+def live(ctx: Context) -> list[GameSummary]:
+    stmt = _summary_query().where(Game.status == GameStatus.in_progress)
+    rows = ctx.session.execute(_ordered(stmt).limit(LIVE_LIMIT))
     return [_summary(*r) for r in rows]
 
 

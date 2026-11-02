@@ -953,6 +953,17 @@
             "title": "Id",
             "type": "string"
           },
+          "live_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Status"
+          },
           "meta": {
             "$ref": "#/components/schemas/Meta"
           },
@@ -1000,6 +1011,7 @@
           "game_date",
           "tipoff_at",
           "status",
+          "live_status",
           "season",
           "season_type",
           "home",
@@ -1240,6 +1252,17 @@
             "title": "Id",
             "type": "string"
           },
+          "live_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Status"
+          },
           "season": {
             "title": "Season",
             "type": "string"
@@ -1268,6 +1291,7 @@
           "game_date",
           "tipoff_at",
           "status",
+          "live_status",
           "season",
           "season_type",
           "home",
@@ -2416,6 +2440,13 @@
               }
             ]
           },
+          "live": {
+            "items": {
+              "$ref": "#/components/schemas/GameSummary"
+            },
+            "title": "Live",
+            "type": "array"
+          },
           "model": {
             "anyOf": [
               {
@@ -2452,6 +2483,7 @@
         "required": [
           "generated_at",
           "today",
+          "live",
           "upcoming",
           "recent",
           "standouts",

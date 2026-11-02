@@ -5,6 +5,7 @@ import { cache, Suspense } from "react";
 
 import { ApiErrorView } from "@/components/data/api-error";
 import { PageHeader } from "@/components/data/page-header";
+import { LiveRefresh } from "@/components/data/live-refresh";
 import { LoadingBlock } from "@/components/data/state-view";
 import { serverTry } from "@/lib/api/server";
 import type { GameDetail } from "@/lib/api/types";
@@ -48,6 +49,7 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
         title={title(game)}
         description={`${formatGameDate(game.game_date, true)}${game.arena ? ` · ${game.arena}` : ""}`}
       />
+      {game.status === "in_progress" && <LiveRefresh />}
       <div className="panel p-5">
         <GameMatchup game={game} />
       </div>

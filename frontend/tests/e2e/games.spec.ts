@@ -5,6 +5,35 @@ import { expectAccessible } from "./helpers";
 // tests/e2e/stub-api.mjs has a final on 2099-11-09 (Alpha 101 at Bravo 112) and scheduled games after it.
 
 test.describe("games", () => {
+  test("a game in progress shows its score and clock", async ({ page }) => {
+    await page.goto("/games?date=2099-11-07");
+    const schedule = page.getByRole("region", { name: "Games by date" });
+    const chip = schedule.getByRole("button", { name: /Bravo at Alpha, Live · Q3 5:12/ });
+    await expect(chip).toContainText("58");
+    await expect(chip).toContainText("61");
+    await expect(schedule.getByText("Score updates about once a minute")).toBeVisible();
+    await expect(schedule.getByRole("table")).toHaveCount(0);
+
+    await page.goto("/games/0099000100");
+    await expect(page.getByText("Live · Q3 5:12")).toBeVisible();
+    await expect(page.locator("main").getByText("61", { exact: true })).toBeVisible();
+  });
+
+  test("the schedule picks up a new live score without a reload", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("/games?date=2099-11-07");
+    const schedule = page.getByRole("region", { name: "Games by date" });
+    await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live/ })).toBeVisible();
+    await page.route("**/api/v1/games?*", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.items[0].home.score = 70;
+      await route.fulfill({ response, json: body });
+    });
+    await page.clock.fastForward(31_000);
+    await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live/ })).toContainText("70");
+  });
+
   test("shows full box scores for a final and keeps the date in the URL", async ({ page }) => {
     await page.goto("/games?date=2099-11-09");
     const schedule = page.getByRole("region", { name: "Games by date" });
