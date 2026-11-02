@@ -36,6 +36,7 @@ class Rejection:
 class Transformed:
     rows: list[dict[str, Any]] = field(default_factory=list)
     rejections: list[Rejection] = field(default_factory=list)
+    scores: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 def season_label(start_year: int) -> str:
@@ -253,6 +254,10 @@ def transform_schedule(df: pd.DataFrame, observed_at: datetime) -> Transformed:
             result.rejections.append(Rejection({"game_id": game_id}, "unknown game status"))
             continue
         tipoff = pd.to_datetime(record.get("gameDateTimeUTC"), utc=True, errors="coerce")
+        home_score = to_int(record.get("homeTeam_score"))
+        away_score = to_int(record.get("awayTeam_score"))
+        if home_score is not None and away_score is not None and min(home_score, away_score) >= 0:
+            result.scores[game_id] = (home_score, away_score)
         result.rows.append({
             "id": game_id,
             "season_id": season_from_game_id(game_id),

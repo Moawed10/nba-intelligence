@@ -25,6 +25,7 @@ import type {
   TeamSeasonStats,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
+import { IDLE_POLL_MS, isLive, liveLabel, LIVE_POLL_MS, shouldFollow } from "@/lib/live";
 import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -34,9 +35,13 @@ function shiftDate(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function LiveDot() {
+  return <span aria-hidden className="mr-1.5 inline-block size-2 rounded-full bg-primary motion-safe:animate-pulse" />;
+}
+
 function statusLabel(game: GameSummary): string {
   if (game.status === "final") return "Final";
-  if (game.status === "in_progress") return "In progress";
+  if (game.status === "in_progress") return liveLabel(game);
   if (game.status === "postponed") return "Postponed";
   if (game.status === "cancelled") return "Cancelled";
   return game.tipoff_at ? formatGameTime(game.tipoff_at) : "Time to be announced";
@@ -58,6 +63,7 @@ function GameChip({
 }) {
   const final = game.status === "final";
   const homeWon = final && (game.home.score ?? 0) > (game.away.score ?? 0);
+  const showScore = final || (game.status === "in_progress" && game.home.score != null);
   const row = (side: "away" | "home") => {
     const entry = game[side];
     const won = final && (side === "home" ? homeWon : !homeWon);
@@ -65,12 +71,12 @@ function GameChip({
       <span className="flex items-center gap-2">
         <TeamMark team={entry.team} size="xs" />
         <span className={cn("flex-1 text-left", won && "font-semibold")}>{entry.team.abbreviation}</span>
-        {final && (
-          <span className={cn("numeral text-headline", won ? "text-foreground" : "text-muted-foreground")}>
+        {showScore && (
+          <span className={cn("numeral text-headline", won || !final ? "text-foreground" : "text-muted-foreground")}>
             {entry.score}
           </span>
         )}
-        {!final && forecast && (
+        {!showScore && forecast && (
           <span className="numeral text-headline text-muted-foreground">
             <span className="sr-only">predicted </span>
             {Math.round(forecast[side].points)}
@@ -92,7 +98,10 @@ function GameChip({
       <span className="sr-only">
         {game.away.team.city} at {game.home.team.city},{" "}
       </span>
-      <span className="kicker text-left">{statusLabel(game)}</span>
+      <span className="kicker text-left">
+        {isLive(game) && <LiveDot />}
+        {statusLabel(game)}
+      </span>
       {row("away")}
       {row("home")}
     </button>
@@ -115,7 +124,7 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
         </p>
       </div>
       {entry.score != null && (
-        <p className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
+        <p data-testid={`score-${side}`} className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
           {entry.score}
         </p>
       )}
@@ -165,7 +174,13 @@ function Matchup({
         />
         <TeamColumn game={game} side="away" />
         <div className="relative order-last col-span-2 text-center md:order-none md:col-span-1">
-          <p className="kicker">{statusLabel(game)}</p>
+          <p className="kicker">
+            {isLive(game) && <LiveDot />}
+            {statusLabel(game)}
+          </p>
+          {isLive(game) && (
+            <p className="text-footnote text-muted-foreground">Updates automatically</p>
+          )}
           <p className="text-footnote text-muted-foreground">
             {formatGameDate(game.game_date, true)}
             {game.arena ? ` · ${game.arena}` : ""}
@@ -644,6 +659,11 @@ export function ScheduleBoard({
       ),
     initialData: date === initialDate ? initialGames : undefined,
     staleTime: 60_000,
+    refetchInterval: (query) => {
+      const day = query.state.data ?? [];
+      if (day.some(shouldFollow)) return LIVE_POLL_MS;
+      return day.some((g) => g.status === "scheduled") ? IDLE_POLL_MS : false;
+    },
   });
   const list = games.data ?? [];
   const selected = list.find((g) => g.id === selectedId) ?? list[0] ?? null;

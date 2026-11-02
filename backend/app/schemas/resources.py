@@ -149,6 +149,7 @@ class GameSummary(BaseModel):
     game_date: date
     tipoff_at: datetime | None
     status: GameStatus
+    live_status: str | None
     season: str
     season_type: SeasonType
     home: GameTeam
@@ -341,6 +342,7 @@ class ModelSnapshot(BaseModel):
 class Overview(BaseModel):
     generated_at: datetime
     today: date
+    live: list[GameSummary]
     upcoming: list[GameSummary]
     recent: list[GameSummary]
     standouts: Standouts

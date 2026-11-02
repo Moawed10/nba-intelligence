@@ -16,7 +16,7 @@ from nba_api.stats.endpoints import (
     TeamYearByYearStats,
 )
 from nba_api.stats.static import teams as static_teams
-from sqlalchemy import Engine, func, select, update
+from sqlalchemy import Engine, func, literal, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -388,8 +388,11 @@ def ingest_game_logs(
         player_rows = [r for r in player_rows if r["game_id"] in accepted_ids]
 
         box = (*BOX_COLUMNS, "plus_minus", "minutes")
-        detect_corrections(session, Game, accepted_games, ["id"], ["home_score", "away_score"],
-                           ctx.run_id)  # fmt: skip
+        logged = set(session.scalars(
+            select(TeamGameStats.game_id).where(TeamGameStats.game_id.in_(accepted_ids)).distinct()
+        ))  # fmt: skip
+        detect_corrections(session, Game, [g for g in accepted_games if g["id"] in logged], ["id"],
+                           ["home_score", "away_score"], ctx.run_id)  # fmt: skip
         detect_corrections(session, TeamGameStats, team_rows, ["game_id", "team_id"], box,
                            ctx.run_id)  # fmt: skip
         corrected = detect_corrections(
@@ -445,6 +448,7 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
             )
         }
         rows = []
+        feed_scores = {}
         for row in result.rows:
             current, current_tipoff = existing.get(row["id"], (None, None))
             status, ok = resolve_status(current, row["status"])
@@ -459,6 +463,9 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
                 )
                 continue
             rows.append(row)
+            just_finished = current is not None and current != status == GameStatus.final
+            if row["id"] in result.scores and (status == GameStatus.in_progress or just_finished):
+                feed_scores[row["id"]] = result.scores[row["id"]]
             if current is None:
                 continue
             gid = row["id"]
@@ -491,5 +498,17 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
         ctx.counted(upsert(session, Game, rows, ["id"],
                            provenance=provenance(ctx.run_id, "ScheduleLeagueV2"),
                            compare_exclude=frozenset({"status_observed_at"})))  # fmt: skip
+        for gid, (home_score, away_score) in feed_scores.items():
+            changed = session.execute(
+                update(Game)
+                .where(
+                    Game.id == gid,
+                    tuple_(Game.home_score, Game.away_score).is_distinct_from(
+                        tuple_(literal(home_score), literal(away_score))
+                    ),
+                )
+                .values(home_score=home_score, away_score=away_score)
+            )
+            ctx.updated += changed.rowcount
 
     return body

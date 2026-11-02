@@ -85,6 +85,9 @@ def test_polling_speeds_up_only_while_games_are_live(engine, source):
     with Session(engine) as s:
         # Tip-off is 06:30; the live window opens 15 minutes before.
         assert worker.next_interval("schedule", s, NOW + timedelta(minutes=20)) == timedelta(
+            seconds=5
+        )
+        assert worker.next_interval("schedule", s, NOW + timedelta(hours=8)) == timedelta(
             seconds=60
         )
         assert worker.next_interval("schedule", s, NOW + timedelta(days=2)) == timedelta(minutes=30)
@@ -183,3 +186,28 @@ def test_freshness_reflects_runs(engine, source):
         }
     assert aged["schedule"] == Freshness.stale
     assert aged["final_box_scores"] == Freshness.fresh
+
+
+def _live_game(engine, source) -> datetime:
+    upcoming = [FixtureGame(5, "2099-11-10", home=1, away=3)]
+    source.frames[("ScheduleLeagueV2", None)] = schedule(upcoming, status=2, tipoff_hour=6)
+    worker.run_due(engine, source, NOW)
+    return NOW + timedelta(hours=1)
+
+
+def test_a_failed_fetch_during_a_game_waits_a_minute_instead_of_5_seconds(engine, source):
+    later = _live_game(engine, source)
+    source.error = RuntimeError("source refused the request")
+    outcomes = worker.run_due(engine, source, later)
+    assert outcomes["schedule"] == "failed"
+    assert schedules(engine)["schedule"] == later + timedelta(seconds=60)
+
+
+def test_the_long_careers_job_waits_while_games_are_live(engine, source):
+    later = _live_game(engine, source)
+    with Session(engine) as s, s.begin():
+        s.execute(
+            update(SyncSchedule).where(SyncSchedule.job == "careers").values(next_run_at=later)
+        )
+    assert worker.run_due(engine, source, later)["careers"] == "deferred: games are live"
+    assert schedules(engine)["careers"] == later + timedelta(minutes=30)
