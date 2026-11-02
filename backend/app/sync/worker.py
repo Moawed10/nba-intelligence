@@ -186,11 +186,11 @@ def finalize_stable_box_scores(engine: Engine, run_started: datetime, now: datet
         return len(rows)
 
 
-EventHandler = Callable[[Session, SyncEvent], None]
+EventHandler = Callable[[Session, SyncEvent, datetime], None]
 
 
-def _score_finalized(session: Session, event: SyncEvent) -> None:
-    prediction_lifecycle.score_game(session, event.payload["game_id"], datetime.now(UTC))
+def _score_finalized(session: Session, event: SyncEvent, now: datetime) -> None:
+    prediction_lifecycle.score_game(session, event.payload["game_id"], now)
 
 
 # Caches need no handler: every committed run advances data_version, part of every cache key.
@@ -243,7 +243,7 @@ def _drain_batch(engine: Engine, now: datetime, limit: int) -> int:
         for event in events:
             handler = HANDLERS.get(event.type)
             if handler:
-                handler(s, event)
+                handler(s, event, now)
             event.processed_at = now
         return len(events)
 
@@ -282,7 +282,7 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
             s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
                       .values(next_run_at=now + interval))  # fmt: skip
         outcomes[job] = outcome
-    drain_events(engine, datetime.now(UTC))
+    drain_events(engine, now)
     return outcomes
 
 

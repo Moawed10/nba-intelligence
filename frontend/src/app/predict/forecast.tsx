@@ -29,6 +29,7 @@ function ForecastView({
   opponentName,
   onRefresh,
   pending,
+  error,
   history,
 }: {
   prediction: Prediction;
@@ -36,6 +37,7 @@ function ForecastView({
   opponentName: string;
   onRefresh: () => void;
   pending: boolean;
+  error: ApiError | null;
   history: PlayerGameLine[];
 }) {
   const value = Object.fromEntries(prediction.values.map((v) => [v.stat, v]));
@@ -70,6 +72,12 @@ function ForecastView({
             {pending ? "Updating…" : "Update forecast"}
           </button>
         </div>
+      )}
+      {error && (
+        <p role="alert" className="rounded-xl bg-muted/60 px-4 py-3 text-subhead">
+          <strong>{ERROR_TITLES[error.code] ?? "This forecast couldn't be updated"}.</strong>{" "}
+          {ERROR_TITLES[error.code] ? error.message : describeError(error).message}
+        </p>
       )}
       <dl className="grid gap-3 sm:grid-cols-3">
         {HEADLINE.map((stat) => {
@@ -197,6 +205,7 @@ export function Forecast({
         opponentName={opponentName}
         onRefresh={request}
         pending={pending}
+        error={error}
         history={history}
       />
     );

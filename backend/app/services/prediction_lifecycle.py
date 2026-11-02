@@ -144,8 +144,11 @@ def forecast(
     existing = session.scalar(same_snapshot)
     if existing is not None:
         return existing, False
+    newer = aliased(Prediction)
     previous = session.scalar(
-        select(Prediction.id).where(*key).order_by(Prediction.created_at.desc())
+        select(Prediction.id)
+        .where(*key, ~exists().where(newer.supersedes_prediction_id == Prediction.id))
+        .order_by(Prediction.created_at.desc())
     )
     row = Prediction(
         id=uuid.uuid4(),

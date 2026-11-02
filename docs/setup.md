@@ -50,7 +50,7 @@ Backend settings use the `NBA_` prefix and are read from the environment or `bac
 | `NBA_STATS_CACHE_DIR` | `.cache/nba_stats` | On-disk source cache |
 | `NBA_ARTIFACTS_DIR` | see `app/config.py` | Where model files live |
 | `NBA_PHOTOS_DIR` | see `app/config.py` | Where player photos live |
-| `NBA_TEST_DATABASE_URL` | `postgresql+psycopg:///nba_intelligence_test` | Dropped and recreated by the test suite |
+| `NBA_TEST_DATABASE_URL` | `postgresql+psycopg:///nba_intelligence_test` | Dropped and recreated by the test suite. Read from the shell only, not from `.env`. Give each checkout running tests at the same time its own database |
 
 Frontend settings (`frontend/.env.local`):
 
