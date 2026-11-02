@@ -33,6 +33,18 @@ test.describe("overview", () => {
     expect(games!.y).toBeLessThan((await hero.boundingBox())!.y);
   });
 
+  test("the ticker can be paused and each game opens its own page", async ({ page, isMobile }) => {
+    await page.goto("/");
+    const ticker = page.getByRole("region", { name: "Recent and upcoming games" });
+    await expect(ticker.getByRole("link").first()).toHaveAttribute("href", /^\/games\/\d{10}$/);
+    test.skip(isMobile || (page.viewportSize()?.width ?? 0) < 1024, "the ticker only moves on wide screens");
+    await page.getByRole("button", { name: "Pause scores" }).click();
+    await expect(page.getByRole("button", { name: "Play scores" })).toBeVisible();
+    await page.mouse.move(0, 0);
+    const state = await page.locator(".ticker-track").evaluate((e) => getComputedStyle(e).animationPlayState);
+    expect(state).toBe("paused");
+  });
+
   test("switches leader categories without leaving the page", async ({ page }) => {
     await page.goto("/");
     const leaders = page.getByRole("region", { name: "League leaders" });

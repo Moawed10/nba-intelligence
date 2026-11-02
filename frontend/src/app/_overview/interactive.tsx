@@ -48,7 +48,7 @@ function statusLabel(game: GameSummary): string {
 }
 
 const ROUND_BUTTON =
-  "inline-flex size-9 items-center justify-center rounded-full border border-border transition-colors hover:border-foreground/25";
+  "inline-flex size-9 pointer-coarse:size-11 items-center justify-center rounded-full border border-border transition-colors hover:border-foreground/25";
 
 function GameChip({
   game,
@@ -91,7 +91,7 @@ function GameChip({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "relative flex w-40 shrink-0 snap-start flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-subhead transition-colors",
+        "relative flex w-44 shrink-0 snap-start flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-subhead transition-colors",
         selected ? "border-primary/70 bg-primary/10" : "border-border bg-card hover:border-foreground/25",
       )}
     >
@@ -181,14 +181,16 @@ function Matchup({
           {isLive(game) && (
             <p className="text-footnote text-muted-foreground">Updates automatically</p>
           )}
-          <p className="text-footnote text-muted-foreground">
-            {formatGameDate(game.game_date, true)}
-            {game.arena ? ` · ${game.arena}` : ""}
-          </p>
+          {pageLink && (
+            <p className="text-footnote text-muted-foreground">
+              {formatGameDate(game.game_date, true)}
+              {game.arena ? ` · ${game.arena}` : ""}
+            </p>
+          )}
           {pageLink && (
             <Link
               href={`/games/${game.id}`}
-              className="mt-2 inline-flex min-h-9 items-center text-subhead font-medium text-primary hover:underline"
+              className="mt-2 inline-flex min-h-9 pointer-coarse:min-h-11 items-center text-subhead font-medium text-primary hover:underline"
             >
               Game page
             </Link>
@@ -441,7 +443,7 @@ function PredictionReview({ game }: { game: GameSummary }) {
               </div>
               <p className="text-right">
                 <span className="numeral block text-title2">{actual}</span>
-                <span className="kicker">Final</span>
+                <span className="sr-only">final score</span>
               </p>
             </li>
           );
@@ -803,7 +805,7 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
                 </span>
                 <PlayerAvatar id={leader.player_id} name={leader.full_name} team={leader.team} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium group-hover:text-primary">
+                  <span className="block font-medium group-hover:text-primary">
                     {leader.full_name}
                   </span>
                   <span aria-hidden className="mt-1 block h-1 overflow-hidden rounded-full bg-muted">

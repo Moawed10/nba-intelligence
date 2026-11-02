@@ -189,7 +189,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
         {doubleDouble?.brier != null &&
           ` Double-double probability: Brier score ${doubleDouble.brier.toFixed(3)} over ${doubleDouble.n.toLocaleString("en-US")} player-games.`}
       </p>
-      <Link href="/models" className="inline-flex text-subhead font-medium text-primary hover:underline">
+      <Link href="/models" className="inline-flex items-center text-subhead font-medium text-primary hover:underline pointer-coarse:min-h-11">
         Full evaluation
       </Link>
     </div>

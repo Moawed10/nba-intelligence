@@ -23,7 +23,7 @@ interface Props {
 /** The selected player as a brushed-metal card that tilts toward the cursor (still under reduced motion). */
 export function PlayerCard({ player, season }: Props) {
   return (
-    <ReflectiveCard width="100%" height={470} radius={22} glare={0.45} blurStrength={8}>
+    <ReflectiveCard width="100%" height={470} radius={22} shine={0.2} glare={0.12} blurStrength={8}>
       <div className="flex h-full flex-col">
         <div className="flex items-center gap-2 text-[13px]">
           {player.team && <TeamMark team={player.team} size="xs" />}
@@ -62,7 +62,7 @@ export function PlayerCard({ player, season }: Props) {
           <dl className="mt-5 grid grid-cols-4 gap-2 border-t border-white/10 pt-4">
             {(["pts", "reb", "ast"] as const).map((k) => (
               <div key={k}>
-                <dt className="text-[11px] font-semibold tracking-[0.08em] text-[color:var(--rc-muted)] uppercase">
+                <dt className="text-[12px] font-semibold tracking-[0.08em] text-[color:var(--rc-muted)] uppercase">
                   <span aria-hidden>{k}</span>
                   <span className="sr-only">{targetLabel(k)} per game</span>
                 </dt>
@@ -70,7 +70,7 @@ export function PlayerCard({ player, season }: Props) {
               </div>
             ))}
             <div>
-              <dt className="text-[11px] font-semibold tracking-[0.08em] text-[color:var(--rc-muted)] uppercase">
+              <dt className="text-[12px] font-semibold tracking-[0.08em] text-[color:var(--rc-muted)] uppercase">
                 GP
               </dt>
               <dd className="numeral text-[1.75rem]">{season.games_played}</dd>

@@ -229,8 +229,6 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
     <div className="grid gap-5 lg:grid-cols-12">
       {picker}
       <div className="grid content-start gap-5 lg:col-span-4">
-        <PlayerCard player={player} season={season} />
-
         <Panel id="games" kicker="Step 2" title="Upcoming games">
           {upcoming.error ? (
             <ApiErrorView error={upcoming.error} />
@@ -255,6 +253,8 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
             />
           )}
         </Panel>
+
+        <PlayerCard player={player} season={season} />
       </div>
 
       <Panel

@@ -39,8 +39,12 @@ test.describe("games", () => {
     await page.goto("/games/0099000099");
     const score = page.locator("main").getByTestId("score-home");
     const first = Number(await score.textContent());
-    await page.clock.fastForward(6_000);
-    await expect.poll(async () => Number(await score.textContent())).toBeGreaterThan(first);
+    await expect
+      .poll(async () => {
+        await page.clock.fastForward(6_000);
+        return Number(await score.textContent());
+      })
+      .toBeGreaterThan(first);
   });
 
   test("the home page ticker shows each new score without a reload", async ({ page }) => {
@@ -48,8 +52,12 @@ test.describe("games", () => {
     await page.goto("/");
     const item = page.getByRole("region", { name: "Recent and upcoming games" }).getByRole("link", { name: /Q2 1:00/ }).first();
     const before = await item.textContent();
-    await page.clock.fastForward(6_000);
-    await expect.poll(() => item.textContent()).not.toBe(before);
+    await expect
+      .poll(async () => {
+        await page.clock.fastForward(6_000);
+        return item.textContent();
+      })
+      .not.toBe(before);
   });
 
   test("a game that tips off while the page is open turns live without a reload", async ({ page }) => {

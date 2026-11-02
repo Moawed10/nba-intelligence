@@ -50,11 +50,12 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
         description={`${formatGameDate(game.game_date, true)}${game.arena ? ` · ${game.arena}` : ""}`}
       />
       <LiveRefresh games={[game]} />
+      <h2 className="sr-only">Matchup</h2>
       <div className="panel p-5">
         <GameMatchup game={game} />
       </div>
       <p className="mt-4 text-subhead">
-        <Link href={`/games?date=${game.game_date}`} className="font-medium text-primary hover:underline">
+        <Link href={`/games?date=${game.game_date}`} className="inline-flex items-center font-medium text-primary hover:underline pointer-coarse:min-h-11">
           All games on {formatGameDate(game.game_date, true)}
         </Link>
       </p>

@@ -1,4 +1,8 @@
+"use client";
+
+import { Pause, Play } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { TeamMark } from "@/components/brand/team-mark";
 import type { GameSummary } from "@/lib/api/types";
@@ -29,8 +33,8 @@ function Item({ game }: { game: GameSummary }) {
   };
   return (
     <Link
-      href={`/games?date=${game.game_date}`}
-      className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-subhead transition-colors hover:bg-muted"
+      href={`/games/${game.id}`}
+      className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-subhead pointer-coarse:min-h-11 transition-colors hover:bg-muted"
     >
       {side("away")}
       <span className="text-muted-foreground">@</span>
@@ -40,7 +44,7 @@ function Item({ game }: { game: GameSummary }) {
           ? "Final"
           : game.status === "in_progress"
             ? liveLabel(game)
-            : game.tipoff_at 
+            : game.tipoff_at
               ? formatGameTime(game.tipoff_at)
               : formatGameDate(game.game_date)}
       </span>
@@ -53,36 +57,52 @@ function Item({ game }: { game: GameSummary }) {
  * stays still (scrollable by hand) when reduced motion is requested.
  */
 export function GameTicker({ games, label }: { games: GameSummary[]; label: string }) {
+  const [paused, setPaused] = useState(false);
   if (games.length === 0) return null;
   const loop = games.length >= 4;
   return (
-    <section
-      aria-label={label}
-      className="ticker group relative -mx-4 overflow-x-auto sm:-mx-6 lg:mx-0 lg:overflow-hidden"
-    >
-      <div
-        className={cn("flex w-max items-center gap-1 px-4 sm:px-6 lg:px-0", loop && "ticker-track")}
-        style={{ animationDuration: `${games.length * 6}s` }}
+    <div className="flex items-center gap-2">
+      <section
+        aria-label={label}
+        className="ticker group relative -mx-4 min-w-0 flex-1 overflow-x-auto sm:-mx-6 lg:mx-0 lg:overflow-hidden"
       >
-        <ul className="flex items-center gap-1">
-          {games.map((g) => (
-            <li key={g.id} className="flex items-center gap-1">
-              <Item game={g} />
-              <span aria-hidden className="h-5 w-px bg-border" />
-            </li>
-          ))}
-        </ul>
-        {loop && (
-          <ul aria-hidden className="flex items-center gap-1" inert>
+        <div
+          className={cn("flex w-max items-center gap-1 px-4 sm:px-6 lg:px-0", loop && "ticker-track")}
+          style={{
+            animationDuration: `${games.length * 6}s`,
+            animationPlayState: paused ? "paused" : undefined,
+          }}
+        >
+          <ul className="flex items-center gap-1">
             {games.map((g) => (
               <li key={g.id} className="flex items-center gap-1">
                 <Item game={g} />
-                <span className="h-5 w-px bg-border" />
+                <span aria-hidden className="h-5 w-px bg-border" />
               </li>
             ))}
           </ul>
-        )}
-      </div>
-    </section>
+          {loop && (
+            <ul aria-hidden className="flex items-center gap-1" inert>
+              {games.map((g) => (
+                <li key={g.id} className="flex items-center gap-1">
+                  <Item game={g} />
+                  <span className="h-5 w-px bg-border" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+      {loop && (
+        <button
+          type="button"
+          onClick={() => setPaused((p) => !p)}
+          aria-label={paused ? "Play scores" : "Pause scores"}
+          className="hidden size-9 shrink-0 items-center justify-center rounded-full border border-border transition-colors hover:border-foreground/25 motion-reduce:hidden lg:inline-flex"
+        >
+          {paused ? <Play aria-hidden className="size-4" /> : <Pause aria-hidden className="size-4" />}
+        </button>
+      )}
+    </div>
   );
 }
