@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { CourtBackdrop } from "@/components/brand/court-backdrop";
+import { teamBandStyle } from "@/components/brand/team-band";
 import { PlayerCutout } from "@/components/brand/player-cutout";
+import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { CompareBar } from "@/components/data/compare-bar";
 import { Panel } from "@/components/data/panel";
@@ -102,54 +103,37 @@ function Hero({
   const [aLeads, bLeads, ties] = leadCounts(lines);
   const total = aLeads + bLeads + ties;
   return (
-    <section
-      aria-labelledby="versus-title"
-      className="relative overflow-hidden rounded-2xl border border-border bg-card"
-    >
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-30"
-        style={{
-          background: `linear-gradient(100deg, ${players[0].team?.primary_color ?? "transparent"} 0%, transparent 42%, transparent 58%, ${players[1].team?.primary_color ?? "transparent"} 100%)`,
-        }}
-      />
-      <CourtBackdrop className="absolute inset-0 text-foreground/[0.06]" />
+    <section aria-labelledby="versus-title" className="bleed relative !px-0">
       <h2 id="versus-title" className="sr-only">
         {players[0].full_name} versus {players[1].full_name}, {season}
       </h2>
-      <div className="relative grid grid-cols-2 items-center gap-4 p-5 sm:p-8 md:grid-cols-[1fr_auto_1fr]">
+      <div className="grid grid-cols-2">
         {players.map((p, i) => (
-          <div
-            key={p.id}
-            className={
-              i === 1
-                ? "flex flex-col items-center gap-3 text-center md:order-3"
-                : "flex flex-col items-center gap-3 text-center"
-            }
-          >
-            <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager className="h-40 w-full sm:h-56" />
-            <div>
+          <div key={p.id} style={teamBandStyle(p.team)} className="team-band min-w-0 pt-5">
+            <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager plain className="h-40 w-full sm:h-72 lg:h-80" />
+            <div className="p-4 text-center sm:p-6">
+              {p.team && <TeamMark team={p.team} size="sm" disc className="mx-auto mb-2" />}
               <Link
                 href={`/players/${p.id}?season=${season}`}
-                className="font-[family-name:var(--font-display)] text-[clamp(1.5rem,3.5vw,2.5rem)] leading-none font-extrabold uppercase hover:text-primary"
+                className="display flex min-h-11 items-center justify-center text-[clamp(2rem,6vw,5rem)] underline-offset-4 hover:underline"
               >
                 {p.full_name}
               </Link>
-              <p className="text-footnote text-muted-foreground">
+              <p className="mt-1 text-footnote font-medium">
                 {[p.team ? `${p.team.city} ${p.team.name}` : null, p.position].filter(Boolean).join(" · ")}
               </p>
+              <p className="mt-3">
+                <span className="numeral text-[clamp(3.5rem,7vw,5.5rem)]">{i === 0 ? aLeads : bLeads}</span>
+                <span className="block text-footnote font-medium">of {total} categories led</span>
+              </p>
             </div>
-            <p className="text-subhead">
-              <span className="numeral text-[2.75rem]">{i === 0 ? aLeads : bLeads}</span>
-              <span className="block text-footnote text-muted-foreground">of {total} categories led</span>
-            </p>
           </div>
         ))}
-        <div className="order-last col-span-2 text-center md:order-2 md:col-span-1">
-          <p className="numeral text-[3rem] text-muted-foreground">VS</p>
-          <p className="kicker mt-1">{season} regular season</p>
-          {ties > 0 && <p className="text-footnote text-muted-foreground">{ties} tied</p>}
-        </div>
+      </div>
+      <div className="flex flex-col items-center gap-1 border-b border-border py-3 text-center md:absolute md:top-6 md:left-1/2 md:-translate-x-1/2 md:rounded-full md:border md:bg-background md:px-6">
+        <p aria-hidden className="numeral text-title1">VS</p>
+        <p className="kicker">{season} regular season</p>
+        {ties > 0 && <p className="text-footnote text-muted-foreground">{ties} tied</p>}
       </div>
     </section>
   );
@@ -182,7 +166,7 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
   const lines = data?.season ? (data.lines as [SeasonLine, SeasonLine]) : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-10">
       <ComparePicker players={picked} season={season} />
       {missing.length > 0 && (
         <Unavailable kind="empty" title="A player in this link wasn't found">
@@ -216,32 +200,39 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
             title="Head to head"
             actions={<SeasonPicker players={[both[0].id, both[1].id]} seasons={common} season={season} />}
           >
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-x-12 gap-y-8 lg:grid-cols-2">
               {GROUPS.map((group) => (
                 <div key={group.title} className={group.title === "Per game" ? "lg:row-span-2" : undefined}>
                   <h3 className="kicker mb-3">{group.title}</h3>
-                  <div className="grid grid-cols-2 pb-2 text-footnote font-medium">
-                    <span>{both[0].full_name}</span>
-                    <span className="text-right">{both[1].full_name}</span>
+                  <div className="grid grid-cols-2 gap-3 border-b border-border pb-2 text-footnote font-medium">
+                    <span className="flex items-center gap-1.5">
+                      <span aria-hidden className="size-2 shrink-0 rounded-full bg-chart-1" />
+                      {both[0].full_name}
+                    </span>
+                    <span className="flex items-center justify-end gap-1.5 text-right">
+                      {both[1].full_name}
+                      <span aria-hidden className="size-2 shrink-0 rotate-45 bg-chart-2" />
+                    </span>
                   </div>
-                  <div className="space-y-3">
+                  <div className="divide-y divide-border/60">
                     {group.rows.map((row) => (
-                      <CompareBar
-                        key={row.label}
-                        label={row.label}
-                        left={row.value(lines[0]) ?? null}
-                        right={row.value(lines[1]) ?? null}
-                        format={row.format}
-                        better={row.better}
-                        names={[both[0].full_name, both[1].full_name]}
-                      />
+                      <div key={row.label} className="py-2.5">
+                        <CompareBar
+                          label={row.label}
+                          left={row.value(lines[0]) ?? null}
+                          right={row.value(lines[1]) ?? null}
+                          format={row.format}
+                          better={row.better}
+                          names={[both[0].full_name, both[1].full_name]}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
             <p className="mt-6 text-footnote text-muted-foreground">
-              Highlighted values lead the category; for turnovers lower is better. Minutes, games and
+              The brighter value with a marker leads the category; for turnovers lower is better. Minutes, games and
               double-doubles are context and aren&apos;t counted as leads. Shooting percentages are made over
               attempted for the whole season.
             </p>

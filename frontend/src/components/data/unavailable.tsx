@@ -56,7 +56,7 @@ export function Unavailable({
     <div
       role={alert ? "alert" : "status"}
       className={cn(
-        "flex items-start gap-3 rounded-lg border border-dashed border-border px-4 py-3",
+        "flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3.5",
         className,
       )}
     >

@@ -10,7 +10,7 @@ export function CourtBackdrop({ className, color }: { className?: string; color?
       preserveAspectRatio="xMaxYMid slice"
       className={cn("pointer-events-none absolute inset-0 h-full w-full", className)}
     >
-      <g fill="none" stroke={stroke} strokeWidth="2" opacity="0.09">
+      <g fill="none" stroke={stroke} strokeWidth="2" opacity="0.08">
         <path d="M30 0 V140 A220 220 0 0 0 470 140 V0" />
         <rect x="170" y="0" width="160" height="190" />
         <circle cx="250" cy="190" r="60" />

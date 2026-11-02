@@ -2,7 +2,7 @@
 
 The authoritative ledger of development progress. A status here is only as good as its evidence. When this document and executable evidence disagree, the evidence wins and this document is corrected (see [data-ownership.md](data-ownership.md#evidence-hierarchy-for-progress-claims)).
 
-**Last updated:** 2026-10-29
+**Last updated:** 2026-11-02
 
 ## Master status
 
@@ -1068,3 +1068,14 @@ The "recent games" block from the original design was folded into the game log, 
 **Not verified:** VoiceOver. An accessibility-tree review of six primary screens was done instead and is recorded as such.
 
 **Next step:** a person runs VoiceOver through Predictions, Compare and Games; then Phase 13.
+
+### Session — 2026-11-02 (visual redesign)
+
+**Phase:** cross-cutting redesign, no new deliverables counted
+
+**Completed:** full-width team-colored features, open sections instead of cards, two-pane schedule, split scoreboards and Compare hero, player dossier with recent games and next-game forecast, new display type and data labels, in both themes. Direction and references are in [frontend.md](frontend.md#design-references). Milestone labels (triple-double) now come from the box score.
+
+**Verified:** lint, types, 39 unit tests, contrast (54 pairs), production build, full Playwright suite including the accessibility audit on 4 viewports (470 passed, 42 skipped by design). Real data inspected at 390, 768 and 1440 px.
+
+**Not verified:** VoiceOver (still open from Phase 12); real-browser zoom.
+

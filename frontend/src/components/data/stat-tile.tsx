@@ -1,10 +1,9 @@
 "use client";
 
-import { animate, useMotionValue, useReducedMotion, useTransform, motion } from "motion/react";
-import { useEffect } from "react";
-
 import { formatSigned, formatStat } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+import { AnimatedNumber } from "./numeral";
 
 interface StatTileProps {
   label: string;
@@ -16,31 +15,18 @@ interface StatTileProps {
   className?: string;
 }
 
-function AnimatedNumber({ value }: { value: number }) {
-  const reduce = useReducedMotion();
-  const mv = useMotionValue(value);
-  const text = useTransform(mv, (v) => formatStat(v));
-  useEffect(() => {
-    if (reduce) {
-      mv.set(value);
-      return;
-    }
-    const controls = animate(mv, value, { duration: 0.4, ease: [0.22, 1, 0.36, 1] });
-    return () => controls.stop();
-  }, [value, reduce, mv]);
-  return <motion.span>{text}</motion.span>;
-}
-
+/** One cell of a stat-grid: label, big number, then context. */
 export function StatTile({ label, value, unit, delta, footnote, className }: StatTileProps) {
-  const direction = delta ? (delta.value > 0 ? "up" : delta.value < 0 ? "down" : "flat") : null;
+  const shown = delta ? Math.round(delta.value * 10) / 10 : 0;
+  const direction = delta ? (shown > 0 ? "up" : shown < 0 ? "down" : "flat") : null;
   return (
-    <div className={cn("rounded-xl bg-card p-4", className)}>
-      <dt className="text-footnote font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-1">
-        <span className="text-stat font-semibold tabular-nums tracking-tight">
-          {value == null ? "—" : <AnimatedNumber value={value} />}
+    <div className={cn("px-4 py-3.5", className)}>
+      <dt className="kicker">{label}</dt>
+      <dd className="mt-1.5">
+        <span className="numeral text-[2.5rem]">
+          {value == null ? "—" : <AnimatedNumber value={value} format={(v) => formatStat(v)} />}
         </span>
-        {unit && value != null && <span className="ml-1 text-subhead text-muted-foreground">{unit}</span>}
+        {unit && value != null && <span className="ml-0.5 text-subhead text-muted-foreground">{unit}</span>}
         {value == null && <span className="sr-only">Not available</span>}
       </dd>
       {delta && (

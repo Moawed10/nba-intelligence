@@ -10,6 +10,7 @@ import {
   formatSigned,
   formatStat,
 } from "@/lib/format";
+import { milestoneLabel } from "@/lib/format";
 
 describe("number formatting", () => {
   it("uses one decimal and never renders missing values as zero", () => {
@@ -62,5 +63,16 @@ describe("navigation", () => {
     expect(isActive("/players", "/")).toBe(false);
     expect(isActive("/players/201939", "/players")).toBe(true);
     expect(isActive("/playersx", "/players")).toBe(false);
+  });
+});
+
+describe("milestoneLabel", () => {
+  const box = (pts: number, reb: number, ast: number, stl = 0, blk = 0) => ({ pts, reb, ast, stl, blk });
+
+  it("names the line by how many counting stats reached 10", () => {
+    expect(milestoneLabel(box(31, 18, 10))).toBe("Triple-double");
+    expect(milestoneLabel(box(45, 15, 6))).toBe("Double-double");
+    expect(milestoneLabel(box(20, 10, 10, 10))).toBe("Quadruple-double");
+    expect(milestoneLabel(box(44, 8, 6))).toBeNull();
   });
 });

@@ -43,7 +43,7 @@ export interface Picked {
 
 const SLOT_COLORS = ["var(--chart-1)", "var(--chart-2)"] as const;
 const ICON_BUTTON =
-  "inline-flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-foreground/25 hover:text-foreground pointer-coarse:size-11";
+  "inline-flex size-10 items-center justify-center rounded-full border border-input text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground active:scale-95 pointer-coarse:size-11";
 
 function useCompareNavigation(season?: string) {
   const router = useRouter();
@@ -104,7 +104,7 @@ export function ComparePicker({
                 <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="kicker">{label}</p>
-                  <p className="font-semibold">{player.full_name}</p>
+                  <p className="display text-[1.625rem]">{player.full_name}</p>
                   <p className="truncate text-footnote text-muted-foreground">
                     {[player.team?.abbreviation ?? "No current team", player.position]
                       .filter(Boolean)
@@ -114,7 +114,7 @@ export function ComparePicker({
                 <button
                   type="button"
                   onClick={() => setEditing(slot)}
-                  className="rounded-full px-3 py-1.5 text-subhead font-medium text-primary hover:bg-muted"
+                  className="min-h-10 rounded-full px-3 text-subhead font-medium text-primary transition-colors duration-150 hover:bg-muted pointer-coarse:min-h-11"
                 >
                   Change<span className="sr-only"> {label.toLowerCase()}</span>
                 </button>
@@ -150,7 +150,7 @@ export function ComparePicker({
             <div
               key={slot}
               className={cn(
-                "relative min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4",
+                "panel relative min-w-0 p-3 sm:p-4",
                 slot === 1 && "md:order-3",
               )}
             >
@@ -199,7 +199,7 @@ export function SeasonPicker({
         value={season}
         aria-busy={pending}
         onChange={(e) => setSeason(players[0], players[1], e.target.value)}
-        className="min-h-9 rounded-full border border-border bg-card px-3 text-subhead"
+        className="field"
       >
         {seasons.map((s) => (
           <option key={s} value={s}>
@@ -329,7 +329,7 @@ export function CompareTrend({ players, season }: { players: [Picked, Picked]; s
                 <caption className="sr-only">
                   {label} in each game for {names[0]} and {names[1]}, {season}
                 </caption>
-                <thead className="sticky top-0 bg-card text-footnote text-muted-foreground">
+                <thead className="sticky top-0 bg-cell text-footnote text-muted-foreground">
                   <tr className="border-b border-border">
                     <th scope="col" className="py-1.5 text-left font-medium">
                       Game
@@ -436,9 +436,9 @@ export function PercentileRadar({
                 </li>
               ))}
             </ul>
-            <div className="h-80">
+            <div className="h-[26rem]">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={data} outerRadius="72%">
+                <RadarChart data={data} outerRadius="58%">
                   <PolarGrid stroke="var(--border)" />
                   <PolarAngleAxis dataKey="label" tick={AXIS} />
                   <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />

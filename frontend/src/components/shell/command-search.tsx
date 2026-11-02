@@ -37,13 +37,13 @@ export function CommandSearch() {
         type="button"
         onClick={() => setOpen(true)}
         aria-keyshortcuts="Meta+K Control+K /"
-        className="inline-flex h-9 min-w-9 items-center justify-center gap-2 rounded-full border border-border bg-card/60 px-2.5 text-subhead text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground xl:w-56 xl:justify-start xl:px-3"
+        className="inline-flex size-10 items-center justify-center gap-2 rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground pointer-coarse:size-11 lg:h-10 lg:w-full lg:max-w-md lg:justify-start lg:bg-muted lg:px-4 lg:hover:bg-thumb"
       >
         <Search aria-hidden className="size-4" />
-        <span className="sr-only xl:not-sr-only">Search players</span>
+        <span className="sr-only lg:not-sr-only">Search players</span>
         <kbd
           aria-hidden
-          className="ml-auto hidden rounded border border-border px-1.5 font-mono text-[0.6875rem] xl:inline"
+          className="ml-auto hidden rounded bg-background px-1.5 font-mono text-[0.75rem] lg:inline"
         >
           ⌘K
         </kbd>

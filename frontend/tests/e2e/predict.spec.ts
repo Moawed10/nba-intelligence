@@ -46,7 +46,6 @@ test.describe("predictions", () => {
     await expect(forecast.getByText("25%")).toBeVisible();
     await expect(forecast.getByText(/In 3 games since 2097-98/)).toBeVisible();
     await expect(forecast.getByText("111.9")).toBeVisible();
-    await forecast.getByText("What is this based on?").click();
     await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });
 
@@ -118,9 +117,6 @@ test.describe("predictions", () => {
     await expect(forecast.getByRole("radio", { name: "Rebounds" })).toBeChecked();
     await expect(forecast.getByText(/rebounds, the range expected/)).toBeVisible();
 
-    const details = forecast.getByText("What is this based on?");
-    await tabTo(page, details);
-    await page.keyboard.press("Enter");
     await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });
 

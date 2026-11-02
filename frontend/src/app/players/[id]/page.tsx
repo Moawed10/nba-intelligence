@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/players/[id]">): 
 
 export default function PlayerPage({ params, searchParams }: PageProps<"/players/[id]">) {
   return (
-    <Suspense fallback={<LoadingBlock label="Loading player" className="pt-2" />}>
+    <Suspense fallback={<LoadingBlock feature label="Loading player" className="pt-2" />}>
       <PlayerProfileView params={params} searchParams={searchParams} />
     </Suspense>
   );

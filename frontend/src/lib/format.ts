@@ -71,3 +71,17 @@ export function formatGameDate(date: string, withYear = false): string {
 export function formatGameValue(value: number | null | undefined): string {
   return value != null && Number.isInteger(value) ? formatCount(value) : formatStat(value);
 }
+
+const MILESTONES = ["Double-double", "Triple-double", "Quadruple-double", "Quintuple-double"];
+
+/** The name for a box score with 10+ in at least two of the five counting stats, else null. */
+export function milestoneLabel(box: {
+  pts: number;
+  reb: number;
+  ast: number;
+  stl: number;
+  blk: number;
+}): string | null {
+  const tens = [box.pts, box.reb, box.ast, box.stl, box.blk].filter((v) => v >= 10).length;
+  return tens >= 2 ? MILESTONES[tens - 2] : null;
+}

@@ -63,6 +63,7 @@ export function GamePicker({
         initialSelectedIndex={selected}
         selectOnHover={false}
         frame={false}
+        animation="none"
         width="100%"
         maxHeight={420}
         gap={6}

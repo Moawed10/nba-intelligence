@@ -30,12 +30,15 @@ export function PlayerAvatar({
   team,
   size = "md",
   className,
+  square,
 }: {
   id?: number;
   name: string;
   team?: Pick<TeamRef, "primary_color"> | null;
   size?: keyof typeof SIZE;
   className?: string;
+  /** A tile instead of a disc, for editorial lists. */
+  square?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
   const color = team?.primary_color ?? "var(--muted-foreground)";
@@ -48,7 +51,8 @@ export function PlayerAvatar({
         boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${color} 70%, transparent)`,
       }}
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold tracking-tight text-foreground",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden font-semibold tracking-tight text-foreground",
+        square ? "rounded-md" : "rounded-full",
         SIZE[size],
         className,
       )}

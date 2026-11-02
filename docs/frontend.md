@@ -2,63 +2,75 @@
 
 Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui primitives (Radix), Framer Motion, Recharts, Lucide icons, TanStack Query. Data loading per screen is specified in [api-contracts.md](api-contracts.md#screen-by-screen-data-loading). State boundaries are in [data-ownership.md](data-ownership.md#frontend-state-boundaries).
 
-## Apple Design Skill
+## Design references
 
-No Apple Design Skill is installed in this environment, and a search of the available skill catalog on 2026-10-28 found none. The design below applies Apple's published Human Interface Guidelines principles directly. It does not claim to use a skill.
+No Apple Design Skill is installed in this environment; Apple's published Human Interface Guidelines are applied directly. Skills used: `ui-ux-pro-max` (typography, target-size guidance; its generated blue, brutalist palette was rejected because it conflicts with the product brief) and `ecc:frontend-design-direction`.
 
-To enable one later: if you have the skill's folder (a `SKILL.md` with its references), place it at `~/.claude/skills/<skill-name>/SKILL.md`, or install the plugin that ships it from the Claude app's plugin settings. It will then appear in the skills list, and Phase 2 onward will invoke it. Until then, these installed skills support the same work: `ecc:frontend-design-direction`, `ecc:design-system`, `ecc:motion-foundations`, `ecc:accessibility`, `ecc:frontend-a11y`.
+References studied on 2026-11-02, and what was taken from each:
+
+| Reference | Taken |
+|---|---|
+| The Ringer | Full-bleed feature composition: one big statement beside one big image, with hard contrast between feature and page |
+| NBA team and player pages | Solid team color behind a player cutout |
+| Sofascore | Two-pane schedule: a compact game list beside the selected game; a list of top performances |
+| Dunks & Threes | Small monospaced data labels; logos on white discs |
+| react.dev | A large search pill in the header; alternating section bands instead of a grid of cards |
+| Linear | Tight, heavy sentence-case headlines; restraint around the product itself |
 
 ## Design direction
 
-The product should feel like a native Apple app built for analysts: calm surfaces, strong typographic hierarchy, data in front, chrome receding. Its own identity comes from a single court-amber signal color and a broadcast-style number treatment, not from imitating Apple Sports.
-
-Principles, each with a concrete rule:
+One product, two registers: a premium basketball publication and a professional analytics platform sharing the same identity. **Broadcast features** run edge to edge in the real team color. **Editorial sections** are open sheets under a fine rule, led by a tight headline. **Terminal data** uses hairline grids, tabular numbers and monospaced labels. **Controls** stay Apple-like: pills, a sliding segment thumb, 44 px targets on touch.
 
 | Principle | Rule in this product |
 |---|---|
-| Clarity | Every screen leads with one headline number set (PTS / REB / AST) before any secondary metric |
-| Deference | No decorative gradients, glows or illustrations; color is reserved for data and state |
-| Depth | Three surface levels plus translucent material only for the navigation bar and sheets |
-| Consistency | One spacing scale, one radius scale, one chart frame component, one stat-tile component |
-| Precision | 4 pt grid, tabular numerals, numbers right-aligned in tables, one decimal max for averages |
-| Simplicity | Progressive disclosure: advanced splits and full logs behind tabs or expanders |
-| Delight | Spring-based selection feedback, counters that animate only when a value changes, chart morphs between filters |
+| One focal point | Every screen has one feature: a team band, a split scoreboard or a forecast block |
+| Open, not boxed | Sections are not cards. `Panel` is a rule, a kicker and a headline. Small cards are reserved for discrete items |
+| Team color is the photography's stage | `TeamBand` and `teamBandStyle()` set the color; text is black or white by contrast, and a band with white text only ever darkens |
+| Amber is earned | Amber marks selected controls, primary actions on the page, and prediction data. Team bands use inverted buttons instead |
+| Logos on team color | Always the full-color logo on a white disc (`TeamMark disc`) |
+| Honest data | Historical results and forecasts are always labelled and drawn differently. No data means a specific state, never filler |
+| No looping motion | Scoreboards stay still; numbers tween only when a value actually changes |
 
 ## Tokens
 
-Defined as CSS variables on `:root` (light) and `[data-theme="dark"]` / `prefers-color-scheme: dark`, mapped into Tailwind. Dark is the default theme. Text tokens must pass the contrast checks in Phase 2 before use; the ratios below are targets to verify, not measurements.
+Defined as CSS variables on `:root` (light) and `.dark` in `src/app/globals.css`, mapped into Tailwind. Dark is the default theme. `npm run check:contrast` verifies every required pair in both themes and runs in CI.
 
 | Token | Dark | Light | Use |
 |---|---|---|---|
-| `--bg` | `#000000` | `#F2F2F7` | Page |
-| `--surface-1` | `#1C1C1E` | `#FFFFFF` | Cards, tables |
-| `--surface-2` | `#2C2C2E` | `#F2F2F7` | Inset controls, hover |
-| `--separator` | `rgba(84,84,88,0.65)` | `rgba(60,60,67,0.29)` | Hairlines |
-| `--label` | `#FFFFFF` | `#000000` | Primary text |
-| `--label-2` | `rgba(235,235,245,0.70)` | `rgba(60,60,67,0.75)` | Secondary text (≥ 4.5:1 target) |
-| `--accent` | `#FF9F0A` | `#C25E00` | Interactive, predictions, focus ring |
-| `--positive` / `--negative` | `#30D158` / `#FF453A` | `#1A7F37` / `#C9252D` | Above/below average, always paired with ▲/▼ and text |
-| `--actual` | `--label` | `--label` | Actual results: solid line, filled markers |
-| `--predicted` | `--accent` | `--accent` | Predictions: dashed line, hollow markers, interval band at 20% opacity |
+| `--background`, `--cell` | `#090A0C` | `#F7F3EA` (warm ivory) | Page; stat-grid cells and sticky table columns |
+| `--card`, `--band-alt` | `#121417` | `#FFFFFF` | Small cards; alternate section band |
+| `--popover`, `--muted` | `#1B1D21` | `#FFFFFF`, `#EFE9DC` | Elevated surface; insets and hover |
+| `--stage` | `#0E0F12` | `#FFFDF8` | Scoreboard center |
+| `--thumb` | `#2C2F35` | `#FFFFFF` | Selected segment |
+| `--foreground` | `#F5F5F7` | `#16140F` | Primary text; actual results |
+| `--muted-foreground` | `#9A9DA5` | `#5C564A` | Secondary text |
+| `--border` | `#2A2D32` | `rgba(58,44,20,.16)` | Fine separators (decorative) |
+| `--input` | `#6C707A` | `#8A8373` | Control boundaries (3:1 or better) |
+| `--primary`, `--ring` | `#FF9500` | `#A34C00` | Actions, selection, predictions, focus |
+| `--chart-2` | `#4CC3E0` | `#00707F` | Secondary series; the second side of a comparison |
+| `--positive`, `--negative` | `#3ECF72`, `#FF6B63` | `#1A7A35`, `#BF2229` | Above or below, always paired with an arrow and text |
 
-Apple's tertiary label color (30% white) is not used for text: it fails 4.5:1. Team colors appear only in the player header strip and team chips, never as the only carrier of meaning, and with a contrast check on any text placed over them.
+Forecasts use dashed outlines, hollow diamonds and amber; actual results use solid marks in the text color.
 
-**Typography:** `font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif`. SF Pro renders through the system stack on Apple devices; it is not self-hosted, because its license does not permit web embedding. Inter (via `next/font`) covers other platforms. All statistics use `font-variant-numeric: tabular-nums`.
+**Utilities** (`globals.css`): `display`, `headline`, `numeral`, `kicker`, `bleed`, `team-band`, `band-alt`, `rule-top`, `stat-grid`, `panel`, `stage`, `btn` with `btn-primary`, `btn-secondary`, `btn-on-band`, `btn-outline-band`, `field`, `material-nav`, `scroll-quiet`. `bleed` runs a section edge to edge while keeping its content on the page grid; it relies on the `@container` frame in `layout.tsx`.
 
-| Style | Size / line height | Weight |
+**Typography:** Archivo (variable width) for display and numbers, Geist for reading and controls, Geist Mono for data labels and model versions. All statistics use tabular numerals.
+
+| Style | Size / line height | Face |
 |---|---|---|
-| Large title | 34 / 41 | 700 |
-| Title 1 | 28 / 34 | 700 |
-| Title 2 | 22 / 28 | 600 |
-| Headline | 17 / 22 | 600 |
-| Body | 17 / 24 | 400 |
-| Subhead | 15 / 20 | 400 |
-| Footnote | 13 / 18 | 400 |
-| Stat display | 44 / 48 | 600, tabular, tracking −0.02em |
+| Player name (`display`) | `clamp(4rem, 11vw, 9.5rem)` / 0.88 | Archivo 62% width, 800, uppercase |
+| Feature statistic (`numeral`) | `clamp(3.75rem, 9vw, 7.5rem)` / 0.95 | Archivo 72% width, 700, tabular |
+| Page title | `clamp(3rem, 7vw, 5rem)` / 0.98 | Archivo 88% width, 800, sentence case |
+| Section title (`headline`) | 30 px / 1.02 | Archivo 88% width, 800, sentence case |
+| Headline | 17 / 22 | Geist 600 |
+| Body | 17 / 24 | Geist 400 |
+| Subhead | 15 / 20 | Geist 400 |
+| Footnote | 13 / 18 | Geist 400 |
+| Label (`kicker`) | 12 / 16 | Geist Mono 500, uppercase, tracked |
 
-Sizes are in `rem`, so 200% zoom and browser text scaling work. Nothing smaller than 13 px carries essential information.
+Sizes are in `rem`, so 200% zoom and browser text scaling work. Nothing smaller than 12 px carries information.
 
-**Spacing:** 4, 8, 12, 16, 20, 24, 32, 48. **Radius:** 8 (chips), 12 (controls), 16 (cards), 24 (sheets). **Touch targets:** 44 × 44 px minimum for all primary controls.
+**Spacing:** 4, 8, 12, 16, 20, 24, 32, 48, 56, 80. **Radius:** 4, 6, 8 for small cards; 0 for bands; pills for controls. **Page width:** 84 rem. **Touch targets:** 44 × 44 px for primary controls on touch screens (`pointer-coarse`).
 
 ## Navigation and routes
 
@@ -72,7 +84,7 @@ Sizes are in `rem`, so 200% zoom and browser text scaling work. Nothing smaller 
 | `/games`, `/games/[id]` | Games, Game detail | Secondary ("More") |
 | `/about` | About & Methodology | Secondary ("More") |
 
-- **≥ 768 px:** a translucent top bar with the five primary destinations, a "More" menu, and global player search (⌘K / Ctrl+K and `/` focus it).
+- **≥ 768 px:** a translucent top bar with a large search pill (⌘K / Ctrl+K and `/` open it), the five primary destinations (amber underline on the current one) and a "More" menu.
 - **< 768 px:** a bottom tab bar with the five primary destinations (44 px targets, labels always visible) and a top bar holding search and "More".
 - The active destination uses `aria-current="page"`, a weight change and an indicator, not color alone.
 - Every page sets a descriptive `<title>` ("Stephen Curry · Players · NBA Intelligence") and moves focus to its `<h1>` after client navigation.
@@ -83,12 +95,13 @@ Framer Motion with `MotionConfig reducedMotion="user"`.
 
 | Interaction | Default | Reduced motion |
 |---|---|---|
-| Page transition | 8 px rise + fade, spring (stiffness 300, damping 30) | 120 ms fade only |
-| Selection, toggles | Shared-layout indicator spring (400, 40) | Instant |
-| Stat counters | Count from previous to new value over ≤ 400 ms, only on change | Final value immediately |
-| Chart filter change | Recharts animation 300 ms | Disabled |
-| Skeletons | Shimmer | Static |
-| Sheets and dialogs | Spring from the edge | Fade |
+| Page transition | 8 px rise + fade, 240 ms | Effectively instant |
+| Selection, toggles | Shared-layout indicator spring (420, 38) | Effectively instant |
+| Numbers | Rendered at their value on load; tween for 300 ms only when the value changes | Final value immediately |
+| Chart filter change | Recharts animation | Disabled |
+| Bars and hover states | 150–300 ms | Effectively instant |
+| Skeletons | Pulse, sized like the content they replace | Static |
+| Sheets and dialogs | Fade and scale from Radix | Fade |
 
 No parallax, no looping motion, nothing that flashes.
 
@@ -118,12 +131,12 @@ Charts never rely on color alone: actual vs predicted differ in line style and m
 2. **Game:** a list of the player's upcoming games (date, opponent, home/away), as a radio group.
 3. **Generate:** one primary button. It's disabled only while a request is in flight, which also prevents duplicate submissions.
 4. **Results:**
-   * One `StatTile` per stat, showing the prediction, its "likely range (80%)", and the last-5 and season averages for context.
+   * One forecast cell per headline stat: the estimate, its "usually" range (80%), and a scale marking the last-5 and season averages as actual results.
    * A double-double probability given as both a percentage and a phrase ("about 1 in 3").
    * The model release and data cutoff.
    * The note "Assumes he plays; not a guarantee."
    * A polite live-region announcement when results arrive.
-5. **Why:** an expandable explanation panel lists the top factors in plain language.
+5. **Why:** the main factors are listed in plain language under the forecast, with the model version and data cutoff in a quieter line below them.
 
 Unavailable states name the reason: not enough games this season, no active model, game already started, or a temporary error with a retry.
 

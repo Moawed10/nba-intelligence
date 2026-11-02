@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { PlayerCutout } from "@/components/brand/player-cutout";
+import { teamBandStyle } from "@/components/brand/team-band";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
@@ -172,7 +173,7 @@ function Podium({ players, column }: { players: DirectoryPlayer[]; column: (type
   const value = (p: DirectoryPlayer) =>
     column.key === "games" ? p.season_averages?.games_played : p.season_averages?.[column.key];
   return (
-    <section aria-labelledby="podium-title" className="border-b border-border px-4 py-5 sm:px-5">
+    <section aria-labelledby="podium-title" className="border-b border-border py-5">
       <h3 id="podium-title" className="kicker mb-3">
         Top 3 · {column.description}
       </h3>
@@ -181,19 +182,15 @@ function Podium({ players, column }: { players: DirectoryPlayer[]; column: (type
           <li key={p.id}>
             <Link
               href={`/players/${p.id}`}
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-background/40 transition-colors hover:border-foreground/25"
+              className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border transition-colors duration-150 hover:bg-muted"
             >
-              <PlayerCutout
-                id={p.id}
-                name={p.full_name}
-                team={p.team}
-                eager={i === 0}
-                className="h-36 sm:h-40"
-              />
+              <div style={teamBandStyle(p.team)} className="team-band pt-3">
+                <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager={i === 0} plain className="h-36 sm:h-44" />
+              </div>
               <span className="flex items-end justify-between gap-3 p-4 pt-3">
                 <span className="min-w-0">
                   <span className="kicker block text-primary">#{i + 1}</span>
-                  <span className="block truncate font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase group-hover:text-primary">
+                  <span className="display mt-0.5 block text-title2 transition-colors duration-150 group-hover:text-primary">
                     {p.full_name}
                   </span>
                   <span className="block text-footnote text-muted-foreground">
@@ -285,25 +282,24 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
       actions={
         freshness && <FreshnessBadge status={freshness.status} lastSync={freshness.last_successful_sync} />
       }
-      bodyClassName="p-0 sm:p-0"
     >
       {teams.data && seasons.length > 0 && (
-        <div className="border-b border-border px-4 py-4 sm:px-5">
+        <div className="border-b border-border pb-4">
           <DirectoryFilterBar teams={teams.data} seasons={seasons} filters={filtersOf(state)} />
         </div>
       )}
       {body ? (
-        <div className="p-4 sm:p-5">{body}</div>
+        <div className="pt-4">{body}</div>
       ) : (
         players?.data && (
           <>
             {state.page === 1 && state.descending && sortColumn && players.data.items.length >= 3 && (
               <Podium players={players.data.items.slice(0, 3)} column={sortColumn} />
             )}
-            <div className="px-4 md:px-0">
+            <div>
               <DirectoryTable players={players.data.items} state={{ ...state, season }} caption={caption} />
             </div>
-            <div className="px-4 pb-3 sm:px-5">
+            <div className="pb-3">
               <Pagination
                 label="Player directory pages"
                 page={state.page}

@@ -25,9 +25,9 @@ test.describe("overview", () => {
     await expect(schedule.getByText("No games on Nov 8, 2099")).toBeVisible();
   });
 
-  test("games come before the player of the week, whose Game Score is labelled", async ({ page }) => {
+  test("the game strip comes before the player of the week, whose Game Score is labelled", async ({ page }) => {
     await page.goto("/");
-    const games = await page.getByRole("region", { name: "Games", exact: true }).boundingBox();
+    const games = await page.getByRole("region", { name: "Recent and upcoming games" }).boundingBox();
     const hero = page.getByRole("region", { name: /./ }).filter({ hasText: "Performance of the week" });
     await expect(hero.getByText("Game Score", { exact: true })).toBeVisible();
     expect(games!.y).toBeLessThan((await hero.boundingBox())!.y);

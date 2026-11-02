@@ -32,13 +32,13 @@ export function ChartFrame({
   const headingId = useId();
   const summaryId = useId();
   return (
-    <section aria-labelledby={headingId} className="rounded-xl bg-card p-4 sm:p-5">
+    <section aria-labelledby={headingId}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Heading id={headingId} className="text-headline font-semibold">
+          <Heading id={headingId} className="headline text-title2">
             {title}
           </Heading>
-          <p className="text-footnote text-muted-foreground">{unit}</p>
+          <p className="mt-1 text-footnote text-muted-foreground">{unit}</p>
         </div>
         <div className="flex items-center gap-2">
           {actions}
@@ -53,7 +53,7 @@ export function ChartFrame({
           />
         </div>
       </div>
-      <p id={summaryId} className="mt-3 text-subhead">
+      <p id={summaryId} className="mt-3 max-w-3xl text-subhead">
         {summary}
       </p>
       <div className="mt-4">

@@ -45,15 +45,14 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
   return (
     <>
       <PageHeader
+        compact
         kicker={`${game.season} ${SEASON_TYPE[game.season_type]}`}
         title={title(game)}
         description={`${formatGameDate(game.game_date, true)}${game.arena ? ` · ${game.arena}` : ""}`}
       />
       <LiveRefresh games={[game]} />
-      <div className="panel p-5">
-        <GameMatchup game={game} />
-      </div>
-      <p className="mt-4 text-subhead">
+      <GameMatchup game={game} />
+      <p className="mt-6 text-subhead">
         <Link href={`/games?date=${game.game_date}`} className="font-medium text-primary hover:underline">
           All games on {formatGameDate(game.game_date, true)}
         </Link>
@@ -64,7 +63,7 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
 
 export default function GamePage({ params }: PageProps<"/games/[id]">) {
   return (
-    <Suspense fallback={<LoadingBlock label="Loading game" className="panel p-5" />}>
+    <Suspense fallback={<LoadingBlock label="Loading game" />}>
       <GameView params={params} />
     </Suspense>
   );

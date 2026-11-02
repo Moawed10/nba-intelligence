@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import Link from "next/link";
 
+import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { BrandMark } from "./brand-mark";
@@ -14,48 +15,45 @@ import { WithPathname } from "./with-pathname";
 
 export function TopNav() {
   return (
-    <header className="material-nav sticky top-0 z-40 border-b border-border/70">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:gap-4">
-        <Link
-          href="/"
-          className="flex min-h-11 items-center gap-2 text-headline font-semibold tracking-tight"
-        >
+    <header className="material-nav sticky top-0 z-40 border-b border-border">
+      <div className="mx-auto flex h-16 max-w-[84rem] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:gap-5 lg:px-8">
+        <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2">
           <BrandMark />
           {/* Wordmark only on phones and wide screens; at tablet width the five links need the room. */}
-          <span className="md:sr-only lg:not-sr-only">NBA Intelligence</span>
+          <span className="display text-[1.1875rem] whitespace-nowrap max-[359px]:sr-only sm:text-[1.5rem] md:sr-only xl:not-sr-only">
+            NBA Intelligence
+          </span>
         </Link>
 
-        <nav aria-label="Primary" className="mx-auto hidden md:block">
+        <div className="ml-auto flex items-center md:ml-0 lg:w-72 xl:w-96">
+          <CommandSearch />
+        </div>
+
+        <nav aria-label="Primary" className="hidden h-full md:ml-auto md:block">
           <WithPathname>
             {(pathname) => (
-              <ul className="flex items-center gap-1">
+              <ul className="flex h-full items-stretch">
                 {PRIMARY_NAV.map((item) => {
                   const active = isActive(pathname, item.href);
                   return (
-                    <li key={item.href}>
+                    <li key={item.href} className="relative flex">
                       <Link
                         href={item.href}
                         aria-current={active ? "page" : undefined}
                         className={cn(
-                          "relative flex h-9 items-center rounded-full px-2.5 text-subhead transition-colors lg:px-3.5",
-                          active
-                            ? "font-semibold text-foreground"
-                            : "text-muted-foreground hover:text-foreground",
+                          "flex items-center px-2.5 text-subhead font-medium transition-colors duration-150 lg:px-3",
+                          active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                         )}
                       >
-                        {active && (
-                          <motion.span
-                            layoutId="nav-active"
-                            className="absolute inset-0 -z-10 rounded-full bg-muted"
-                            transition={{
-                              type: "spring",
-                              stiffness: 420,
-                              damping: 38,
-                            }}
-                          />
-                        )}
                         {item.label}
                       </Link>
+                      {active && (
+                        <motion.span
+                          layoutId="nav-active"
+                          className="absolute inset-x-2.5 -bottom-px h-0.5 bg-primary lg:inset-x-3"
+                          transition={SPRING.snappy}
+                        />
+                      )}
                     </li>
                   );
                 })}
@@ -64,8 +62,7 @@ export function TopNav() {
           </WithPathname>
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
-          <CommandSearch />
+        <div className="flex shrink-0 items-center gap-1">
           <WithPathname>{(pathname) => <MoreMenu pathname={pathname} />}</WithPathname>
           <ThemeToggle />
         </div>

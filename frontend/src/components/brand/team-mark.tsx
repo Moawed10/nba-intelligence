@@ -36,11 +36,26 @@ export function TeamMark({
   team,
   size = "sm",
   className,
+  disc,
 }: {
   team: Pick<TeamRef, "id" | "abbreviation" | "primary_color"> | null | undefined;
   size?: keyof typeof SIZE;
   className?: string;
+  /** Show the full-color logo on a white disc, for use on top of team colors. */
+  disc?: boolean;
 }) {
+  if (team && disc && TEAM_LOGOS.has(team.id)) {
+    return (
+      <span
+        aria-hidden
+        style={{ borderRadius: "9999px" }}
+        className={cn("inline-flex shrink-0 items-center justify-center bg-white", SIZE[size], className)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- static SVGs; next/image adds nothing here */}
+        <img src={`/logos/${team.id}-L.svg`} alt="" decoding="async" className="size-[76%] object-contain" />
+      </span>
+    );
+  }
   if (team && TEAM_LOGOS.has(team.id)) {
     return (
       <span
