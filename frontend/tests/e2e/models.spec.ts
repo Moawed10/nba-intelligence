@@ -10,7 +10,7 @@ test.describe("models", () => {
     const release = page.getByRole("region", { name: "2099.11.10-1" });
     await expect(release.getByText("Serving predictions")).toBeVisible();
     await expect(release.getByText("Test · 2096-97")).toBeVisible();
-    const accuracy = page.getByRole("region", { name: "Accuracy against the baseline" });
+    const accuracy = page.getByRole("region", { name: "Accuracy against a simple average" });
     await expect(accuracy.getByRole("row", { name: /Points XGBoost 4\.50 4\.70 4\.3%/ })).toBeVisible();
     await expect(accuracy.getByRole("row", { name: /Rebounds Ridge regression 1\.90 1\.95/ })).toBeVisible();
     const live = page.getByRole("region", { name: "Live accuracy", exact: true });
@@ -22,11 +22,11 @@ test.describe("models", () => {
 
   test("ranks candidate algorithms by validation error", async ({ page }) => {
     await page.goto("/models");
-    const comparison = page.getByRole("region", { name: "Algorithm comparison" });
+    const comparison = page.getByRole("region", { name: "Models compared" });
     const rows = comparison.getByRole("table").getByRole("row");
     await expect(rows.nth(1)).toContainText("XGBoost");
     await expect(rows.nth(1)).toContainText("Selected");
-    await expect(rows.nth(3)).toContainText("Baseline (last 10 games)");
+    await expect(rows.nth(3)).toContainText("Simple average (last 10 games)");
     await expect(rows.nth(3)).toContainText("Reference");
   });
 
@@ -63,7 +63,7 @@ test.describe("models", () => {
   test("checks every stored prediction against the result, labelled as a backtest", async ({ page }) => {
     await page.goto("/models");
     const check = page.getByRole("region", { name: "Check the predictions" });
-    await expect(check.getByText(/Backtest: made after the fact/)).toBeVisible();
+    await expect(check.getByText(/^Not live: made after the fact/)).toBeVisible();
     await expect(check.getByText("1,000")).toBeVisible();
     await expect(check.getByText("80%").first()).toBeVisible();
     await expect(check.getByRole("region", { name: "Predicted vs. actual" })).toBeVisible();
@@ -91,7 +91,7 @@ test.describe("models", () => {
 
   test("is accessible in both themes without horizontal overflow", async ({ page }) => {
     await page.goto("/models");
-    await expect(page.getByRole("region", { name: "Accuracy against the baseline" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Accuracy against a simple average" })).toBeVisible();
     await expectAccessible(page);
   });
 });

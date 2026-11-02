@@ -52,7 +52,7 @@ const KINDS = (testSeason: string) => [
 ];
 const KIND_NOTE: Record<Kind, string> = {
   backtest:
-    "Backtest: made after the fact by the release's held-out models, which never saw this season, then scored against the box scores.",
+    "Not live: made after the fact by models that never saw this season, then scored against the box scores.",
   pregame: "Pregame: stored before tip-off and scored once the game was final.",
 };
 

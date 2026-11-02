@@ -52,7 +52,7 @@ function servingNote(releases: ModelReleaseSummary[] | null): { title: string; b
   }
   return {
     title: "No model has been trained yet",
-    body: "Forecasts appear here once a model has been trained, evaluated on a held-out season and activated.",
+    body: "Forecasts appear here once a model has been trained, tested on a season it never saw and switched on.",
   };
 }
 
@@ -101,7 +101,7 @@ function HeadToHead({
       </h3>
       {!history || history.games === 0 ? (
         <p className="text-subhead text-muted-foreground">
-          No previous games against them in our records, which start in 2018-19.
+          No previous games against them since 2018-19, when these records start.
         </p>
       ) : (
         <>

@@ -66,8 +66,8 @@ function StatusBadge({ status }: { status: string }) {
 
 function Timeline({ release, testSeason }: { release: ModelReleaseDetail; testSeason: string }) {
   const segments = [
-    { label: "Training", start: release.train_start, end: release.train_end, tone: "bg-chart-3" },
-    { label: "Validation", start: release.val_start, end: release.val_end, tone: "bg-chart-2" },
+    { label: "Learning", start: release.train_start, end: release.train_end, tone: "bg-chart-3" },
+    { label: "Tryout", start: release.val_start, end: release.val_end, tone: "bg-chart-2" },
     { label: `Test · ${testSeason}`, start: release.test_start, end: release.test_end, tone: "bg-primary" },
   ];
   const t = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
@@ -123,19 +123,19 @@ function AccuracyTable({ metrics, testSeason }: { metrics: TargetMetrics[]; test
               Avg miss
             </th>
             <th scope="col" className="py-2 text-right font-medium">
-              Baseline miss
+              Simple average miss
             </th>
             <th scope="col" className="w-36 py-2 pl-4 text-left font-medium">
               Improvement
             </th>
             <th scope="col" className="py-2 text-right font-medium">
-              RMSE
+              Typical big miss
             </th>
             <th scope="col" className="py-2 text-right font-medium">
               In 80% range
             </th>
             <th scope="col" className="py-2 text-right font-medium">
-              Player-games
+              Stat lines checked
             </th>
           </tr>
         </thead>
@@ -153,7 +153,7 @@ function AccuracyTable({ metrics, testSeason }: { metrics: TargetMetrics[]; test
                 <td className="py-2 text-right text-muted-foreground">{m.baseline_mae?.toFixed(2) ?? "—"}</td>
                 <td className="py-2 pl-4">
                   {baselineKept ? (
-                    <span className="text-footnote text-muted-foreground">Baseline kept</span>
+                    <span className="text-footnote text-muted-foreground">Simple average kept</span>
                   ) : g == null ? (
                     "—"
                   ) : (
@@ -307,7 +307,7 @@ function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetri
       <div role="region" aria-label="Live accuracy by statistic" tabIndex={0} className="overflow-x-auto">
         <table className="w-full text-subhead tabular-nums">
           <caption className="sr-only">
-            Average miss of final pregame forecasts after {live.games} games, next to the held-out season
+            Average miss of final pregame forecasts after {live.games} games, next to the test season
           </caption>
           <thead className="text-footnote text-muted-foreground">
             <tr className="border-b border-border">
@@ -350,7 +350,7 @@ function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetri
         {live.games === 1 ? "game" : "games"}.
         {live.double_double?.brier != null &&
           ` Double-double Brier score ${live.double_double.brier.toFixed(3)} over ${live.double_double.n} forecasts.`}{" "}
-        Small samples swing widely; compare with the held-out season only after many games.
+        Small samples swing widely; compare with the test season only after many games.
       </p>
     </div>
   );
@@ -408,32 +408,42 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-subhead sm:grid-cols-4 lg:grid-cols-2">
               {[
                 ["Trained", formatGameDate(release.created_at.slice(0, 10), true)],
-                ["Inputs", `${release.features.length} features`],
-                ["Data version", String(release.data_version)],
-                ["Code", release.git_sha ? release.git_sha.slice(0, 7) : "—"],
+                ["Inputs", String(release.features.length)],
               ].map(([term, value]) => (
                 <div key={term}>
                   <dt className="text-footnote text-muted-foreground">{term}</dt>
-                  <dd className={cn("font-medium", term === "Code" && "font-mono")}>{value}</dd>
+                  <dd className="font-medium">{value}</dd>
                 </div>
               ))}
             </dl>
           </div>
           <p className="mt-5 text-footnote text-muted-foreground">
-            Seasons are split by date, never shuffled: models learn from training seasons, are chosen on
-            validation, and are scored once on {testSeason}. Every input is computed only from games before
+            Seasons stay in date order. Models learn from the earlier seasons, the best one is chosen on the
+            tryout season, and it is scored once on {testSeason}. Every input uses only games played before
             the one being predicted.
           </p>
+          <details className="mt-3 text-footnote text-muted-foreground">
+            <summary className="cursor-pointer font-medium">Technical details</summary>
+            <p className="mt-2">
+              Data version {release.data_version}
+              {release.git_sha && (
+                <>
+                  {" · Code "}
+                  <span className="font-mono">{release.git_sha.slice(0, 7)}</span>
+                </>
+              )}
+            </p>
+          </details>
         </Panel>
 
         <Panel
           id="accuracy"
-          kicker={`Held out · ${testSeason}`}
-          title="Accuracy against the baseline"
+          kicker={`Tested on ${testSeason}`}
+          title="Accuracy against a simple average"
           actions={
             <InfoHint term="Average miss">
-              Mean absolute error: how far the prediction lands from the actual box score, on average. The
-              baseline predicts each player&apos;s average over the previous 10 games.
+              How far the prediction lands from the actual box score, on average. The
+              simple average predicts each player&apos;s average over the previous 10 games.
             </InfoHint>
           }
           className="lg:col-span-12"
@@ -441,14 +451,14 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
           {regression.length ? (
             <AccuracyTable metrics={regression} testSeason={testSeason} />
           ) : (
-            <Unavailable kind="not_built" title="No held-out evaluation recorded for this release" />
+            <Unavailable kind="not_built" title="No test-season results recorded for this release" />
           )}
         </Panel>
 
         <Panel
           id="algorithms"
-          kicker="Model selection"
-          title="Algorithm comparison"
+          kicker="Picking a model"
+          title="Models compared"
           className="lg:col-span-7"
         >
           {release.algorithms.length ? (
@@ -467,8 +477,8 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
               </p>
               <RangesTable calibration={calibration} />
               <p className="text-footnote text-muted-foreground">
-                Split conformal intervals by predicted minutes, calibrated on {testSeason} for the production
-                models. Ranges calibrated on validation and checked on {testSeason} held{" "}
+                Ranges are sized by how many minutes a player is expected to play, using {testSeason} for the
+                models now serving. Ranges set on the tryout season and checked on {testSeason} held{" "}
                 {formatPercent(Math.min(...regression.map((m) => m.interval_coverage ?? 1)))}–
                 {formatPercent(Math.max(...regression.map((m) => m.interval_coverage ?? 0)))} of results.
               </p>
@@ -516,7 +526,7 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
                 {[
                   ["Brier score", doubleDouble.brier.toFixed(3)],
                   ["Log loss", doubleDouble.log_loss?.toFixed(3) ?? "—"],
-                  ["Player-games", doubleDouble.n.toLocaleString("en-US")],
+                  ["Stat lines checked", doubleDouble.n.toLocaleString("en-US")],
                 ].map(([term, value]) => (
                   <div key={term} className="rounded-lg bg-muted/60 p-3">
                     <dt className="text-footnote text-muted-foreground">{term}</dt>

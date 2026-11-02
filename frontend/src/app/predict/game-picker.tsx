@@ -84,7 +84,7 @@ export function GamePicker({
             <span className="flex w-full items-center gap-3">
               <TeamMark team={opponent} size="sm" />
               <span className="min-w-0 flex-1">
-                <span className={cn("block truncate font-medium", isSelected && "text-primary")}>
+                <span className={cn("block font-medium", isSelected && "text-primary")}>
                   {home ? "vs" : "@"} {opponent.city} {opponent.name}
                 </span>
                 <span className="block text-footnote text-muted-foreground">

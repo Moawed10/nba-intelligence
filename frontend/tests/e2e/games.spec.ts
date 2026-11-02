@@ -79,6 +79,20 @@ test.describe("games", () => {
     }).toPass();
   });
 
+  test("a long player name cannot widen an upcoming game page on a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.route("**/api/v1/leaders?*", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.leaders = body.leaders.map((l: object) => ({ ...l, full_name: "Giannis Sina Ugo Antetokounmpo-Gilgeous-Alexander" }));
+      await route.fulfill({ response, json: body });
+    });
+    await page.goto("/games/0099000102");
+    await expect(page.getByRole("region", { name: "Predict a player in this game" }).getByRole("link").first()).toBeVisible();
+    const extra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(extra).toBeLessThanOrEqual(0);
+  });
+
   test("shows full box scores for a final and keeps the date in the URL", async ({ page }) => {
     await page.goto("/games?date=2099-11-09");
     const schedule = page.getByRole("region", { name: "Games by date" });
@@ -101,7 +115,7 @@ test.describe("games", () => {
     await page.goto("/games?date=2099-11-10");
     const schedule = page.getByRole("region", { name: "Games by date" });
     await expect(schedule.getByRole("button", { name: /Bravo at Alpha/ })).toContainText("115");
-    const forecast = schedule.getByRole("region", { name: "Our prediction" });
+    const forecast = schedule.getByRole("region", { name: "Predicted score" });
     await expect(forecast).toContainText("Ants favored by about 6");
     await expect(forecast).toContainText("Bears 32%");
     await expect(forecast).toContainText("Ants 68%");
@@ -121,7 +135,7 @@ test.describe("games", () => {
     await schedule.getByRole("link", { name: "Game page" }).click();
     await expect(page).toHaveURL(/\/games\/0099000102$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Bravo Bears at Alpha Ants");
-    await expect(page.getByRole("region", { name: "Our prediction" })).toContainText(
+    await expect(page.getByRole("region", { name: "Predicted score" })).toContainText(
       "Ants favored by about 6",
     );
     await expect(page.getByRole("link", { name: "Game page" })).toHaveCount(0);
@@ -150,14 +164,14 @@ test.describe("games", () => {
 
   test("a finished game shows the final score next to the pregame prediction", async ({ page }) => {
     await page.goto("/games/0099000101");
-    const review = page.getByRole("region", { name: "How our prediction did" });
+    const review = page.getByRole("region", { name: "How the prediction did" });
     await expect(review.getByText("✓ Picked the winner")).toBeVisible();
-    await expect(review.getByText("Before tip-off we gave the Bears a 62% chance to win.")).toBeVisible();
+    await expect(review.getByText("Before tip-off, the Bears were given a 62% chance to win.")).toBeVisible();
     await expect(review.getByRole("listitem").filter({ hasText: "Bears" })).toContainText("112");
     await expect(review.getByRole("listitem").filter({ hasText: "Bears" })).toContainText("Predicted 108");
     await expect(review.getByRole("listitem").filter({ hasText: "Ants" })).toContainText("101");
     await page.goto("/games?date=2099-11-09");
-    await expect(page.getByRole("region", { name: "How our prediction did" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "How the prediction did" })).toBeVisible();
   });
 
   test("ignores a malformed date", async ({ page }) => {

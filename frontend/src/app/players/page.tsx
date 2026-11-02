@@ -13,9 +13,9 @@ export default function PlayersPage({ searchParams }: PageProps<"/players">) {
   return (
     <>
       <PageHeader
-        kicker="Scouting"
+        kicker="Every player"
         title="Players"
-        description="Search any player, sort the league by what matters, and open a full scouting report."
+        description="Search any player, sort the league by what matters, and open a full profile."
       />
       <div className="space-y-6">
         <PlayerFinder />

@@ -55,16 +55,16 @@ export function AlgorithmComparison({
       >
         <table className="w-full min-w-[30rem] text-subhead tabular-nums">
           <caption className="sr-only">
-            {targetLabel(target)}: mean absolute error of each algorithm on the validation season and on{" "}
-            {testSeason}, with the improvement over the baseline
+            {targetLabel(target)}: average miss of each model on the tryout season and on{" "}
+            {testSeason}, with the improvement over a simple average
           </caption>
           <thead className="text-footnote text-muted-foreground">
             <tr className="border-b border-border">
               <th scope="col" className="py-2 text-left font-medium">
-                Algorithm
+                Model
               </th>
               <th scope="col" className="py-2 text-right font-medium">
-                Validation error
+                Tryout miss
               </th>
               <th scope="col" className="w-32 py-2 pl-4 text-left font-medium">
                 Improvement
@@ -135,9 +135,9 @@ export function AlgorithmComparison({
         </table>
       </div>
       <p className="text-footnote text-muted-foreground">
-        The algorithm with the lowest validation error is selected; {testSeason} error is reported afterwards
-        and never used to choose. Improvement is how much smaller the average miss is than the baseline&apos;s
-        on the validation season.
+        The model with the smallest miss on the tryout season is chosen; {testSeason} error is reported afterwards
+        and never used to choose. Improvement is how much smaller the average miss is than the simple average&apos;s
+        on the tryout season.
       </p>
     </div>
   );
