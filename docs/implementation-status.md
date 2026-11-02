@@ -2,7 +2,23 @@
 
 The authoritative ledger of development progress. A status here is only as good as its evidence. When this document and executable evidence disagree, the evidence wins and this document is corrected (see [data-ownership.md](data-ownership.md#evidence-hierarchy-for-progress-claims)).
 
-**Last updated:** 2026-10-29
+**Last updated:** 2026-11-02
+
+## Evidence audit (2026-11-02)
+
+The release-readiness audit re-checked claims in this ledger against current evidence. Tables and session logs below are kept as historical records of what was believed on their dates. Where they differ from this section, this section wins.
+
+| Claim | Evidence | Status |
+|---|---|---|
+| "Kept in sync automatically" | The worker has to be running. It was stopped on 2026-10-28 and 29 (finals waited for box scores until it was restarted) and is not running now | Only while `app.cli sync-worker` runs |
+| CI passes on main | `9938ecf` and `e1fccc5` passed. Phases 10 and 11 and the refresh and final-score commits were cancelled or failed individually; their code was first fully checked by the `9938ecf` run | Passing at `9938ecf` |
+| Career history for every player | Backfill stops when the source refuses requests: 1,080 of 5,197 players at the start of this audit | Partial; resumable |
+| Prediction workflow works end to end | Before this audit, only stub-API tests and manual checks. `npm run test:fullstack` now covers it against the real backend | Verified on synthetic data; not on a deployed host |
+| Fresh checkout installs reproducibly | Clean-room run in [test-report.md](test-report.md#release-readiness-baseline-2026-11-02) | Verified on macOS; CI verifies Ubuntu |
+| Rules in `AGENTS.md` | Only `frontend/AGENTS.md` exists (Next.js guidance); there is no root file | Noted |
+| VoiceOver check | Not performed | Not Verified |
+
+Release gates and blockers are tracked in [release-readiness.md](release-readiness.md).
 
 ## Master status
 

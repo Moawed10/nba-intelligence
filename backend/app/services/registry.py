@@ -185,7 +185,9 @@ ANALYTICS_SQL = """
     JOIN prediction_values m ON m.prediction_id = p.id AND m.stat = 'min'
     JOIN games g ON g.id = p.game_id
     WHERE p.release_id = :release AND p.kind::text = :kind
-      AND NOT EXISTS (SELECT 1 FROM predictions newer WHERE newer.supersedes_prediction_id = p.id)"""
+      AND NOT EXISTS (
+        SELECT 1 FROM predictions newer WHERE newer.supersedes_prediction_id = p.id
+      )"""
 
 
 def _analytics_version(versions: list[ModelVersion], kind: str, stat: str) -> ModelVersion | None:

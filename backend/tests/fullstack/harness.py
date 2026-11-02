@@ -233,8 +233,9 @@ def register_release(db: Engine) -> None:
         s.flush()
         for held_out in (False, True):
             for target in TARGETS:
-                _add_version(s, release, target, RollingBaseline(target),
-                             Algorithm.rolling_baseline, FEATURES, calibration, held_out)  # fmt: skip
+                baseline = RollingBaseline(target)
+                _add_version(s, release, target, baseline, Algorithm.rolling_baseline, FEATURES,
+                             calibration, held_out)  # fmt: skip
             _add_version(s, release, "double_double", classifier, Algorithm.logistic, FEATURES,
                          None, held_out)  # fmt: skip
         _add_version(s, release, "team_pts", RollingBaseline("pts"), Algorithm.rolling_baseline,

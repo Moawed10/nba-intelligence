@@ -312,3 +312,65 @@ Each spec includes an axe pass (WCAG 2.2 AA tags, serious and critical violation
 | Retrain from clean commit `da61251` | Release `2026.10.29-2`: every selected metric and calibration identical to `-1`; two random-forest candidates differ at the 16th decimal |
 
 The first reproducibility run found a real bug: snapshots were stored rounded to 6 decimals while the model saw full precision, so XGBoost splits could differ by up to 0.68 points. Snapshots now keep full precision and the model reads the snapshot itself. The 57 forecasts made before the fix remain stored and are superseded by new rows.
+
+## Release readiness baseline (2026-11-02)
+
+Environment: macOS (Darwin 27.0.0, arm64), Python 3.12.15, PostgreSQL 16.15, Node 25.9.0. Branch `release-readiness`. No Docker on this machine.
+
+### Dependency lock and clean setup
+
+| Check | Command or method | Result |
+|---|---|---|
+| Lock files are reproducible | `sh scripts/lock.sh` twice | Byte-identical |
+| Hash-checked install | `pip install --require-hashes -r requirements-dev.lock`, `pip check` | Clean |
+| Bundle tests after the docstring removal | `pytest tests/integration/test_release_bundle.py` | 4 passed |
+| Real release moved between machines | `artifacts export 2026.10.29-3`, then import into a new empty database with its own artifact directory, `artifacts verify`, `activate` | 19 artifacts, 6,308,098 bytes; status `active`; 43 versions and 67 evaluations, the same as the source |
+| Clean-room setup | Fresh `git clone` into a scratch directory, following [setup.md](setup.md) with a new database and the bundle above | Install, migrations on an empty database, import, verify, activate, API start, frontend `npm ci` and build, `/about` 200, `/models` 200, `/api/v1/health` ok |
+| Backend suite in the clean-room checkout | `pytest -q` run 7 times | First run 4 failed, 1 error, 280 passed. The next 6 runs all 285 passed |
+
+The first clean-room run's failure details were not kept (only the last lines of the log). The likely cause is that `NBA_TEST_DATABASE_URL` was set in `.env`, which the test suite does not read, so that run used the shared default `nba_intelligence_test` while another session was running tests against it. This is likely, not proven. [setup.md](setup.md) now says the variable is read from the shell only.
+
+Not covered by the clean-room run: a real `ingest backfill` and `train`. Both call or depend on stats.nba.com data and were run earlier on the main checkout ([Phase 3](#live-ingestion-against-statsnbacom), [Phase 6](#training-run-on-real-data)).
+
+### CI history
+
+| Commit | Result |
+|---|---|
+| `9938ecf` (Phase 12) | Passed |
+| `e1fccc5` (Phase 9) | Passed |
+| `02b7c97`, `cb2bd67`, `6c2c900`, `d6f8b74` | Cancelled by a newer push, so those commits never had a completed run of their own |
+| `6f600ad` | Failed on a line-length lint error, fixed in `6c2c900` |
+
+### Real-backend prediction workflow
+
+```bash
+cd frontend && npm run test:fullstack
+```
+
+Real Next.js production build, real FastAPI on its own port, isolated PostgreSQL database `nba_intelligence_fullstack`, synthetic season 2099 from `backend/tests/fullstack/scenario.json`, loaded through the real ingestion jobs. The model release is registered and activated through the real registry functions, using deterministic artifacts. `stub-api.mjs` is not used and no request is intercepted. Time comes from a clock file read only by the test factory `tests.fullstack.app:build`. There are no sleeps. The test fails if the browser requests any host other than localhost, and the test factory replaces the photo cache so the API makes no NBA requests either.
+
+**Result:** 1 test passed, 14 steps, 2.4 min test time (2.7 min with the production build).
+
+Expected values are calculated in the test from the scenario's numbers, not read from application code:
+
+| Check | Expected and observed |
+|---|---|
+| First forecast (mean of 6 games) | 21.667 points, range 18.667 to 24.667 |
+| After an earlier game arrives | Appended row at 23.0 superseding the original; original row unchanged |
+| Repeated request with the same inputs | Same row returned, HTTP 200, no new row |
+| Past tip-off | HTTP 409 `game_already_started`; the page says "This game has started"; no new row |
+| Live points MAE, coverage (2 final forecasts) | 3.0, 50% |
+| Live points RMSE | 3.606 |
+| Double-double Brier (n=2) | 0.3125 |
+| Backtest points MAE, coverage (n=10) | 0.68, 90%, unaffected by live forecasts |
+| Repeated scoring | Stored evaluations for the game unchanged |
+
+Bugs this suite found, all fixed:
+
+- `/models/{version}/analytics?kind=pregame` counted superseded forecasts, so revisions were overweighted. It now counts each player-game's final forecast, the same as `/live`.
+- A refresh chose the forecast to supersede by timestamp, which is ambiguous when two forecasts share one. It now picks the forecast nothing has superseded.
+- Scoring from a sync event used the system clock rather than the worker's.
+- A refused "Update forecast" showed nothing. It now keeps the stored forecast and shows the reason (`tests/unit/forecast.test.tsx`).
+
+The backend suite after these fixes: 285 passed.
+
