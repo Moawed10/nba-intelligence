@@ -37,8 +37,18 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/pyproject.toml
-      - run: pip install -e ".[dev,ml]"
+          cache-dependency-path: backend/requirements-dev.lock
+      - name: Install the locked dependency set (hash-checked)
+        run: |
+          pip install --require-hashes -r requirements-dev.lock
+          pip install --no-deps -e .
+          pip check
+      - name: Lock files match pyproject.toml
+        run: |
+          pip install uv==0.13.6
+          mkdir -p /tmp/lock && sh scripts/lock.sh /tmp/lock
+          diff requirements.lock /tmp/lock/requirements.lock
+          diff requirements-dev.lock /tmp/lock/requirements-dev.lock
       - run: ruff check app tests
       - run: ruff format --check app tests
       - name: Tests (unit, integration, migrations) with coverage
