@@ -279,3 +279,8 @@ If a player did not play, no evaluation row is written. The prediction stays vis
 - Every upsert is `INSERT … ON CONFLICT (natural key) DO UPDATE` inside one transaction per ingestion batch. A failed run rolls back its batch and leaves previously committed data intact.
 - Foreign keys use `ON DELETE RESTRICT` throughout; nothing cascades away historical data.
 - `pg_trgm` is enabled by the first migration.
+
+## Game forecast evaluations
+
+`game_prediction_evaluations` holds one row per stored score forecast (`forecast_id`, the actual scores, each side's absolute error and whether it landed in the range, `winner_correct`, `brier`, `evaluated_at`). Forecast rows in `game_predictions` stay append-only. A source correction overwrites the evaluation, never the forecast. Every forecast is scored, but headline live metrics (`/models/{version}/live`, `game_scores`) count only the forecast nothing superseded, so revisions cannot weigh a game twice. Postponed and cancelled games are never scored.
+

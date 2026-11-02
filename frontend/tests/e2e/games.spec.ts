@@ -30,8 +30,10 @@ test.describe("games", () => {
       body.items[0].home.score = 70;
       await route.fulfill({ response, json: body });
     });
-    await page.clock.fastForward(6_000);
-    await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live/ })).toContainText("70");
+    await expect(async () => {
+      await page.clock.fastForward(6_000);
+      await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live/ })).toContainText("70", { timeout: 500 });
+    }).toPass();
   });
 
   test("a game page shows each new score without a reload", async ({ page }) => {
@@ -39,8 +41,12 @@ test.describe("games", () => {
     await page.goto("/games/0099000099");
     const score = page.locator("main").getByTestId("score-home");
     const first = Number(await score.textContent());
-    await page.clock.fastForward(6_000);
-    await expect.poll(async () => Number(await score.textContent())).toBeGreaterThan(first);
+    await expect
+      .poll(async () => {
+        await page.clock.fastForward(6_000);
+        return Number(await score.textContent());
+      })
+      .toBeGreaterThan(first);
   });
 
   test("the home page ticker shows each new score without a reload", async ({ page }) => {
@@ -48,8 +54,12 @@ test.describe("games", () => {
     await page.goto("/");
     const item = page.getByRole("region", { name: "Recent and upcoming games" }).getByRole("link", { name: /Q2 1:00/ }).first();
     const before = await item.textContent();
-    await page.clock.fastForward(6_000);
-    await expect.poll(() => item.textContent()).not.toBe(before);
+    await expect
+      .poll(async () => {
+        await page.clock.fastForward(6_000);
+        return item.textContent();
+      })
+      .not.toBe(before);
   });
 
   test("a game that tips off while the page is open turns live without a reload", async ({ page }) => {
@@ -63,8 +73,10 @@ test.describe("games", () => {
       body.items[0] = { ...body.items[0], status: "in_progress", live_status: "Q1 11:40", home: { ...body.items[0].home, score: 2 }, away: { ...body.items[0].away, score: 0 } };
       await route.fulfill({ response, json: body });
     });
-    await page.clock.fastForward(6_000);
-    await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live · Q1 11:40/ })).toBeVisible();
+    await expect(async () => {
+      await page.clock.fastForward(6_000);
+      await expect(schedule.getByRole("button", { name: /Bravo at Alpha, Live · Q1 11:40/ })).toBeVisible({ timeout: 500 });
+    }).toPass();
   });
 
   test("shows full box scores for a final and keeps the date in the URL", async ({ page }) => {

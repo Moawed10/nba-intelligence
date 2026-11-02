@@ -321,7 +321,17 @@ def score_pending(session: Session, now: datetime) -> int:
     games = session.scalars(
         select(Prediction.game_id)
         .join(Game, Game.id == Prediction.game_id)
-        .where(Game.status == GameStatus.final, Game.stats_finalized_at.is_not(None), ~scored)
+        .join(
+            PlayerGameStats,
+            (PlayerGameStats.game_id == Prediction.game_id)
+            & (PlayerGameStats.player_id == Prediction.player_id),
+        )
+        .where(
+            Game.status == GameStatus.final,
+            Game.stats_finalized_at.is_not(None),
+            PlayerGameStats.minutes > 0,
+            ~scored,
+        )
         .distinct()
     ).all()
     return sum(score_game(session, game_id, now) for game_id in games)

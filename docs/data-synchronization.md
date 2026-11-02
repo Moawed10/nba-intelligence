@@ -162,3 +162,8 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 - Cache invalidation on `data_version` bump
 - Restart recovery: abandoned lease rerun; overdue jobs run once
 - Time zones: game-day boundaries across the March and November DST changes
+
+## Score forecast lifecycle
+
+Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
+

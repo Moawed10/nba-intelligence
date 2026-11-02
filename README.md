@@ -20,6 +20,7 @@ Next.js · TypeScript · Tailwind · shadcn/ui · Framer Motion · Recharts · T
 | Document | Contents |
 |---|---|
 | [Setup](docs/setup.md) | Clean setup from a fresh checkout: database, environment, model release, startup |
+| [Deployment](docs/deployment.md) | Packaging, migrations, model artifacts, backups, monitoring, rollback |
 | [Release readiness](docs/release-readiness.md) | Release gates, evidence and open blockers |
 | [Architecture](docs/architecture.md) | Five-layer system diagram, data source findings, repository layout |
 | [Data ownership](docs/data-ownership.md) | Source of truth, statistic definitions, state boundaries |

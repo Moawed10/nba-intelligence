@@ -251,7 +251,12 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
 
     const stored = await predictions(request, STAR, TARGET);
     expect(stored.every((r) => r.actuals?.pts === STAR_ACTUAL.pts)).toBe(true);
-    expect(stat(stored.find((r) => r.id === original.id)!, "pts").point).toBeCloseTo(FIRST_POINT, 9);
+    expect(
+      stat(
+        stored.find((r) => r.id === original.id)!,
+        "pts",
+      ).point,
+    ).toBeCloseTo(FIRST_POINT, 9);
 
     const history = await (
       await request.get(`${API}/predictions/history`, {
@@ -266,7 +271,10 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
     await page.goto("/models");
     const explorer = page.getByRole("region", { name: "Prediction history", exact: true });
     await explorer.getByRole("combobox", { name: "Player" }).fill("Testić");
-    await page.getByRole("listbox").getByRole("option", { name: /Nikola Testić/ }).click();
+    await page
+      .getByRole("listbox")
+      .getByRole("option", { name: /Nikola Testić/ })
+      .click();
     await explorer.getByRole("radio", { name: "Live" }).click();
     const row = explorer.locator("tbody tr").filter({ hasText: "vs BBB" });
     await expect(row).toContainText(REFRESHED_POINT.toFixed(1));
@@ -302,8 +310,12 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
     const table = page.getByRole("region", { name: "Live accuracy by statistic" });
     const row = table.getByRole("row", { name: /^Points/ });
     await expect(row).toContainText(LIVE_MAE.toFixed(2));
-    await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText("across 1 game");
-    await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText(`Brier score ${LIVE_BRIER.toFixed(3)} over 2 forecasts`);
+    await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText(
+      "across 1 game",
+    );
+    await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText(
+      `Brier score ${LIVE_BRIER.toFixed(3)} over 2 forecasts`,
+    );
 
     const check = page.getByRole("region", { name: "Check the predictions", exact: true });
     await check.getByRole("radio", { name: "Live" }).click();

@@ -42,9 +42,14 @@ Backend settings use the `NBA_` prefix and are read from the environment or `bac
 |---|---|---|
 | `NBA_DATABASE_URL` | `postgresql+psycopg:///nba_intelligence` | Application database |
 | `NBA_DB_POOL_SIZE`, `NBA_DB_MAX_OVERFLOW` | 5, 5 | Connection pool per process |
+| `NBA_DB_CONNECT_TIMEOUT_SECONDS`, `NBA_DB_POOL_TIMEOUT_SECONDS` | 5, 10 | How long to wait for a connection before answering 503 |
+| `NBA_API_STATEMENT_TIMEOUT_MS` | 15000 | Longest query the API will run. The worker and CLI have no such limit |
 | `NBA_LOG_LEVEL`, `NBA_LOG_JSON` | `INFO`, `true` | Logging |
 | `NBA_CORS_ORIGINS` | `[]` | Leave empty: the browser reaches the API through the frontend's `/api/v1` proxy |
 | `NBA_API_DOCS_ENABLED`, `NBA_API_CACHE_ENABLED` | `true`, `true` | Interactive docs; response memoization |
+| `NBA_PREDICTION_RATE_PER_MINUTE`, `NBA_PREDICTION_RATE_BURST` | 60, 20 | Forecast requests per client. Counted per API process |
+| `NBA_PREDICTION_RATE_GLOBAL_PER_MINUTE` | 600 | Forecast requests from everyone together. Measured capacity is about 10 per second ([load test](test-report.md#load-test)) |
+| `NBA_TRUSTED_PROXY_IPS` | `["127.0.0.1","::1"]` | Peers whose `X-Forwarded-For` header is believed |
 | `NBA_STATS_REQUEST_INTERVAL_SECONDS` | `1.0` | Minimum gap between stats.nba.com requests. Raise to 4 for long backfills |
 | `NBA_STATS_TIMEOUT_SECONDS`, `NBA_STATS_MAX_ATTEMPTS` | 30, 5 | Source request limits |
 | `NBA_STATS_CACHE_DIR` | `.cache/nba_stats` | On-disk source cache |
@@ -135,3 +140,5 @@ cd frontend && npm run test:fullstack
 ```
 
 `test:fullstack` runs the prediction workflow against the real API and a real PostgreSQL database. See [test-report.md](test-report.md) for what each suite covers.
+
+For hosting, backups, monitoring and rollback, see [deployment.md](deployment.md).

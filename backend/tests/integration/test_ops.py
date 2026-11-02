@@ -77,6 +77,23 @@ def test_unscored_finished_games_fail_and_scoring_clears_them(serving, league): 
         assert scoring(s, NOW).status == "ok"
 
 
+def test_a_player_who_did_not_play_does_not_trigger_rescoring_on_every_run(serving, league):  # noqa: F811
+    assert serving.post(
+        "/api/v1/predictions", json={"player_id": STAR, "game_id": NEXT_GAME.id}
+    ).status_code == 201
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE games SET status = 'final', home_score = 100, away_score = 90, "
+                "stats_finalized_at = :at WHERE id = :g"
+            ),
+            {"at": NOW - timedelta(hours=2), "g": NEXT_GAME.id},
+        )
+    with Session(league) as s, s.begin():
+        assert score_pending(s, NOW) == 0
+        assert scoring(s, NOW).status == "ok"
+
+
 def test_events_left_waiting_fail(league):  # noqa: F811
     with Session(league) as s, s.begin():
         s.execute(text("UPDATE sync_events SET processed_at = now()"))

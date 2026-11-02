@@ -1,0 +1,93 @@
+name: nba-intelligence
+
+x-backend: &backend
+  build: ./backend
+  environment: &backend-env
+    NBA_DATABASE_URL: postgresql+psycopg://nba:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/nba_intelligence
+    NBA_LOG_JSON: "true"
+    NBA_API_DOCS_ENABLED: "false"
+    NBA_TRUSTED_PROXY_IPS: '["172.30.0.10"]'
+  volumes:
+    - model-data:/data
+  networks: [internal]
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nba
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: nba_intelligence
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nba -d nba_intelligence"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db: { condition: service_healthy }
+
+  api:
+    <<: *backend
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/api/v1/readiness', timeout=5)"
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "app.cli", "sync-worker"]
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        API_INTERNAL_URL: http://api:8000
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    networks:
+      internal:
+        ipv4_address: 172.30.0.10
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/about').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  db-data:
+  model-data:
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
