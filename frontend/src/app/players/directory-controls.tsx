@@ -101,7 +101,7 @@ export function DirectoryFilterBar({
           type="checkbox"
           checked={shown.status === "all"}
           onChange={(event) => update({ status: event.target.checked ? "all" : undefined })}
-          className="size-5 accent-primary"
+          className="size-5 accent-primary pointer-coarse:size-6"
         />
         Include former players
       </label>

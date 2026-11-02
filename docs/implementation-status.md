@@ -1075,7 +1075,7 @@ The "recent games" block from the original design was folded into the game log, 
 
 **Completed:** full-width team-colored features, open sections instead of cards, two-pane schedule, split scoreboards and Compare hero, player dossier with recent games and next-game forecast, new display type and data labels, in both themes. Direction and references are in [frontend.md](frontend.md#design-references). Milestone labels (triple-double) now come from the box score.
 
-**Verified:** lint, types, 39 unit tests, contrast (54 pairs), production build, full Playwright suite including the accessibility audit on 4 viewports (470 passed, 42 skipped by design). Real data inspected at 390, 768 and 1440 px.
+**Verified:** lint, types, 39 unit tests, contrast (54 pairs), production build, full Playwright suite including the accessibility audit on 4 viewports (478 passed, 42 skipped by design). Real data inspected at 390, 768 and 1440 px.
 
 **Not verified:** VoiceOver (still open from Phase 12); real-browser zoom.
 

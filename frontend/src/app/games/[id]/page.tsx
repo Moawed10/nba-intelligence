@@ -53,7 +53,7 @@ async function GameView({ params }: { params: Promise<{ id: string }> }) {
       <LiveRefresh games={[game]} />
       <GameMatchup game={game} />
       <p className="mt-6 text-subhead">
-        <Link href={`/games?date=${game.game_date}`} className="font-medium text-primary hover:underline">
+        <Link href={`/games?date=${game.game_date}`} className="inline-flex items-center font-medium text-primary hover:underline pointer-coarse:min-h-11">
           All games on {formatGameDate(game.game_date, true)}
         </Link>
       </p>

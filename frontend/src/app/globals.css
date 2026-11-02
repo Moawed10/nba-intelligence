@@ -153,6 +153,34 @@
   body {
     @apply bg-background text-foreground text-body antialiased;
   }
+  button:not(:disabled),
+  [role="button"],
+  [role="radio"],
+  [role="tab"],
+  [role="option"],
+  summary,
+  select:not(:disabled),
+  label:has(input) {
+    cursor: pointer;
+  }
+  :disabled {
+    cursor: not-allowed;
+  }
+  @media (pointer: coarse) {
+    select,
+    input:not([type="checkbox"], [type="radio"]) {
+      min-height: 2.75rem;
+    }
+    summary {
+      padding-block: 0.75rem;
+    }
+    main td a,
+    main th a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+  }
   h1,
   h2,
   h3 {

@@ -16,6 +16,18 @@ async function tabTo(page: Page, target: Locator, limit = 60) {
 
 // tests/e2e/stub-api.mjs: Zed Fixture (1000) plays for Alpha, scheduled vs Bravo on 2099-11-10 and at Bravo on 2099-11-12.
 
+test("the prediction steps read in order", async ({ page }) => {
+  await page.goto("/predict?player=1000");
+  await expect(page.locator("#player-name")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Upcoming games" })).toBeVisible();
+  const main = await page.locator("main").innerText();
+  const steps = [...main.matchAll(/STEP (\d)/gi)].map((m) => m[1]);
+  expect(steps).toEqual(["1", "2", "3"]);
+  const games = await page.getByRole("heading", { name: "Upcoming games" }).boundingBox();
+  const band = await page.locator("#player-name").boundingBox();
+  expect(band!.y).toBeLessThan(games!.y);
+});
+
 test.describe("predictions", () => {
   test("starts from search or a scoring leader", async ({ page }) => {
     await page.goto("/predict");

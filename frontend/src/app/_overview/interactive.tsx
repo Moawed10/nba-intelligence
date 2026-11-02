@@ -186,10 +186,12 @@ function Matchup({
             {isLive(game) && (
               <p className="text-footnote text-muted-foreground">Updates automatically</p>
             )}
-            <p className="mt-1 text-footnote text-muted-foreground">
-              {formatGameDate(game.game_date, true)}
-              {game.arena ? ` · ${game.arena}` : ""}
-            </p>
+            {pageLink && (
+              <p className="mt-1 text-footnote text-muted-foreground">
+                {formatGameDate(game.game_date, true)}
+                {game.arena ? ` · ${game.arena}` : ""}
+              </p>
+            )}
             {pageLink && (
               <Link
                 href={`/games/${game.id}`}
@@ -455,7 +457,7 @@ function PredictionReview({ game, headingLevel }: { game: GameSummary; headingLe
               </div>
               <p className="text-right">
                 <span className="numeral block text-title2">{actual}</span>
-                <span className="kicker">Final</span>
+                <span className="sr-only">final score</span>
               </p>
             </li>
           );

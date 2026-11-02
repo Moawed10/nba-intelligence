@@ -33,6 +33,14 @@ test.describe("overview", () => {
     expect(games!.y).toBeLessThan((await hero.boundingBox())!.y);
   });
 
+  test("the game strip stays still and each game opens its own page", async ({ page }) => {
+    await page.goto("/");
+    const strip = page.getByRole("region", { name: "Recent and upcoming games" });
+    await expect(strip.getByRole("link").first()).toHaveAttribute("href", /^\/games\/\d{10}$/);
+    const moving = await strip.evaluate((el) => el.getAnimations({ subtree: true }).length);
+    expect(moving).toBe(0);
+  });
+
   test("switches leader categories without leaving the page", async ({ page }) => {
     await page.goto("/");
     const leaders = page.getByRole("region", { name: "League leaders" });
