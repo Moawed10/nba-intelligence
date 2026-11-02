@@ -953,6 +953,13 @@ export interface components {
              * Format: date-time
              */
             data_cutoff_at: string;
+            /**
+             * Freshness
+             * @enum {string}
+             */
+            freshness: "current" | "stale" | "invalid" | "superseded" | "final_pregame";
+            /** Freshness Reason */
+            freshness_reason: string | null;
             /** Game Id */
             game_id: string;
             home: components["schemas"]["TeamScore"];
@@ -969,6 +976,26 @@ export interface components {
             release_version: string;
             /** Supersedes Prediction Id */
             supersedes_prediction_id: string | null;
+        };
+        /** GameForecastEvaluation */
+        GameForecastEvaluation: {
+            /** Away Abs Error */
+            away_abs_error: number;
+            /** Away Within Interval */
+            away_within_interval: boolean;
+            /** Brier */
+            brier: number;
+            /**
+             * Evaluated At
+             * Format: date-time
+             */
+            evaluated_at: string;
+            /** Home Abs Error */
+            home_abs_error: number;
+            /** Home Within Interval */
+            home_within_interval: boolean;
+            /** Winner Correct */
+            winner_correct: boolean;
         };
         /** GameForecastRequest */
         GameForecastRequest: {
@@ -992,6 +1019,7 @@ export interface components {
         GameForecastReview: {
             /** Away Score */
             away_score: number | null;
+            evaluation: components["schemas"]["GameForecastEvaluation"] | null;
             forecast: components["schemas"]["GameForecast"] | null;
             /** Game Id */
             game_id: string;
@@ -1172,6 +1200,7 @@ export interface components {
             /** Activated At */
             activated_at: string | null;
             double_double: components["schemas"]["LiveDoubleDouble"] | null;
+            game_scores: components["schemas"]["LiveGameScores"] | null;
             /** Games */
             games: number;
             /** Stats */
@@ -1187,6 +1216,19 @@ export interface components {
             brier: number | null;
             /** N */
             n: number;
+        };
+        /** LiveGameScores */
+        LiveGameScores: {
+            /** Brier */
+            brier: number;
+            /** Games */
+            games: number;
+            /** Interval Coverage */
+            interval_coverage: number;
+            /** Points Mae */
+            points_mae: number;
+            /** Winner Accuracy */
+            winner_accuracy: number;
         };
         /** LiveStat */
         LiveStat: {

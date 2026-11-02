@@ -12,7 +12,7 @@ from app.api import v1
 from app.api.deps import ApiState
 from app.api.errors import register_error_handlers
 from app.config import get_settings
-from app.db import get_engine
+from app.db import api_engine
 from app.logging import configure_logging
 from app.services.cache import VersionedCache
 
@@ -33,7 +33,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.state.api = ApiState(
-        engine=engine or get_engine(), cache=VersionedCache(enabled=settings.api_cache_enabled)
+        engine=engine or api_engine(), cache=VersionedCache(enabled=settings.api_cache_enabled)
     )
     register_error_handlers(app)
     if settings.cors_origins:

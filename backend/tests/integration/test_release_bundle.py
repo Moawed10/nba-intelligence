@@ -2,7 +2,7 @@ import io
 import tarfile
 
 import pytest
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.cli import main
@@ -86,6 +86,22 @@ def test_import_refuses_a_tampered_bundle_and_keeps_the_registry_unchanged(
         import_release(s, tmp_path / "target", tampered)
     with Session(league) as s:
         assert s.scalar(select(ModelRelease).where(ModelRelease.version == VERSION)) is None
+
+
+def test_a_restored_database_gets_its_artifact_files_back_from_the_bundle(
+    league,  # noqa: F811
+    released,
+    tmp_path,
+):
+    bundle = tmp_path / "release.tar.gz"
+    with Session(league) as s:
+        export_release(s, released, VERSION, bundle)
+    elsewhere = tmp_path / "restored"
+    with Session(league) as s, s.begin():
+        assert import_release(s, elsewhere, bundle) == VERSION
+        assert verify_release(s, elsewhere, VERSION) == []
+        count = s.scalar(select(func.count()).select_from(ModelRelease))
+    assert count == 1
 
 
 def test_cli_verifies_and_rejects_an_unknown_release(league, released, monkeypatch, capsys):  # noqa: F811

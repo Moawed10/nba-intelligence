@@ -10,6 +10,7 @@ from app.models.operations import (
 from app.models.predictions import (
     EvaluatedStat,
     GamePrediction,
+    GamePredictionEvaluation,
     PredictedStat,
     Prediction,
     PredictionEvaluation,
@@ -46,6 +47,7 @@ __all__ = [
     "Base",
     "EvaluatedStat",
     "GamePrediction",
+    "GamePredictionEvaluation",
     "EvaluationSplit",
     "Game",
     "GameStatus",

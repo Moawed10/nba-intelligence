@@ -13,6 +13,9 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
     log_json: bool = True
+    db_connect_timeout_seconds: int = 5
+    db_pool_timeout_seconds: float = 10.0
+    api_statement_timeout_ms: int = 15_000
 
     stats_request_interval_seconds: float = 1.0
     stats_timeout_seconds: float = 30.0
@@ -24,6 +27,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
     api_docs_enabled: bool = True
     api_cache_enabled: bool = True
+    prediction_rate_per_minute: int = 60
+    prediction_rate_burst: int = 20
+    prediction_rate_global_per_minute: int = 600
+    trusted_proxy_ips: list[str] = ["127.0.0.1", "::1"]
 
     first_season: int = 2018
     artifacts_dir: Path = Path("artifacts")

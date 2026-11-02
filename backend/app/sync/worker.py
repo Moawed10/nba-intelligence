@@ -208,11 +208,17 @@ EventHandler = Callable[[Session, SyncEvent, datetime], None]
 
 def _score_finalized(session: Session, event: SyncEvent, now: datetime) -> None:
     prediction_lifecycle.score_game(session, event.payload["game_id"], now)
+    game_forecasts.score_game(session, event.payload["game_id"], now)
+
+
+def _rescore_corrected(session: Session, event: SyncEvent, now: datetime) -> None:
+    prediction_lifecycle.score_game(session, event.payload["record_key"]["game_id"], now)
 
 
 # Caches need no handler: every committed run advances data_version, part of every cache key.
 HANDLERS: dict[SyncEventType, EventHandler] = {
     SyncEventType.GAME_STATS_FINALIZED: _score_finalized,
+    SyncEventType.HISTORICAL_DATA_CORRECTED: _rescore_corrected,
 }
 
 
@@ -232,12 +238,13 @@ def maintain_predictions(
         try:
             with Session(bind=conn) as s:
                 scored = prediction_lifecycle.score_pending(s, now)
+                game_scored = game_forecasts.score_pending(s, now)
                 s.commit()
                 counts = prediction_lifecycle.refresh_due(s, artifacts_dir, now)
                 s.commit()
                 games = game_forecasts.store_upcoming(s, artifacts_dir, now)
                 s.commit()
-                return {"scored": scored, **counts, **games}
+                return {"scored": scored, "games_scored": game_scored, **counts, **games}
         finally:
             conn.rollback()
             conn.execute(select(func.pg_advisory_unlock(key)))

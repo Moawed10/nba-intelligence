@@ -358,6 +358,7 @@ createServer((req, res) => {
       version: RELEASE.version, status: RELEASE.status, activated_at: RELEASE.activated_at, games: 2,
       stats: [{ stat: "pts", n: 6, mae: 5.25, interval_coverage: 0.8333 }, { stat: "reb", n: 6, mae: 2.1, interval_coverage: 0.6667 }],
       double_double: { n: 6, brier: 0.07 },
+      game_scores: { games: 2, points_mae: 7.25, interval_coverage: 0.75, brier: 0.18, winner_accuracy: 0.5 },
     });
   }
   if (path === `/models/${RELEASE.version}/analytics`) {
@@ -411,7 +412,7 @@ createServer((req, res) => {
       supersedes_prediction_id: null,
     } : null;
     return send(res, 200, {
-      game_id: g.id, status: g.status, forecast,
+      game_id: g.id, status: g.status, forecast, evaluation: null,
       home_score: final ? g.home.score : null, away_score: final ? g.away.score : null,
       picked_winner: forecast && final ? (forecast.home_win_probability >= 0.5) === (g.home.score > g.away.score) : null,
     });
@@ -433,7 +434,7 @@ createServer((req, res) => {
             id: "00000000-0000-4000-8000-0000000000aa", game_id: id, release_version: "2099.11.01-1",
             home: side(g.home.team, 114.6), away: side(g.away.team, 108.2), home_win_probability: 0.68,
             interval_level: 0.8, created_at: "2099-11-10T12:00:00Z", data_cutoff_at: "2099-11-10T12:00:00Z",
-            supersedes_prediction_id: null,
+            supersedes_prediction_id: null, freshness: "current", freshness_reason: null,
           },
         };
       }));

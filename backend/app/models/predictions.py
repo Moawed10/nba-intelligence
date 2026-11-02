@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKeyConstraint,
     Index,
     Numeric,
+    SmallInteger,
     String,
     UniqueConstraint,
 )
@@ -163,3 +164,20 @@ class GamePrediction(Base):
     supersedes_prediction_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("game_predictions.id", ondelete="RESTRICT")
     )
+
+
+class GamePredictionEvaluation(Base):
+    __tablename__ = "game_prediction_evaluations"
+
+    forecast_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("game_predictions.id", ondelete="RESTRICT"), primary_key=True
+    )
+    home_actual: Mapped[int] = mapped_column(SmallInteger)
+    away_actual: Mapped[int] = mapped_column(SmallInteger)
+    home_abs_error: Mapped[float] = mapped_column(Float)
+    away_abs_error: Mapped[float] = mapped_column(Float)
+    home_within_interval: Mapped[bool] = mapped_column(Boolean)
+    away_within_interval: Mapped[bool] = mapped_column(Boolean)
+    winner_correct: Mapped[bool] = mapped_column(Boolean)
+    brier: Mapped[float] = mapped_column(Float)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

@@ -272,6 +272,34 @@ function FeatureList({ features }: { features: string[] }) {
   );
 }
 
+function LiveGameScores({ scores }: { scores: NonNullable<LiveAccuracy["game_scores"]> }) {
+  const facts = [
+    ["Average score miss", `${scores.points_mae.toFixed(2)} pts`],
+    ["Scores inside the range", formatPercent(scores.interval_coverage)],
+    ["Picked the winner", formatPercent(scores.winner_accuracy)],
+    ["Win chance Brier score", scores.brier.toFixed(3)],
+  ];
+  return (
+    <section aria-labelledby="live-game-scores" className="space-y-3">
+      <h3 id="live-game-scores" className="kicker">
+        Final-score forecasts, {scores.games} {scores.games === 1 ? "game" : "games"}
+      </h3>
+      <dl className="grid grid-cols-2 gap-3">
+        {facts.map(([term, value]) => (
+          <div key={term} className="rounded-xl bg-muted/40 px-4 py-3">
+            <dt className="text-footnote text-muted-foreground">{term}</dt>
+            <dd className="numeral text-title3">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-footnote text-muted-foreground">
+        Each game counts once, using the last forecast made before tip-off. These are real games, kept
+        separate from the held-out season.
+      </p>
+    </section>
+  );
+}
+
 function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetrics[] }) {
   const reference = new Map(heldOut.map((m) => [m.target, m.mae]));
   return (
@@ -464,8 +492,11 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
         </Panel>
 
         <Panel id="live" kicker="After release" title="Live accuracy" className="lg:col-span-7">
-          {live && live.games > 0 ? (
-            <LiveTable live={live} heldOut={regression} />
+          {live && (live.games > 0 || live.game_scores) ? (
+            <div className="space-y-6">
+              {live.games > 0 && <LiveTable live={live} heldOut={regression} />}
+              {live.game_scores && <LiveGameScores scores={live.game_scores} />}
+            </div>
           ) : (
             <Unavailable
               kind={active ? "empty" : "not_built"}

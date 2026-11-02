@@ -394,6 +394,14 @@ class LiveDoubleDouble(BaseModel):
     brier: float | None
 
 
+class LiveGameScores(BaseModel):
+    games: int
+    points_mae: float
+    interval_coverage: float
+    brier: float
+    winner_accuracy: float
+
+
 class LiveAccuracy(BaseModel):
     """Final pregame forecasts of this release scored against box scores after the games."""
 
@@ -403,6 +411,7 @@ class LiveAccuracy(BaseModel):
     games: int
     stats: list[LiveStat]
     double_double: LiveDoubleDouble | None
+    game_scores: LiveGameScores | None
 
 
 class MatchupHistory(BaseModel):

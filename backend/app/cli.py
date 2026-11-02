@@ -3,10 +3,13 @@
 import argparse
 import json
 import sys
+import time
+from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
 from sqlalchemy import exists, select
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_engine, session_scope
@@ -140,6 +143,29 @@ def artifacts_command(args: argparse.Namespace) -> int:
         return 1
 
 
+def ops_check_command() -> int:
+    from app.ops import run_checks
+
+    with Session(get_engine()) as session:
+        checks = run_checks(session, datetime.now(UTC), get_settings().artifacts_dir)
+    print(json.dumps([asdict(c) for c in checks], indent=2))
+    return 1 if any(c.status == "fail" for c in checks) else 0
+
+
+def source_check_command() -> int:
+    from nba_api.stats.endpoints import CommonTeamYears
+
+    started = time.perf_counter()
+    try:
+        result = NBAStatsClient(max_attempts=1).fetch(CommonTeamYears)
+    except Exception as error:
+        print(json.dumps({"reachable": False, "error": type(error).__name__}))
+        return 1
+    elapsed = round(time.perf_counter() - started, 2)
+    print(json.dumps({"reachable": True, "rows": len(result.frames[0]), "seconds": elapsed}))
+    return 0
+
+
 def openapi_json() -> str:
     from app.main import create_app
 
@@ -189,6 +215,10 @@ def main(argv: list[str] | None = None) -> int:
     asub.add_parser("import", help="Install a release bundle as a candidate").add_argument(
         "target", metavar="bundle"
     )
+    sub.add_parser(
+        "ops-check", help="Check sync, data, scoring and model health; exit 1 on failure"
+    )
+    sub.add_parser("source-check", help="Check that this host can reach stats.nba.com")
     backtest = sub.add_parser(
         "backtest", help="Store and score a release's held-out test-season predictions"
     )
@@ -204,6 +234,12 @@ def main(argv: list[str] | None = None) -> int:
         return activate_command(args.version)
     if args.command == "artifacts":
         return artifacts_command(args)
+    if args.command == "ops-check":
+        configure_logging()
+        return ops_check_command()
+    if args.command == "source-check":
+        configure_logging()
+        return source_check_command()
     if args.command == "backtest":
         from app.ml.backtest import run_backtest
 

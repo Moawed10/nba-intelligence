@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as PoolTimeout
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 log = logging.getLogger(__name__)
@@ -31,13 +32,19 @@ class ErrorResponse(BaseModel):
 
 class ApiError(Exception):
     def __init__(
-        self, status: int, code: str, message: str, details: list[ErrorDetail] | None = None
+        self,
+        status: int,
+        code: str,
+        message: str,
+        details: list[ErrorDetail] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(message)
         self.status = status
         self.code = code
         self.message = message
         self.details = details or []
+        self.headers = headers
 
 
 def not_found(resource: str, identifier: Any) -> ApiError:
@@ -49,7 +56,7 @@ def invalid_parameter(field: str, message: str, issue: str = "invalid") -> ApiEr
 
 
 ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
-    status: {"model": ErrorResponse} for status in (400, 404, 409, 422, 503)
+    status: {"model": ErrorResponse} for status in (400, 404, 409, 422, 429, 503)
 }
 
 HTTP_CODES = {404: "not_found", 405: "method_not_allowed", 413: "payload_too_large"}
@@ -81,7 +88,7 @@ def _field(loc: tuple[Any, ...]) -> str:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def api_error(request: Request, exc: ApiError) -> JSONResponse:
-        return error_response(request, exc.status, exc.code, exc.message, exc.details)
+        return error_response(request, exc.status, exc.code, exc.message, exc.details, exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -101,6 +108,17 @@ def register_error_handlers(app: FastAPI) -> None:
         log.error("database unavailable", extra={"request_id": _request_id(request)})
         return error_response(
             request, 503, "database_unavailable", "The database is temporarily unavailable."
+        )
+
+    @app.exception_handler(PoolTimeout)
+    async def database_busy(request: Request, exc: PoolTimeout) -> JSONResponse:
+        log.error("database pool exhausted", extra={"request_id": _request_id(request)})
+        return error_response(
+            request,
+            503,
+            "database_busy",
+            "The service is busy. Try again in a moment.",
+            headers={"Retry-After": "5"},
         )
 
     @app.exception_handler(Exception)

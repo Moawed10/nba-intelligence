@@ -118,8 +118,18 @@ def import_release(session: Session, artifacts_dir: Path, bundle: Path) -> str:
         if registry.get("format") != BUNDLE_FORMAT:
             raise ArtifactMismatch(f"unsupported bundle format {registry.get('format')}")
         version = registry["release"]["version"]
-        if session.scalar(select(ModelRelease.id).where(ModelRelease.version == version)):
-            raise ArtifactMismatch(f"release {version} already exists here")
+        release_id = session.scalar(select(ModelRelease.id).where(ModelRelease.version == version))
+        if release_id is not None:
+            known = dict(
+                session.execute(
+                    select(ModelVersion.artifact_path, ModelVersion.artifact_sha256).where(
+                        ModelVersion.release_id == release_id
+                    )
+                ).all()
+            )
+            bundled = {r["artifact_path"]: r["artifact_sha256"] for r in registry["versions"]}
+            if known != bundled:
+                raise ArtifactMismatch(f"release {version} here differs from this bundle")
         for row in registry["versions"]:
             if row["artifact_sha256"] == NOT_PERSISTED:
                 continue
@@ -135,6 +145,8 @@ def import_release(session: Session, artifacts_dir: Path, bundle: Path) -> str:
                 target.unlink()
                 raise
 
+    if release_id is not None:
+        return version
     release_row = {**registry["release"], "status": "candidate", "activated_at": None}
     session.add(ModelRelease(**_from_json(ModelRelease, release_row)))
     session.flush()

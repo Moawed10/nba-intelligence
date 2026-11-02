@@ -16,6 +16,7 @@ const ERROR_TITLES: Record<string, string> = {
   game_already_started: "This game has started",
   invalid_matchup: "This player isn't in this game",
   model_unavailable: "Forecasts are unavailable right now",
+  rate_limited: "Too many forecasts requested",
 };
 
 const HEADLINE = ["pts", "reb", "ast"] as const;

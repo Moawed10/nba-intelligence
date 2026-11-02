@@ -5,6 +5,7 @@ row that supersedes the last one, and scoring writes `prediction_evaluations` on
 """
 
 import enum
+import logging
 import threading
 import uuid
 from collections.abc import Iterator
@@ -36,6 +37,8 @@ from app.models import (
     PredictionValue,
 )
 from app.models.predictions import EvaluatedStat, PredictedStat
+
+log = logging.getLogger(__name__)
 
 REFRESH_WINDOW = timedelta(hours=48)
 # At most this many forecasts are computed at once; others wait up to INFERENCE_WAIT_SECONDS.
@@ -76,7 +79,8 @@ def serving_release(session: Session, artifacts_dir: Path) -> ActiveRelease:
     try:
         release = active_release(session, artifacts_dir)
     except (ArtifactMismatch, LookupError, FileNotFoundError) as error:
-        raise model_unavailable(f"The active model release failed verification: {error}") from None
+        log.error("active release failed verification", extra={"reason": str(error)})
+        raise model_unavailable("The active model release failed verification.") from None
     if release is None:
         raise model_unavailable("No model release is serving predictions yet.")
     return release

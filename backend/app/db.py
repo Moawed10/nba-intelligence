@@ -16,7 +16,27 @@ def get_engine(url: str | None = None) -> Engine:
         pool_size=settings.db_pool_size,
         max_overflow=settings.db_max_overflow,
         pool_pre_ping=True,
-        connect_args={"options": "-c timezone=UTC"},
+        pool_timeout=settings.db_pool_timeout_seconds,
+        connect_args={
+            "options": "-c timezone=UTC",
+            "connect_timeout": settings.db_connect_timeout_seconds,
+        },
+    )
+
+
+@lru_cache
+def api_engine(url: str | None = None) -> Engine:
+    settings = get_settings()
+    return create_engine(
+        url or settings.database_url,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_pre_ping=True,
+        pool_timeout=settings.db_pool_timeout_seconds,
+        connect_args={
+            "options": f"-c timezone=UTC -c statement_timeout={settings.api_statement_timeout_ms}",
+            "connect_timeout": settings.db_connect_timeout_seconds,
+        },
     )
 
 

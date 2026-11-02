@@ -99,6 +99,18 @@ class GameForecast(BaseModel):
     created_at: datetime
     data_cutoff_at: datetime
     supersedes_prediction_id: uuid.UUID | None
+    freshness: Literal["current", "stale", "invalid", "superseded", "final_pregame"]
+    freshness_reason: str | None
+
+
+class GameForecastEvaluation(BaseModel):
+    home_abs_error: float
+    away_abs_error: float
+    home_within_interval: bool
+    away_within_interval: bool
+    winner_correct: bool
+    brier: float
+    evaluated_at: datetime
 
 
 class GameForecastResult(BaseModel):
@@ -119,3 +131,4 @@ class GameForecastReview(BaseModel):
     away_score: int | None
     # Whether the side given the higher win chance won; null until the game is final.
     picked_winner: bool | None
+    evaluation: GameForecastEvaluation | None

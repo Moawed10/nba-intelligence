@@ -1,6 +1,9 @@
 """Game score forecasts against the synthetic league, with a 10-game rolling baseline for points
 (so the expected score is each team's recent average) and a fixed logistic margin calibrator."""
 
+import uuid
+from datetime import datetime, timedelta
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -8,12 +11,21 @@ from sklearn.linear_model import LogisticRegression
 from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session
 
+from app.ingestion import jobs
 from app.ml.artifacts import save_artifact
 from app.ml.models import RollingBaseline
 from app.ml.team_model import TEAM_FEATURES
-from app.models import Algorithm, GamePrediction, ModelRelease, ModelTarget, ModelVersion
-from app.services import game_forecasts
-from tests.api.conftest import FINAL, SCHEDULED
+from app.models import (
+    Algorithm,
+    GamePrediction,
+    ModelRelease,
+    ModelTarget,
+    ModelVersion,
+    SyncEventType,
+)
+from app.services import game_forecasts, prediction_lifecycle
+from app.sync.worker import drain_events, maintain_predictions
+from tests.api.conftest import FINAL, NOW, SCHEDULED, STAR
 from tests.api.test_predictions import CONFORMAL, EXTRA, client, league, serving  # noqa: F401
 
 pytestmark = pytest.mark.integration
@@ -21,6 +33,7 @@ pytestmark = pytest.mark.integration
 NEXT_GAME = SCHEDULED[0]  # 2099-11-11, team 1 hosts team 2
 LATER_GAME = SCHEDULED[2]  # 2099-11-25, team 1 hosts team 3
 URL = "/api/v1/predictions/games"
+VERSION = "2099.11.10-1"
 
 
 @pytest.fixture(autouse=True)
@@ -129,9 +142,6 @@ def test_invalid_requests_are_refused(scoring, ids):  # noqa: F811
 
 
 def test_worker_stores_a_score_forecast_for_games_in_the_next_48_hours(league, tmp_path, scoring):  # noqa: F811
-    from app.sync.worker import maintain_predictions
-    from tests.api.conftest import NOW
-
     result = maintain_predictions(league, NOW, tmp_path)
     assert result["game_forecasts"] >= 1
     with Session(league) as s:
@@ -163,3 +173,195 @@ def test_review_without_a_stored_forecast_says_so(scoring):  # noqa: F811
     body = scoring.get(f"{URL}/{FINAL[0].id}").json()
     assert body["forecast"] is None and body["status"] == "final"
     assert scoring.get(f"{URL}/0099999999").status_code == 404
+
+
+def _finish(engine: Engine, home: int, away: int, status: str = "final") -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE games SET status = :status, home_score = :home, away_score = :away, "
+                "stats_finalized_at = :now WHERE id = :g"
+            ),
+            {"status": status, "home": home, "away": away, "now": NOW, "g": NEXT_GAME.id},
+        )
+
+
+def _change_inputs(engine: Engine) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE team_game_stats SET pts = pts + 30 WHERE game_id = :g AND team_id = 1"),
+            {"g": FINAL[-1].id},
+        )
+
+
+def _score(engine: Engine, now: datetime = NOW) -> int:
+    with Session(engine) as s, s.begin():
+        return game_forecasts.score_pending(s, now)
+
+
+def _evaluations(engine: Engine) -> list[tuple]:
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT forecast_id::text, home_actual, away_actual, home_abs_error, "
+                "away_abs_error, home_within_interval, away_within_interval, winner_correct, "
+                "brier FROM game_prediction_evaluations ORDER BY forecast_id"
+            )
+        )
+        return [tuple(r) for r in rows]
+
+
+def test_changed_inputs_mark_the_forecast_stale_and_maintenance_refreshes_it(
+    league,  # noqa: F811
+    tmp_path,
+    scoring,
+):
+    first = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    assert first["freshness"] == "current"
+    assert scoring.get(f"{URL}/{NEXT_GAME.id}").json()["forecast"]["freshness"] == "current"
+    _change_inputs(league)
+    assert scoring.get(f"{URL}/{NEXT_GAME.id}").json()["forecast"]["freshness"] == "stale"
+    assert maintain_predictions(league, NOW, tmp_path)["game_forecasts"] >= 1
+    current = scoring.get(f"{URL}/{NEXT_GAME.id}").json()["forecast"]
+    assert current["freshness"] == "current"
+    assert current["supersedes_prediction_id"] == first["id"]
+    with Session(league) as s:
+        original = s.get(GamePrediction, uuid.UUID(first["id"]))
+        assert original.home_pts == first["home"]["points"]
+    assert maintain_predictions(league, NOW, tmp_path)["game_forecasts"] == 0
+
+
+def test_forecasts_close_at_tip_off(league, tmp_path, scoring):  # noqa: F811
+    first = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    after = NOW + timedelta(hours=7)
+    scoring.app.state.api.clock = lambda: after
+    _change_inputs(league)
+    refused = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]
+    assert refused["forecast"] is None
+    assert refused["unavailable"]["code"] == "game_already_started"
+    maintain_predictions(league, after, tmp_path)
+    review = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert review["forecast"]["id"] == first["id"]
+    assert review["forecast"]["freshness"] == "final_pregame"
+    with Session(league) as s:
+        assert s.scalar(select(func.count()).select_from(GamePrediction)
+                        .where(GamePrediction.game_id == NEXT_GAME.id)) == 1  # fmt: skip
+
+
+@pytest.mark.parametrize("status", ["postponed", "cancelled"])
+def test_postponed_and_cancelled_games_are_never_scored(league, tmp_path, scoring, status):  # noqa: F811
+    scoring.post(URL, json={"game_ids": [NEXT_GAME.id]})
+    _finish(league, 100, 90, status)
+    maintain_predictions(league, NOW, tmp_path)
+    review = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert review["forecast"]["freshness"] == "invalid"
+    assert status in review["forecast"]["freshness_reason"]
+    assert review["evaluation"] is None
+    assert _evaluations(league) == []
+    with Session(league) as s, s.begin():
+        assert game_forecasts.score_game(s, NEXT_GAME.id, NOW) == 0
+    live = scoring.get(f"/api/v1/models/{VERSION}/live").json()
+    assert live["game_scores"] is None
+
+
+def test_live_metrics_count_only_the_final_forecast_and_match_hand_values(league, scoring):  # noqa: F811
+    first = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    _change_inputs(league)
+    final = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    assert final["id"] != first["id"]
+    home, away = 100, 120
+    _finish(league, home, away)
+    assert _score(league) == 2
+
+    home_miss = abs(final["home"]["points"] - home)
+    away_miss = abs(final["away"]["points"] - away)
+    inside = [
+        final["home"]["lower"] <= home <= final["home"]["upper"],
+        final["away"]["lower"] <= away <= final["away"]["upper"],
+    ]
+    probability = final["home_win_probability"]
+    live = scoring.get(f"/api/v1/models/{VERSION}/live").json()["game_scores"]
+    assert live["games"] == 1
+    assert live["points_mae"] == pytest.approx((home_miss + away_miss) / 2)
+    assert live["interval_coverage"] == pytest.approx(sum(inside) / 2)
+    assert live["brier"] == pytest.approx(probability**2)
+    assert live["winner_accuracy"] == (0.0 if probability >= 0.5 else 1.0)
+
+    review = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert review["forecast"]["id"] == final["id"]
+    assert review["evaluation"]["home_abs_error"] == pytest.approx(home_miss)
+    assert review["evaluation"]["winner_correct"] == (probability < 0.5)
+
+
+def test_repeated_scoring_changes_nothing(league, tmp_path, scoring):  # noqa: F811
+    scoring.post(URL, json={"game_ids": [NEXT_GAME.id]})
+    _finish(league, 100, 120)
+    assert _score(league) == 1
+    stored = _evaluations(league)
+    assert _score(league) == 0
+    assert maintain_predictions(league, NOW, tmp_path)["games_scored"] == 0
+    assert _evaluations(league) == stored
+
+
+def test_a_source_correction_updates_the_evaluation_not_the_forecast(league, tmp_path, scoring):  # noqa: F811
+    forecast = scoring.post(URL, json={"game_ids": [NEXT_GAME.id]}).json()[0]["forecast"]
+    _finish(league, 100, 120)
+    _score(league)
+    _finish(league, 130, 120)
+    assert maintain_predictions(league, NOW, tmp_path)["games_scored"] == 1
+    review = scoring.get(f"{URL}/{NEXT_GAME.id}").json()
+    assert review["evaluation"]["home_abs_error"] == pytest.approx(
+        abs(forecast["home"]["points"] - 130)
+    )
+    assert review["forecast"]["home"] == forecast["home"]
+    assert review["forecast"]["created_at"] == forecast["created_at"]
+    assert _evaluations(league)[0][1:3] == (130, 120)
+
+
+def test_a_finalized_game_is_scored_by_its_sync_event(league, scoring):  # noqa: F811
+    scoring.post(URL, json={"game_ids": [NEXT_GAME.id]})
+    _finish(league, 100, 120)
+    with Session(league) as s, s.begin():
+        jobs.emit_event(s, SyncEventType.GAME_STATS_FINALIZED, "test-finalized",
+                        {"game_id": NEXT_GAME.id}, None)  # fmt: skip
+    drain_events(league, NOW)
+    assert len(_evaluations(league)) == 1
+
+
+def test_a_corrected_player_line_rescores_player_forecasts(league, scoring):  # noqa: F811
+    response = scoring.post(
+        "/api/v1/predictions", json={"player_id": STAR, "game_id": NEXT_GAME.id}
+    )
+    assert response.status_code == 201
+    _finish(league, 100, 120)
+    box = (
+        "(game_id, player_id, team_id, minutes, fgm, fga, fg3m, fg3a, ftm, fta, oreb, dreb, reb, "
+        "ast, stl, blk, tov, pf, pts, plus_minus, source_endpoint)"
+    )
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                f"INSERT INTO player_game_stats {box} "
+                "VALUES (:g, :p, 1, 40, 5, 10, 0, 0, 0, 0, 0, 3, 3, 2, 1, 0, 1, 2, 10, 0, "
+                "'fixture')"
+            ),
+            {"g": NEXT_GAME.id, "p": STAR},
+        )
+    with Session(league) as s, s.begin():
+        prediction_lifecycle.score_game(s, NEXT_GAME.id, NOW)
+    with league.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE player_game_stats SET pts = 12, fgm = 6 "
+                "WHERE game_id = :g AND player_id = :p"
+            ),
+            {"g": NEXT_GAME.id, "p": STAR},
+        )
+    with Session(league) as s, s.begin():
+        jobs.emit_event(s, SyncEventType.HISTORICAL_DATA_CORRECTED, "test-corrected",
+                        {"record_key": {"game_id": NEXT_GAME.id, "player_id": STAR},
+                         "column": "pts"}, None)  # fmt: skip
+    drain_events(league, NOW)
+    with league.connect() as conn:
+        actual = conn.scalar(text("SELECT actual FROM prediction_evaluations WHERE stat = 'pts'"))
+    assert actual == 12

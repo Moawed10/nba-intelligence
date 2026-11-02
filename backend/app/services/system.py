@@ -2,6 +2,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.deps import ApiState, Context
+from app.ml.artifacts import ArtifactMismatch
+from app.ml.inference import active_release
 from app.models import Game, GameStatus, Player, PlayerGameStats, Season, Team, TeamGameStats
 from app.schemas.resources import DatasetStatus, DataStatus, Readiness, SeasonCoverage
 from app.sync.freshness import dataset_freshness
@@ -19,8 +21,19 @@ def readiness(state: ApiState) -> Readiness:
         database = "unavailable"
     return Readiness(
         status="ready" if database == "ok" else "not_ready",
-        checks={"database": database, "model": "not_configured"},
+        checks={
+            "database": database,
+            "model": _model_check(state) if database == "ok" else "unknown",
+        },
     )
+
+
+def _model_check(state: ApiState) -> str:
+    with state.sessions() as session:
+        try:
+            return "ok" if active_release(session, state.artifacts_dir) else "no_active_release"
+        except (ArtifactMismatch, LookupError, FileNotFoundError):
+            return "failed_verification"
 
 
 def data_status(ctx: Context) -> DataStatus:
