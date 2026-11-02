@@ -1,6 +1,6 @@
 # Test Report
 
-Recorded test evidence. Each entry lists the exact command, environment and result. Status claims in [implementation-status.md](implementation-status.md) cite this file.
+Recorded test evidence. Entries are historical: each records what was true on the date and commit it names, and later code may differ. Each entry lists the exact command, environment and result. Status claims in [implementation-status.md](implementation-status.md) cite this file.
 
 ## Environment (2026-10-28)
 
@@ -13,7 +13,7 @@ Recorded test evidence. Each entry lists the exact command, environment and resu
 | Next.js / React | 16.4.3 / 19.3 |
 | Playwright / Chromium | 1.64.1 |
 
-CI (`.github/workflows/ci.yml`) runs the same suites on Ubuntu with Python 3.12, Node 24 and a `postgres:16` service. CI has **not run yet**, because the repository has no GitHub remote.
+CI (`.github/workflows/ci.yml`) runs the same suites on Ubuntu with Python 3.12, Node 24 and a `postgres:16` service. (Historical note, 2026-10-28: at that date the repository had no GitHub remote and CI had not run. It has run since; see [Release readiness](#release-readiness-baseline-2026-11-02).)
 
 ## Backend
 

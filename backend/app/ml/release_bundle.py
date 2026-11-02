@@ -1,11 +1,3 @@
-"""Portable model releases: verify a release's artifacts, and move a release between machines.
-
-A bundle is a gzipped tar holding `registry.json` (the release, its versions and evaluations) and
-every persisted artifact at its registry path. Import refuses any file whose SHA-256 or feature
-schema differs from the registry, and imports the release as a candidate: activation stays a
-separate, explicit step (`app.cli activate`).
-"""
-
 import io
 import json
 import tarfile
@@ -41,7 +33,6 @@ def _to_json(obj: Any) -> dict[str, Any]:
 
 
 def _from_json(model: type, row: dict[str, Any]) -> dict[str, Any]:
-    """Column values back from JSON, typed by the model's own column definitions."""
     out: dict[str, Any] = {}
     for attr in inspect(model).column_attrs:
         if attr.key not in row:
@@ -71,7 +62,6 @@ def _versions(session: Session, release: ModelRelease) -> list[ModelVersion]:
 
 
 def verify_release(session: Session, artifacts_dir: Path, version: str) -> list[str]:
-    """Every problem with a release's persisted artifacts; empty when all of them load."""
     problems = []
     for v in _versions(session, _release(session, version)):
         if v.artifact_sha256 == NOT_PERSISTED:
@@ -86,7 +76,6 @@ def verify_release(session: Session, artifacts_dir: Path, version: str) -> list[
 
 
 def export_release(session: Session, artifacts_dir: Path, version: str, out: Path) -> int:
-    """Write a verified bundle for `version`; returns the number of artifact files."""
     problems = verify_release(session, artifacts_dir, version)
     if problems:
         raise ArtifactMismatch("; ".join(problems))
@@ -123,7 +112,6 @@ def _safe(name: str) -> PurePosixPath:
 
 
 def import_release(session: Session, artifacts_dir: Path, bundle: Path) -> str:
-    """Install a bundle's artifacts and registry rows; returns the release version (a candidate)."""
     with tarfile.open(bundle, "r:gz") as tar:
         files = {m.name: m for m in tar.getmembers() if m.isfile()}
         registry = json.loads(tar.extractfile(files["registry.json"]).read())  # type: ignore[union-attr]

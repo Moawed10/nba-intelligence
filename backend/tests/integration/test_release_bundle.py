@@ -1,5 +1,3 @@
-"""Release bundles: verify, export and import a model release with its artifacts."""
-
 import io
 import tarfile
 
