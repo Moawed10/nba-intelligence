@@ -261,7 +261,7 @@ function Matchup({
                 <PlayerAvatar id={top.player_id} name={top.full_name} team={team.team} size="sm" />
                 <span className="min-w-0 flex-1">
                   <span className="kicker block">{team.team.abbreviation} top scorer</span>
-                  <span className="block truncate font-medium">{top.full_name}</span>
+                  <span className="block font-medium">{top.full_name}</span>
                 </span>
                 <span className="text-right tabular-nums">
                   <span className="block text-headline font-semibold">{top.box.pts}</span>
@@ -329,7 +329,7 @@ function ScoreForecast({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 id={`forecast-${game.id}`} className="kicker text-primary">
-          Our prediction
+          Predicted score
         </h3>
         <p className="text-footnote text-muted-foreground">Made before tip-off</p>
       </div>
@@ -341,13 +341,13 @@ function ScoreForecast({
           <div
             key={side.team.id}
             className={cn(
-              "flex min-w-0 items-center gap-3",
-              i === 1 && "order-3 flex-row-reverse text-right",
+              "flex min-w-0 items-center gap-3 max-sm:flex-col max-sm:items-start",
+              i === 1 && "order-3 flex-row-reverse text-right max-sm:items-end",
             )}
           >
             <TeamMark team={side.team} size="md" />
             <div className="min-w-0">
-              <p className="truncate text-subhead text-muted-foreground">{side.team.name}</p>
+              <p className="text-subhead text-muted-foreground">{side.team.name}</p>
               <p className="numeral text-[clamp(2.25rem,5vw,3rem)]">{Math.round(side.points)}</p>
             </div>
           </div>
@@ -415,7 +415,7 @@ function PredictionReview({ game }: { game: GameSummary }) {
     <section aria-labelledby={`review-${game.id}`} className="space-y-4 rounded-xl border border-border p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 id={`review-${game.id}`} className="kicker text-primary">
-          How our prediction did
+          How the prediction did
         </h3>
         <p
           className={cn("text-subhead font-semibold", data.picked_winner ? "text-positive" : "text-negative")}
@@ -424,7 +424,7 @@ function PredictionReview({ game }: { game: GameSummary }) {
         </p>
       </div>
       <p className="text-subhead">
-        Before tip-off we gave the {favorite.name} a {chance}% chance to win.
+        Before tip-off, the {favorite.name} were given a {chance}% chance to win.
       </p>
       <ul className="grid gap-3 sm:grid-cols-2">
         {sides.map(({ team, predicted, actual }) => {
@@ -472,9 +472,9 @@ function PlayerShortcuts({ game }: { game: GameSummary }) {
       <h3 id={`shortcuts-${game.id}`} className="kicker">
         Predict a player in this game
       </h3>
-      <div className="grid gap-3 sm:grid-cols-2" aria-busy={leaders.isPending}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-busy={leaders.isPending}>
         {teams.map((team, i) => (
-          <ul key={team.id} className="space-y-2" aria-label={`${team.city} ${team.name} leading scorers`}>
+          <ul key={team.id} className="min-w-0 space-y-2" aria-label={`${team.city} ${team.name} leading scorers`}>
             {(leaders.data?.[i].leaders ?? []).map((l) => (
               <li key={l.player_id}>
                 <Link
@@ -483,7 +483,7 @@ function PlayerShortcuts({ game }: { game: GameSummary }) {
                 >
                   <PlayerAvatar id={l.player_id} name={l.full_name} team={team} size="sm" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{l.full_name}</span>
+                    <span className="block font-medium">{l.full_name}</span>
                     <span className="text-footnote text-muted-foreground">
                       {formatStat(l.value)} points per game
                     </span>
@@ -729,7 +729,7 @@ export function ScheduleBoard({
       )}
       {forecasts.data && forecasts.data.size > 0 && (
         <p className="text-footnote text-muted-foreground">
-          Grey scores on upcoming games are our predictions. Pick a game to see who&apos;s favored and why.
+          Grey scores on upcoming games are predictions. Pick a game to see who&apos;s favored and why.
         </p>
       )}
       {selected && (

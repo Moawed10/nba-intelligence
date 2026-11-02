@@ -221,8 +221,8 @@ export async function CompareView({ searchParams }: { searchParams: Promise<Sear
                 <div key={group.title} className={group.title === "Per game" ? "lg:row-span-2" : undefined}>
                   <h3 className="kicker mb-3">{group.title}</h3>
                   <div className="grid grid-cols-2 pb-2 text-footnote font-medium">
-                    <span className="truncate">{both[0].full_name}</span>
-                    <span className="truncate text-right">{both[1].full_name}</span>
+                    <span>{both[0].full_name}</span>
+                    <span className="text-right">{both[1].full_name}</span>
                   </div>
                   <div className="space-y-3">
                     {group.rows.map((row) => (

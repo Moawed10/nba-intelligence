@@ -104,7 +104,7 @@ export function ComparePicker({
                 <PlayerAvatar id={player.id} name={player.full_name} team={player.team} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="kicker">{label}</p>
-                  <p className="truncate font-semibold">{player.full_name}</p>
+                  <p className="font-semibold">{player.full_name}</p>
                   <p className="truncate text-footnote text-muted-foreground">
                     {[player.team?.abbreviation ?? "No current team", player.position]
                       .filter(Boolean)

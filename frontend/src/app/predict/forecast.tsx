@@ -116,7 +116,7 @@ function ForecastView({
         <summary className="cursor-pointer font-medium text-primary">What is this based on?</summary>
         <div className="mt-3 space-y-4">
           <p className="text-muted-foreground">
-            We look at how {playerName} has played lately, this season, and in past games against the{" "}
+            The forecast looks at how {playerName} has played lately, this season, and in past games against the{" "}
             {opponentName}, plus rest and whether the game is at home. Most of the time, about 4 games out of
             5, the real number lands inside the &quot;usually&quot; range.
           </p>

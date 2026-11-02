@@ -13,7 +13,7 @@ export const TARGET_LABELS: Record<string, string> = {
 export const TARGET_ORDER = ["pts", "reb", "ast", "fg3m", "stl", "blk", "min"] as const;
 
 export const ALGORITHM_LABELS: Record<string, string> = {
-  rolling_baseline: "Baseline (last 10 games)",
+  rolling_baseline: "Simple average (last 10 games)",
   ridge: "Ridge regression",
   random_forest: "Random forest",
   xgboost: "XGBoost",

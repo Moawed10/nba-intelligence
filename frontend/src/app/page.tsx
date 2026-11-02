@@ -74,7 +74,7 @@ function StandoutGrid({ standouts }: { standouts: Standouts }) {
                 <span className="flex items-center gap-3">
                   <PlayerAvatar id={p.player_id} name={p.full_name} team={p.team} size="sm" />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold group-hover:text-primary">
+                    <span className="block font-semibold group-hover:text-primary">
                       {p.full_name}
                     </span>
                     <span className="block truncate text-footnote text-muted-foreground">
@@ -121,7 +121,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
   if (!model) {
     return (
       <Unavailable kind="no_model" title="No model has been trained yet">
-        Accuracy appears here after the first training run is evaluated on a held-out season.
+        Accuracy appears here after the first training run is evaluated on a season it never saw.
       </Unavailable>
     );
   }
@@ -145,7 +145,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
       </div>
       <table className="w-full text-subhead">
         <caption className="sr-only">
-          Mean absolute error per statistic for the model and the baseline, {model.test_season}
+          Average miss per statistic for the model and a simple average, {model.test_season}
         </caption>
         <thead className="text-footnote text-muted-foreground">
           <tr className="border-b border-border">
@@ -153,10 +153,10 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
               Statistic
             </th>
             <th scope="col" className="py-1.5 text-right font-medium">
-              Model error
+              Model miss
             </th>
             <th scope="col" className="py-1.5 text-right font-medium">
-              Baseline error
+              Simple average miss
             </th>
             <th scope="col" className="py-1.5 text-right font-medium">
               In 80% range
@@ -184,7 +184,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
         </tbody>
       </table>
       <p className="text-footnote text-muted-foreground">
-        Error is the average miss per game (mean absolute error). The baseline predicts each player&apos;s
+        Miss is how far off a prediction is per game, on average. The simple average predicts each player&apos;s
         average over their previous 10 games.
         {doubleDouble?.brier != null &&
           ` Double-double probability: Brier score ${doubleDouble.brier.toFixed(3)} over ${doubleDouble.n.toLocaleString("en-US")} player-games.`}
@@ -256,7 +256,8 @@ function StandoutHero({ p, window }: { p: Performance; window: string }) {
               </div>
             ))}
             <div>
-              <dt className="kicker">
+              <dt className="kicker flex h-[1lh] items-center gap-1">
+                Game Score
                 <InfoHint term="Game Score">
                   A single-number summary of a box score: points, shooting efficiency, rebounds, assists,
                   steals, blocks, fouls and turnovers.
@@ -281,7 +282,6 @@ function StandoutHero({ p, window }: { p: Performance; window: string }) {
           id={p.player_id}
           name={p.full_name}
           team={p.team}
-          eager
           className="order-first h-56 sm:h-80 md:order-none md:h-[25rem]"
         />
       </div>
@@ -307,11 +307,6 @@ async function OverviewContent() {
   return (
     <div className="grid gap-5 lg:grid-cols-12">
       <LiveRefresh games={tickerGames} />
-      {top && (
-        <div className="min-w-0 lg:col-span-12">
-          <StandoutHero p={top} window={window} />
-        </div>
-      )}
       <div className="min-w-0 lg:col-span-12">
         <GameTicker games={tickerGames} label="Recent and upcoming games" />
       </div>
@@ -330,6 +325,11 @@ async function OverviewContent() {
           <Unavailable kind="empty" title="No season data yet" />
         )}
       </Panel>
+      {top && (
+        <div className="min-w-0 lg:col-span-12">
+          <StandoutHero p={top} window={window} />
+        </div>
+      )}
       <Panel
         id="standouts"
         kicker={window}
@@ -361,7 +361,7 @@ export default function OverviewPage() {
   return (
     <>
       <PageHeader
-        kicker="Command center"
+        kicker="Today"
         title="Overview"
         description="Today's games, the best recent performances, and how accurate the models are."
       />

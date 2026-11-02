@@ -12,7 +12,7 @@ export default function ModelsPage({ searchParams }: PageProps<"/models">) {
   return (
     <>
       <PageHeader
-        kicker="Machine learning"
+        kicker="How accurate"
         title="Models"
         description="How accurate the predictions are, measured on a season the models never saw."
       />

@@ -21,7 +21,7 @@ const SECTIONS: BranchedMenuItem[] = [
     children: [
       { value: "release", label: "Release", icon: GitBranchIcon },
       { value: "accuracy", label: "Accuracy", icon: Target02Icon },
-      { value: "algorithms", label: "Algorithms", icon: ChartBarLineIcon },
+      { value: "algorithms", label: "Models compared", icon: ChartBarLineIcon },
       { value: "ranges", label: "Prediction ranges", icon: ChartHistogramIcon },
       { value: "check", label: "Check the predictions", icon: ChartScatterIcon },
       { value: "explorer", label: "Prediction history", icon: Search01Icon },

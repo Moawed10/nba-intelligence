@@ -22,7 +22,7 @@ const SECTIONS = [
     body: [
       "Player forecasts use only what was known before tip-off: recent form over the last 3, 5 and 10 games, season averages, history against the opponent, rest, home or away, and the opponent's recent defense and pace.",
       "Score predictions look at both teams' last 10 games (points scored and allowed, efficiency, pace), their records, rest and home court. The win chance comes from the predicted margin, calibrated on a past season's results; on a season it never saw it picked the winner 67% of the time.",
-      "Several models are trained on past seasons, chosen on a later one, and scored once on a season none of them saw, against a simple baseline (the last-10-game average). The Models page shows those results and checks every stored prediction against the real box score.",
+      "Several models are trained on past seasons, chosen on a later one, and scored once on a season none of them saw, against a simple average (the last-10-game average). The Models page shows those results and checks every stored prediction against the real box score.",
     ],
   },
   {
@@ -59,7 +59,7 @@ export default function AboutPage() {
           Reading a prediction range{" "}
           <InfoHint term="80% range">
             A range built so that, across many past games, the actual result fell inside it about 80% of the
-            time. It is calibrated on one held-out season and checked on another.
+            time. It is set using one season the models never saw and checked on another.
           </InfoHint>
         </h2>
         <p className="mt-2 max-w-3xl text-subhead leading-relaxed text-muted-foreground">
