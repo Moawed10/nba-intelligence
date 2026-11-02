@@ -20,12 +20,12 @@ The authoritative ledger of development progress. A status here is only as good 
 | 9 | Model Analytics | Complete | 100% (10/10) | None |
 | 10 | Player Comparison | Complete | 100% (9/9) | None |
 | 11 | Overview & Games | Complete | 100% (9/9) | None |
-| 12 | Accessibility Audit | Not Started | 0% (0/10) | Core screens |
+| 12 | Accessibility Audit | Verification Pending | 90% (9/10) | VoiceOver pass needs a person |
 | 13 | Performance & Security | Not Started | 0% (0/12) | Core functionality |
 | 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 136 / 182 verified deliverables = **75%**.
+**Overall:** 145 / 182 verified deliverables = **80%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -644,39 +644,39 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 12 — Accessibility & Usability Audit
 
-**Status:** Not Started · **Progress:** 0% (0/10) · **Dependencies:** Core screens
+**Status:** Verification Pending · **Progress:** 90% (9/10) · **Dependencies:** Core screens
 
 #### Deliverables
 
-- [ ] WCAG 2.2 AA audit of every route
-- [ ] Keyboard-only pass
-- [ ] VoiceOver pass for primary workflows
-- [ ] Contrast validation of all tokens in both themes
-- [ ] 200% zoom and 320 px reflow
-- [ ] Chart alternatives verified
-- [ ] Reduced-motion verified
-- [ ] Loading and error state review
-- [ ] Usability fixes in primary workflows
-- [ ] `docs/accessibility-report.md` with real results
+- [x] WCAG 2.2 AA audit of every route (15 routes and states × 4 viewports × 2 themes)
+- [x] Keyboard-only pass
+- [ ] VoiceOver pass for primary workflows (an accessibility-tree review was done instead; a person still needs to listen)
+- [x] Contrast validation of all tokens in both themes
+- [x] 200% zoom and 320 px reflow
+- [x] Chart alternatives verified
+- [x] Reduced-motion verified
+- [x] Loading and error state review
+- [x] Usability fixes in primary workflows
+- [x] `docs/accessibility-report.md` with real results
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Critical or serious axe violations | 0 | Not measured | Not Verified |
-| Primary workflows keyboard-operable | 100% | Not measured | Not Verified |
-| Essential controls with accessible names | 100% | Not measured | Not Verified |
-| Normal text contrast | ≥ 4.5:1 | Not measured | Not Verified |
-| Large text contrast | ≥ 3:1 | Not measured | Not Verified |
-| Essential non-text contrast | ≥ 3:1 | Not measured | Not Verified |
-| Essential charts with alternatives | 100% | Not measured | Not Verified |
-| Nonessential motion respects preference | 100% | Not measured | Not Verified |
-| Usable at 200% zoom | All primary screens | Not measured | Not Verified |
-| No content loss at 320 px reflow | Yes | Not measured | Not Verified |
-| Keyboard traps | 0 | Not measured | Not Verified |
-| Manual screen-reader testing | All primary workflows | Not measured | Not Verified |
+| Critical or serious axe violations | 0 | 0 (and 0 moderate or minor) in 118 page × viewport × theme runs | Pass |
+| Primary workflows keyboard-operable | 100% | Predictions, Compare, Games, Models and the shell covered with keys only | Pass |
+| Essential controls with accessible names | 100% | axe name rules pass; the accessibility-tree review found no unnamed control | Pass |
+| Normal text contrast | ≥ 4.5:1 | All text pairs pass in both themes (`check:contrast`) | Pass |
+| Large text contrast | ≥ 3:1 | Covered by the 4.5:1 text pairs | Pass |
+| Essential non-text contrast | ≥ 3:1 | Focus ring, chart colors, selected segment and control boundaries (new `--input` token) pass | Pass |
+| Essential charts with alternatives | 100% | 6 charts with table views and summaries; 3 graphics with `role="img"` labels | Pass |
+| Nonessential motion respects preference | 100% | Reduced-motion E2E passes | Pass |
+| Usable at 200% zoom | All primary screens | 0 px overflow at the 640 px equivalent layout, all 15 pages | Pass |
+| No content loss at 320 px reflow | Yes | 0 px overflow at 320 px, all 15 pages | Pass |
+| Keyboard traps | 0 | 0 across 45 page × viewport keyboard passes | Pass |
+| Manual screen-reader testing | All primary workflows | Not done: accessibility-tree review only | Not Verified |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** `docs/accessibility-report.md`, `frontend/tests/e2e/a11y-audit.spec.ts`, `frontend/scripts/check-contrast.mjs`. · **Decision:** Verification Pending (manual VoiceOver pass)
 
 ---
 
@@ -1051,3 +1051,20 @@ The "recent games" block from the original design was folded into the game log, 
 **Tests run:** backend 268 passed; Playwright 288 passed; 56 internal links crawled with none broken; lint, unit and contrast clean.
 
 **Next step:** Phase 12 (Accessibility & Usability Audit).
+
+### Session — 2026-10-30 (Phase 12)
+
+**Completed:**
+- An audit spec covering 15 routes and states at four viewports and in both themes: axe WCAG 2.2 AA, a keyboard focus and trap pass, and 640 px (200% zoom) and 320 px reflow. Results are in `docs/accessibility-report.md`.
+- Fixes:
+  - visible keyboard focus on the Predictions game list and the Models section rail
+  - a 3:1 `--input` token for text-field and control boundaries (was 1.42:1 light, 1.34:1 dark)
+  - nested chart headings at level 3
+  - screen-reader wording on the Predictions player card, game list and range chart
+- The contrast check grew from 36 to 46 pairs, all passing.
+
+**Results:** 0 axe violations of any impact; 0 keyboard traps or invisible focus states; 0 px overflow in 90 reflow runs.
+
+**Not verified:** VoiceOver. An accessibility-tree review of six primary screens was done instead and is recorded as such.
+
+**Next step:** a person runs VoiceOver through Predictions, Compare and Games; then Phase 13.

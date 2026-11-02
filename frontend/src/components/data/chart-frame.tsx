@@ -13,10 +13,21 @@ interface ChartFrameProps {
   chart: ReactNode;
   table: ReactNode;
   actions?: ReactNode;
+  /** 3 when the chart sits inside a panel that already has a level-2 heading. */
+  headingLevel?: 2 | 3;
 }
 
 /** Every chart ships with a title, units, a text summary and an equivalent table. */
-export function ChartFrame({ title, unit, summary, chart, table, actions }: ChartFrameProps) {
+export function ChartFrame({
+  title,
+  unit,
+  summary,
+  chart,
+  table,
+  actions,
+  headingLevel = 2,
+}: ChartFrameProps) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const [view, setView] = useState<"chart" | "table">("chart");
   const headingId = useId();
   const summaryId = useId();
@@ -24,9 +35,9 @@ export function ChartFrame({ title, unit, summary, chart, table, actions }: Char
     <section aria-labelledby={headingId} className="rounded-xl bg-card p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id={headingId} className="text-headline font-semibold">
+          <Heading id={headingId} className="text-headline font-semibold">
             {title}
-          </h2>
+          </Heading>
           <p className="text-footnote text-muted-foreground">{unit}</p>
         </div>
         <div className="flex items-center gap-2">

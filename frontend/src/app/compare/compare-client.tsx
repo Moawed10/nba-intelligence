@@ -267,6 +267,7 @@ export function CompareTrend({ players, season }: { players: [Picked, Picked]; s
         </Unavailable>
       ) : (
         <ChartFrame
+          headingLevel={3}
           title={`${label}: form through the season`}
           unit={`Season average after each game, by game number in ${season}`}
           summary={summary}
@@ -417,6 +418,7 @@ export function PercentileRadar({
   return (
     <div className="space-y-3">
       <ChartFrame
+        headingLevel={3}
         title="League ranking by area"
         unit="Percentile among qualified players this season (100 = best)"
         summary={summary}

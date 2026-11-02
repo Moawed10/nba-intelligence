@@ -69,7 +69,7 @@ export function RecentRange({
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
-        aria-label={`${summary} Forecast: ${formatStat(forecast.point)} ${unit}.`}
+        aria-label={`Dot chart of ${unit} in each of the last ${results.length} games, with the forecast of ${formatStat(forecast.point)} and the expected range of ${lower} to ${upper}.`}
         className="w-full"
       >
         <rect

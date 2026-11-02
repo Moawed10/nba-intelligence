@@ -63,6 +63,13 @@ const pairs = [
   ["chart-5", "card", 3],
   ["ring", "background", 3],
   ["ring", "card", 3],
+  ["chart-1", "card", 3],
+  ["muted-foreground", "popover", 4.5],
+  // Selected segment inside a muted track.
+  ["primary", "muted", 3],
+  // Text-field and control boundaries (WCAG 1.4.11).
+  ["input", "card", 3],
+  ["input", "background", 3],
 ];
 
 let failed = 0;

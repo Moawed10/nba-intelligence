@@ -7,6 +7,7 @@ import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamMark } from "@/components/brand/team-mark";
 import type { TeamRef } from "@/lib/api/types";
 import { formatStat } from "@/lib/format";
+import { targetLabel } from "@/lib/models";
 
 interface Props {
   player: {
@@ -62,7 +63,8 @@ export function PlayerCard({ player, season }: Props) {
             {(["pts", "reb", "ast"] as const).map((k) => (
               <div key={k}>
                 <dt className="text-[11px] font-semibold tracking-[0.08em] text-[color:var(--rc-muted)] uppercase">
-                  {k}
+                  <span aria-hidden>{k}</span>
+                  <span className="sr-only">{targetLabel(k)} per game</span>
                 </dt>
                 <dd className="numeral text-[1.75rem]">{formatStat(season.per_game[k])}</dd>
               </div>
