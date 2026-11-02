@@ -419,7 +419,7 @@ A 422 is a player with too few games, which is the correct answer. There were no
 
 ### Accessibility
 
-`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 had failures that were not investigated one by one, because another session was running Playwright on the same machine and ports at the same time. CI on the pull request is the result to trust.
+`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 gave 434 passed and 28 failed, while another session ran Playwright on the same machine and ports and a database rehearsal ran alongside it. Those failures were not investigated one by one, so that run proves nothing either way. CI on the pull request is the result to trust.
 
 ## Deployment and operations rehearsal (2026-11-02)
 

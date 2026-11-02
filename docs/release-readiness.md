@@ -13,7 +13,7 @@ Current state of the release gates, as of 2026-11-02. Evidence lives in [test-re
 ## Release blockers
 
 1. **No hosted deployment.** No host has been chosen or authorized, so hosted smoke tests cannot run.
-2. **NBA source access from a host is unknown.** Run  from the candidate host. If blocked, use the [remote worker arrangement](deployment.md#nba-source-access).
+2. **NBA source access from a host is unknown.** Run `app.cli source-check` from the candidate host. If blocked, use the [remote worker arrangement](deployment.md#nba-source-access).
 3. **Seven-day thresholds are pending.** Healthy request success of at least 99% and scheduled ingestion success of at least 95% need seven days of a running deployment.
 4. **The worker is not supervised anywhere yet.** While it is stopped, nothing syncs and nothing is scored. Compose restarts it once deployed.
 5. **The manual screen-reader pass has not been done.** See the [checklist](accessibility-report.md#manual-screen-reader-checklist).
@@ -23,5 +23,5 @@ Current state of the release gates, as of 2026-11-02. Evidence lives in [test-re
 ## Known limits
 
 - Rate limit counts are per API process, so run one process or lower the limits.
-- The per-client limit depends on the edge proxy overwriting .
+- The per-client limit depends on the edge proxy overwriting `X-Forwarded-For`.
 - The career backfill is partial and resumes when re-run; the source refuses long runs.
