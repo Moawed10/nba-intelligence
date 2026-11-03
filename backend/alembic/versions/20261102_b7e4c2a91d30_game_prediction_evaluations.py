@@ -1,7 +1,7 @@
 """game prediction evaluations
 
 Revision ID: b7e4c2a91d30
-Revises: a7c31e5d9f02
+Revises: e81f6b0c3a47
 Create Date: 2026-11-02 12:30:00
 """
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "b7e4c2a91d30"
-down_revision: str | None = "a7c31e5d9f02"
+down_revision: str | None = "e81f6b0c3a47"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
