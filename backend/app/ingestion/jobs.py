@@ -7,6 +7,7 @@ from typing import Any
 
 from nba_api.stats.endpoints import (
     BoxScoreMatchupsV3,
+    BoxScoreSummaryV3,
     CommonAllPlayers,
     LeagueDashTeamStats,
     LeagueGameLog,
@@ -39,6 +40,7 @@ from app.ingestion.transforms import (
     Rejection,
     current_season_start_year,
     season_label,
+    transform_attendance,
     transform_matchups,
     transform_player_career,
     transform_player_logs,
@@ -423,6 +425,48 @@ def ingest_players(client: StatsSource, season: int) -> Callable[[RunContext], N
         ctx.valid += len(rows)
         ctx.counted(upsert(ctx.session, Player, rows, ["id"],
                            provenance=provenance(ctx.run_id, "CommonAllPlayers")))  # fmt: skip
+
+    return body
+
+
+ATTENDANCE_FAILURE_LIMIT = 2
+
+
+def games_missing_attendance(session: Session, limit: int, season: int) -> list[str]:
+    """This season's final games with no attendance yet, newest first."""
+    return list(session.scalars(
+        select(Game.id)
+        .where(Game.status == GameStatus.final, Game.season_id == season, Game.attendance.is_(None))
+        .order_by(Game.game_date.desc(), Game.id)
+        .limit(limit)
+    ))  # fmt: skip
+
+
+def ingest_attendance(client: StatsSource, game_ids: list[str]) -> Callable[[RunContext], None]:
+    """Reported attendance per game (one request per game); stops early if the source refuses."""
+
+    def body(ctx: RunContext) -> None:
+        failures = 0
+        for game_id in game_ids:
+            try:
+                result = client.fetch(BoxScoreSummaryV3, game_id=game_id)
+            except StatsSourceError as error:
+                ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
+                failures += 1
+                if failures >= ATTENDANCE_FAILURE_LIMIT:
+                    return
+                continue
+            failures = 0
+            ctx.fetched += 1
+            attendance = transform_attendance(result.frames)
+            if attendance is None:
+                ctx.reject([Rejection({"game_id": game_id}, "no attendance reported")])
+                continue
+            ctx.valid += 1
+            ctx.updated += 1
+            ctx.session.execute(
+                update(Game).where(Game.id == game_id).values(attendance=attendance)
+            )
 
     return body
 

@@ -621,6 +621,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/teams/{team_id}/home-court": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Home Court */
+        get: operations["get_home_court_api_v1_teams__team_id__home_court_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/teams/{team_id}/stats": {
         parameters: {
             query?: never;
@@ -1134,6 +1151,22 @@ export interface components {
             upper: number;
             /** Within Interval */
             within_interval: boolean | null;
+        };
+        /** HomeCourt */
+        HomeCourt: {
+            /** Attendance Games */
+            attendance_games: number;
+            /** Average Attendance */
+            average_attendance: number | null;
+            away: components["schemas"]["VenueSplit"];
+            home: components["schemas"]["VenueSplit"];
+            meta: components["schemas"]["Meta"];
+            /** Players */
+            players: components["schemas"]["PlayerVenueSplit"][];
+            /** Season */
+            season: string;
+            /** Team Id */
+            team_id: number;
         };
         /**
          * InjuryReport
@@ -1746,6 +1779,25 @@ export interface components {
              */
             stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
         };
+        /** PlayerVenueSplit */
+        PlayerVenueSplit: {
+            /** Away */
+            away: {
+                [key: string]: number | null;
+            };
+            /** Away Games */
+            away_games: number;
+            /** Full Name */
+            full_name: string;
+            /** Home */
+            home: {
+                [key: string]: number | null;
+            };
+            /** Home Games */
+            home_games: number;
+            /** Player Id */
+            player_id: number;
+        };
         /**
          * PredictedStat
          * @enum {string}
@@ -2231,6 +2283,24 @@ export interface components {
             days: number;
             /** Player Id */
             player_id: number;
+        };
+        /**
+         * VenueSplit
+         * @description A team's results in one setting; a point-margin gap is an association, not a cause.
+         */
+        VenueSplit: {
+            /** Games */
+            games: number;
+            /** Losses */
+            losses: number;
+            /** Margin Per Game */
+            margin_per_game: number | null;
+            /** Opp Pts Per Game */
+            opp_pts_per_game: number | null;
+            /** Pts Per Game */
+            pts_per_game: number | null;
+            /** Wins */
+            wins: number;
         };
     };
     responses: never;
@@ -4576,6 +4646,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamHistory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_home_court_api_v1_teams__team_id__home_court_get: {
+        parameters: {
+            query?: {
+                season?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeCourt"];
                 };
             };
             /** @description Bad Request */

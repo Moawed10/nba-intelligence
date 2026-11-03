@@ -205,6 +205,7 @@ class Game(Provenance, Base):
     home_score: Mapped[int | None] = mapped_column(SmallInteger)
     away_score: Mapped[int | None] = mapped_column(SmallInteger)
     arena: Mapped[str | None] = mapped_column(String(96))
+    attendance: Mapped[int | None] = mapped_column(Integer)
 
 
 BOX_COLUMNS = (

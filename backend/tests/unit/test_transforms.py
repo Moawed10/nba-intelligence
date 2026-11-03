@@ -9,6 +9,7 @@ from app.ingestion.transforms import (
     parse_matchup,
     season_from_game_id,
     season_label,
+    transform_attendance,
     transform_matchups,
     transform_player_logs,
     transform_schedule,
@@ -174,3 +175,12 @@ def test_matchup_rows_without_possessions_are_dropped_and_bad_rows_rejected():
     out = transform_matchups(frame, "0099000001", (1, 2), {11, 21})
     assert out.rows == []
     assert len(out.rejections) == 4
+
+
+def test_attendance_of_zero_or_missing_is_not_a_crowd():
+    crowd = pd.DataFrame({"attendance": [18236]})
+    empty_arena = pd.DataFrame({"attendance": [0]})
+    assert transform_attendance([pd.DataFrame({"x": [1]}), crowd]) == 18236
+    assert transform_attendance([empty_arena]) is None
+    assert transform_attendance([]) is None
+

@@ -394,6 +394,37 @@ class HistoricSeason(BaseModel):
     net_rating: float | None
 
 
+class VenueSplit(BaseModel):
+    """A team's results in one setting; a point-margin gap is an association, not a cause."""
+
+    games: int
+    wins: int
+    losses: int
+    pts_per_game: float | None
+    opp_pts_per_game: float | None
+    margin_per_game: float | None
+
+
+class PlayerVenueSplit(BaseModel):
+    player_id: int
+    full_name: str
+    home_games: int
+    away_games: int
+    home: dict[str, float | None]
+    away: dict[str, float | None]
+
+
+class HomeCourt(BaseModel):
+    team_id: int
+    season: str
+    home: VenueSplit
+    away: VenueSplit
+    average_attendance: int | None
+    attendance_games: int
+    players: list[PlayerVenueSplit]
+    meta: Meta
+
+
 class TeamHistory(BaseModel):
     team: TeamRef
     seasons: list[HistoricSeason]

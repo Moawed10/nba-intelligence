@@ -134,3 +134,16 @@ def test_every_data_response_is_revalidated_on_refresh(client, path):
     response = client.get(path)
     assert response.status_code == 200
     assert response.headers["Cache-Control"] == "no-cache"
+
+
+def test_home_court_splits_add_up_to_the_season(client):
+    body = client.get("/api/v1/teams/1/home-court").json()
+    stats = client.get("/api/v1/teams/1/stats").json()
+    assert body["home"]["games"] + body["away"]["games"] == stats["games"]
+    assert body["home"]["wins"] + body["away"]["wins"] == stats["record"]["wins"]
+    assert body["average_attendance"] is None and body["attendance_games"] == 0
+    for player in body["players"]:
+        assert player["home_games"] + player["away_games"] > 0
+        if player["home_games"] == 0:
+            assert player["home"]["pts"] is None
+

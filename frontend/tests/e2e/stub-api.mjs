@@ -347,6 +347,22 @@ createServer((req, res) => {
     if (!team) return error(res, 404, "team_not_found", "No team with that id.");
     return send(res, 200, { team: ref(team), seasons: HISTORY[team.id], meta: META });
   }
+  const courtMatch = path.match(/^\/teams\/(\d+)\/home-court$/);
+  if (courtMatch) {
+    const id = Number(courtMatch[1]);
+    const side = (wins, losses, pts, allowed) => ({
+      games: wins + losses, wins, losses, pts_per_game: pts, opp_pts_per_game: allowed, margin_per_game: pts - allowed,
+    });
+    return send(res, 200, {
+      team_id: id, season: "2099-00", home: side(4, 1, 114, 104), away: side(2, 3, 106, 112),
+      average_attendance: 18200, attendance_games: 5,
+      players: PLAYERS.filter((p) => p.team?.id === id).map((p) => ({
+        player_id: p.id, full_name: p.full_name, home_games: 5, away_games: 5,
+        home: { pts: 25.5, reb: 6, ast: 5 }, away: { pts: 22.5, reb: 5, ast: 4 },
+      })),
+      meta: META,
+    });
+  }
   const teamMatch = path.match(/^\/teams\/(\d+)$/);
   if (teamMatch) {
     const team = TEAMS.find((t) => t.id === Number(teamMatch[1]));

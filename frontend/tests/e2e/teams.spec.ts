@@ -60,4 +60,15 @@ test.describe("team page", () => {
     await page.goto("/predict?player=1002");
     await expect(page.getByText(/This forecast assumes Test plays/)).toBeVisible();
   });
+
+  test("home court shows real splits and the home crowd", async ({ page }) => {
+    await page.goto("/teams/1");
+    const section = page.getByRole("region", { name: "Home court", exact: true });
+    await expect(section.getByText("4–1")).toBeVisible();
+    await expect(section.getByText("18,200")).toBeVisible();
+    const row = section.getByRole("row", { name: /Zed Fixture/ });
+    await expect(row.getByRole("cell", { name: "+3.0" })).toBeVisible();
+    await page.goto("/predict?player=1000");
+    await expect(page.getByText(/averages 25\.5 points at home/)).toBeVisible();
+  });
 });

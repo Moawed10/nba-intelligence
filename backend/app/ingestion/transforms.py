@@ -515,3 +515,14 @@ def transform_matchups(
                 **numbers,
             })  # fmt: skip
     return out
+
+
+def transform_attendance(frames: list[pd.DataFrame]) -> int | None:
+    """The reported crowd from a box-score summary; zero means not reported (a closed arena reads
+    the same as a missing figure, so neither is stored as a real number)."""
+    for frame in frames:
+        if "attendance" in frame.columns and not frame.empty:
+            value = to_int(frame["attendance"].iloc[0])
+            return value if value else None
+    return None
+
