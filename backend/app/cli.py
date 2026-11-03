@@ -80,17 +80,6 @@ MATCHUP_CLI_BATCH = 25
 MATCHUP_LIVE_WAIT_SECONDS = 300
 
 
-def _source_refused_matchups() -> bool:
-    with session_scope(get_engine()) as s:
-        rejected = s.scalar(
-            select(IngestionRun.rows_rejected)
-            .where(IngestionRun.job == "player_matchups")
-            .order_by(IngestionRun.id.desc())
-            .limit(1)
-        )
-    return (rejected or 0) >= jobs.MATCHUP_FAILURE_LIMIT
-
-
 def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval: float) -> bool:
     """Who guarded whom, in short runs that each keep their work, so stopping loses little and a
     re-run continues with what is missing. stats.nba.com stops answering this connection after a
@@ -101,6 +90,7 @@ def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval
         missing = jobs.games_missing_matchups(s, limit, seasons)
     print(f"matchups for {len(missing)} games, one every {interval:g} seconds", flush=True)
     ok = True
+    refused: list[bool] = []
     for start in range(0, len(missing), MATCHUP_CLI_BATCH):
         while True:
             with session_scope(get_engine()) as s:
@@ -108,9 +98,9 @@ def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval
                     break
             time.sleep(MATCHUP_LIVE_WAIT_SECONDS)
         batch = missing[start : start + MATCHUP_CLI_BATCH]
-        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)},
-                   jobs.ingest_player_matchups(client, batch))  # fmt: skip
-        if _source_refused_matchups():
+        body = jobs.ingest_player_matchups(client, batch, lambda: refused.append(True))
+        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)}, body)
+        if refused:
             print("the source is refusing requests; stopped. Re-run later to continue.", flush=True)
             return False
     return ok

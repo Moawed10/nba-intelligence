@@ -4,12 +4,13 @@ from dataclasses import dataclass, field
 
 import pytest
 import requests
-from nba_api.stats.endpoints import LeagueGameLog
+from nba_api.stats.endpoints import BoxScoreMatchupsV3, LeagueGameLog
 
 from app.ingestion.client import (
     NBAStatsClient,
     NonRetryableSourceError,
     RetryableSourceError,
+    UnexpectedResponseError,
     backoff_delay,
     parse_retry_after,
 )
@@ -126,6 +127,13 @@ def test_unexpected_schema_is_not_retried(tmp_path):
     client, _ = make_client([FakeResponse(text=bad)], tmp_path)
     with pytest.raises(NonRetryableSourceError):
         fetch(client, cacheable=True)
+    assert not list(tmp_path.rglob("*.json")), "invalid responses must never be cached"
+
+
+def test_a_v3_reply_with_no_tables_is_a_source_error_not_a_crash(tmp_path):
+    client, _ = make_client([FakeResponse(text=json.dumps({"meta": {}}))], tmp_path)
+    with pytest.raises(UnexpectedResponseError):
+        client.fetch(BoxScoreMatchupsV3, game_id="0022600001", cacheable=True)
     assert not list(tmp_path.rglob("*.json")), "invalid responses must never be cached"
 
 

@@ -516,8 +516,12 @@ def matchup(ctx: Context, player_id: int, team_id: int) -> MatchupHistory:
                 MatchupDefender(**row._mapping)
                 for row in ctx.session.execute(
                     DEFENDERS_SQL,
-                    {"p": player_id, "t": team_id, "roster": ROSTER_DAYS,
-                     "limit": MATCHUP_DEFENDERS},
+                    {
+                        "p": player_id,
+                        "t": team_id,
+                        "roster": ROSTER_DAYS,
+                        "limit": MATCHUP_DEFENDERS,
+                    },
                 )
             ],  # fmt: skip
             usual_pts_per_100=ctx.session.scalar(
