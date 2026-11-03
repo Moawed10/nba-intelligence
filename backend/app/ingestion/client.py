@@ -42,6 +42,10 @@ class NonRetryableSourceError(StatsSourceError):
     pass
 
 
+class UnexpectedResponseError(NonRetryableSourceError):
+    """The source answered, but not with the tables this endpoint should have."""
+
+
 @dataclass
 class FetchResult:
     frames: list[pd.DataFrame]
@@ -103,10 +107,10 @@ class NBAStatsClient:
         try:
             endpoint.load_response()
             frames = endpoint.get_data_frames()
-        except (KeyError, ValueError, TypeError) as exc:
+        except (KeyError, IndexError, ValueError, TypeError) as exc:
             if cache_path and from_cache:
                 cache_path.unlink(missing_ok=True)
-            raise NonRetryableSourceError(
+            raise UnexpectedResponseError(
                 f"{endpoint.endpoint}: response did not match the expected schema ({exc})"
             ) from exc
 

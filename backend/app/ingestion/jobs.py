@@ -23,7 +23,12 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion.client import FetchResult, StatsSource, StatsSourceError
+from app.ingestion.client import (
+    FetchResult,
+    StatsSource,
+    StatsSourceError,
+    UnexpectedResponseError,
+)
 from app.ingestion.lifecycle import resolve_status
 from app.ingestion.transforms import (
     ADVANCED_FIRST_SEASON,
@@ -348,11 +353,12 @@ def games_missing_matchups(
 
 
 def ingest_player_matchups(
-    client: StatsSource, game_ids: list[str]
+    client: StatsSource, game_ids: list[str], on_refused: Callable[[], None] | None = None
 ) -> Callable[[RunContext], None]:
     """Who guarded whom in each game (one request per game). A game the source fails on is rejected
-    and the rest are kept; after MATCHUP_FAILURE_LIMIT failures in a row the batch stops, and a
-    re-run picks up what is missing."""
+    and the rest are kept; after MATCHUP_FAILURE_LIMIT failed requests in a row the batch stops and
+    on_refused is called, and a re-run picks up what is missing. A reply with no usable table is
+    only that game's problem: the source is still answering."""
 
     def body(ctx: RunContext) -> None:
         session = ctx.session
@@ -367,12 +373,18 @@ def ingest_player_matchups(
             try:
                 result = client.fetch(BoxScoreMatchupsV3, game_id=game_id,
                                       cacheable=_is_completed_season(game.season_id))  # fmt: skip
+            except UnexpectedResponseError as error:
+                ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
+                failures = 0
+                continue
             except StatsSourceError as error:
                 ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
                 failures += 1
                 if failures >= MATCHUP_FAILURE_LIMIT:
                     log.warning("matchup source refusing requests; batch stopped early",
                                 extra={"game_id": game_id})  # fmt: skip
+                    if on_refused:
+                        on_refused()
                     return
                 continue
             failures = 0

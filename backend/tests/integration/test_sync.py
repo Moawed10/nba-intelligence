@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.ingestion import jobs
-from app.ingestion.client import FetchResult, RetryableSourceError
+from app.ingestion.client import FetchResult, RetryableSourceError, UnexpectedResponseError
 from app.ingestion.writer import upsert
 from app.models import (
     Game,
@@ -253,9 +253,11 @@ def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_repl
         finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
     source.error = RetryableSourceError("ConnectionError")
     repeated = [*finals, *finals, *finals]
-    run = jobs.run_job(engine, "player_matchups", {"t": 1},
-                       jobs.ingest_player_matchups(source, repeated))  # fmt: skip
+    refused = []
+    body = jobs.ingest_player_matchups(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_matchups", {"t": 1}, body)
     assert run.rows_rejected == jobs.MATCHUP_FAILURE_LIMIT
+    assert refused == [1]
     source.error = None
 
     class NoTables(FakeSource):
@@ -265,3 +267,16 @@ def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_repl
     run = jobs.run_job(engine, "player_matchups", {"t": 2},
                        jobs.ingest_player_matchups(NoTables(), finals[:1]))  # fmt: skip
     assert (run.status, run.rows_rejected) == (RunStatus.succeeded, 1)
+
+
+def test_matchup_games_with_unusable_replies_are_skipped_without_ending_the_batch(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
+    source.error = UnexpectedResponseError("boxscorematchupsv3: no tables")
+    repeated = [*finals, *finals, *finals]
+    refused = []
+    body = jobs.ingest_player_matchups(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_matchups", {"t": 3}, body)
+    assert (run.status, run.rows_rejected) == (RunStatus.succeeded, len(repeated))
+    assert refused == []
