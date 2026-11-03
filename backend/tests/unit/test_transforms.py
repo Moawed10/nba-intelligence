@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 from app.ingestion.transforms import (
+    _jersey,
     current_season_start_year,
     parse_height,
     parse_matchup,
@@ -183,4 +184,9 @@ def test_attendance_of_zero_or_missing_is_not_a_crowd():
     assert transform_attendance([pd.DataFrame({"x": [1]}), crowd]) == 18236
     assert transform_attendance([empty_arena]) is None
     assert transform_attendance([]) is None
+
+
+def test_a_missing_jersey_number_stays_missing():
+    assert _jersey(float("nan")) is None and _jersey(None) is None and _jersey(" ") is None
+    assert _jersey("00") == "00"
 
