@@ -9,6 +9,7 @@ from app.api.deps import Context
 from app.api.errors import not_found
 from app.models import (
     EvaluationSplit,
+    GamePredictionEvaluation,
     ModelEvaluation,
     ModelRelease,
     ModelVersion,
@@ -28,7 +29,7 @@ from app.schemas.resources import (
     ResidualBin,
     TargetMetrics,
 )
-from app.services import prediction_lifecycle
+from app.services import game_forecasts, prediction_lifecycle
 
 REGISTRY_TTL = 300
 LIVE_TTL = 120
@@ -37,7 +38,10 @@ LIVE_TTL = 120
 def _scored_at(session: Session):
     """When a prediction was last scored. Scoring does not advance data_version, so views of scored
     predictions include this in their cache key and change as soon as new results are scored."""
-    return session.scalar(select(func.max(PredictionEvaluation.evaluated_at)))
+    return (
+        session.scalar(select(func.max(PredictionEvaluation.evaluated_at))),
+        session.scalar(select(func.max(GamePredictionEvaluation.evaluated_at))),
+    )
 
 
 def _versions(session: Session, release: ModelRelease) -> list[ModelVersion]:
@@ -166,6 +170,7 @@ def live(ctx: Context, version: str) -> LiveAccuracy:
             version=release.version,
             status=release.status.value,
             activated_at=release.activated_at,
+            game_scores=game_forecasts.live_accuracy(ctx.session, release.id),
             **summary,
         )
 
@@ -184,9 +189,10 @@ ANALYTICS_SQL = """
       ON e.prediction_id = p.id AND e.stat::text = :stat
     JOIN prediction_values m ON m.prediction_id = p.id AND m.stat = 'min'
     JOIN games g ON g.id = p.game_id
-    WHERE p.release_id = :release AND p.kind::text = :kind"""
-# Only scored predictions have evaluations: every backtest, and for live forecasts the final one
-# made before tip-off.
+    WHERE p.release_id = :release AND p.kind::text = :kind
+      AND NOT EXISTS (
+        SELECT 1 FROM predictions newer WHERE newer.supersedes_prediction_id = p.id
+      )"""
 
 
 def _analytics_version(versions: list[ModelVersion], kind: str, stat: str) -> ModelVersion | None:

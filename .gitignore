@@ -20,6 +20,7 @@ node_modules/
 out/
 frontend/playwright-report/
 frontend/test-results/
+frontend/playwright-report-fullstack/
 coverage/
 
 # Env and secrets
@@ -34,3 +35,7 @@ coverage/
 *.egg-info/
 frontend/.next/
 frontend/next-env.d.ts
+
+# Full-stack test runs
+backend/.fullstack/
+frontend/.next-fullstack/

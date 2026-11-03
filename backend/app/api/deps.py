@@ -9,11 +9,13 @@ from pydantic import BaseModel
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.api.errors import ApiError
 from app.config import get_settings
 from app.db import current_data_version, session_factory
 from app.schemas.common import DataFreshness, Meta
 from app.services.cache import Memo, VersionedCache
 from app.services.photos import PhotoCache
+from app.services.rate_limit import PredictionLimiter, client_address
 from app.sync.freshness import DatasetFreshness, Freshness, dataset_freshness
 
 # How long the data version and freshness are reused before checking the database again.
@@ -33,6 +35,14 @@ class ApiState:
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
     artifacts_dir: Path = field(default_factory=lambda: get_settings().artifacts_dir)
     photos: PhotoCache = field(default_factory=lambda: PhotoCache(get_settings().photos_dir))
+    limiter: PredictionLimiter = field(
+        default_factory=lambda: PredictionLimiter(
+            get_settings().prediction_rate_per_minute,
+            get_settings().prediction_rate_burst,
+            get_settings().prediction_rate_global_per_minute,
+        )
+    )
+    trusted_proxies: set[str] = field(default_factory=lambda: set(get_settings().trusted_proxy_ips))
 
     def __post_init__(self) -> None:
         self.sessions = session_factory(self.engine)
@@ -106,3 +116,16 @@ def get_context(
 
 
 Ctx = Annotated[Context, Depends(get_context)]
+
+
+def limit_predictions(request: Request, state: Annotated[ApiState, Depends(get_state)]) -> None:
+    peer = request.client.host if request.client else None
+    client = client_address(peer, request.headers.get("X-Forwarded-For"), state.trusted_proxies)
+    retry_after = state.limiter.retry_after(client)
+    if retry_after is not None:
+        raise ApiError(
+            429,
+            "rate_limited",
+            "Too many forecast requests. Try again shortly.",
+            headers={"Retry-After": str(retry_after)},
+        )

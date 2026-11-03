@@ -4,9 +4,12 @@ import argparse
 import json
 import sys
 import time
+from dataclasses import asdict
 from datetime import UTC, datetime
+from pathlib import Path
 
 from sqlalchemy import exists, select
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_engine, session_scope
@@ -142,6 +145,57 @@ def activate_command(version: str) -> int:
     return 0
 
 
+def artifacts_command(args: argparse.Namespace) -> int:
+    from app.ml.artifacts import ArtifactMismatch
+    from app.ml.release_bundle import export_release, import_release, verify_release
+
+    artifacts_dir = get_settings().artifacts_dir
+    try:
+        with session_scope(get_engine()) as session:
+            if args.action == "verify":
+                problems = verify_release(session, artifacts_dir, args.target)
+                for problem in problems:
+                    print(problem, file=sys.stderr)
+                print(f"{args.target}: {'FAILED' if problems else 'all artifacts verified'}")
+                return 1 if problems else 0
+            if args.action == "export":
+                count = export_release(session, artifacts_dir, args.target, Path(args.file))
+                print(f"{args.target}: {count} artifacts written to {args.file}")
+                return 0
+            version = import_release(session, artifacts_dir, Path(args.target))
+            session.commit()
+            print(
+                f"{version} imported as a candidate; activate it with: app.cli activate {version}"
+            )
+            return 0
+    except (LookupError, ArtifactMismatch, FileNotFoundError, KeyError) as error:
+        print(f"{args.action} failed: {error}", file=sys.stderr)
+        return 1
+
+
+def ops_check_command() -> int:
+    from app.ops import run_checks
+
+    with Session(get_engine()) as session:
+        checks = run_checks(session, datetime.now(UTC), get_settings().artifacts_dir)
+    print(json.dumps([asdict(c) for c in checks], indent=2))
+    return 1 if any(c.status == "fail" for c in checks) else 0
+
+
+def source_check_command() -> int:
+    from nba_api.stats.endpoints import CommonTeamYears
+
+    started = time.perf_counter()
+    try:
+        result = NBAStatsClient(max_attempts=1).fetch(CommonTeamYears)
+    except Exception as error:
+        print(json.dumps({"reachable": False, "error": type(error).__name__}))
+        return 1
+    elapsed = round(time.perf_counter() - started, 2)
+    print(json.dumps({"reachable": True, "rows": len(result.frames[0]), "seconds": elapsed}))
+    return 0
+
+
 def openapi_json() -> str:
     from app.main import create_app
 
@@ -186,6 +240,21 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("predictions", help="Score finished games and refresh stale forecasts once")
     activate = sub.add_parser("activate", help="Verify a release's artifacts and make it serve")
     activate.add_argument("version")
+    artifacts = sub.add_parser("artifacts", help="Verify, export or import a model release")
+    asub = artifacts.add_subparsers(dest="action", required=True)
+    asub.add_parser(
+        "verify", help="Check every artifact's SHA-256 and feature schema"
+    ).add_argument("target", metavar="version")
+    export = asub.add_parser("export", help="Write a release bundle (registry + artifacts)")
+    export.add_argument("target", metavar="version")
+    export.add_argument("file")
+    asub.add_parser("import", help="Install a release bundle as a candidate").add_argument(
+        "target", metavar="bundle"
+    )
+    sub.add_parser(
+        "ops-check", help="Check sync, data, scoring and model health; exit 1 on failure"
+    )
+    sub.add_parser("source-check", help="Check that this host can reach stats.nba.com")
     backtest = sub.add_parser(
         "backtest", help="Store and score a release's held-out test-season predictions"
     )
@@ -199,6 +268,14 @@ def main(argv: list[str] | None = None) -> int:
         return train_command(args)
     if args.command == "activate":
         return activate_command(args.version)
+    if args.command == "artifacts":
+        return artifacts_command(args)
+    if args.command == "ops-check":
+        configure_logging()
+        return ops_check_command()
+    if args.command == "source-check":
+        configure_logging()
+        return source_check_command()
     if args.command == "backtest":
         from app.ml.backtest import run_backtest
 

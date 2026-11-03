@@ -1,6 +1,6 @@
 # Test Report
 
-Recorded test evidence. Each entry lists the exact command, environment and result. Status claims in [implementation-status.md](implementation-status.md) cite this file.
+Recorded test evidence. Entries are historical: each records what was true on the date and commit it names, and later code may differ. Each entry lists the exact command, environment and result. Status claims in [implementation-status.md](implementation-status.md) cite this file.
 
 ## Environment (2026-10-28)
 
@@ -13,7 +13,7 @@ Recorded test evidence. Each entry lists the exact command, environment and resu
 | Next.js / React | 16.4.3 / 19.3 |
 | Playwright / Chromium | 1.64.1 |
 
-CI (`.github/workflows/ci.yml`) runs the same suites on Ubuntu with Python 3.12, Node 24 and a `postgres:16` service. CI has **not run yet**, because the repository has no GitHub remote.
+CI (`.github/workflows/ci.yml`) runs the same suites on Ubuntu with Python 3.12, Node 24 and a `postgres:16` service. (Historical note, 2026-10-28: at that date the repository had no GitHub remote and CI had not run. It has run since; see [Release readiness](#release-readiness-baseline-2026-11-02).)
 
 ## Backend
 
@@ -312,3 +312,134 @@ Each spec includes an axe pass (WCAG 2.2 AA tags, serious and critical violation
 | Retrain from clean commit `da61251` | Release `2026.10.29-2`: every selected metric and calibration identical to `-1`; two random-forest candidates differ at the 16th decimal |
 
 The first reproducibility run found a real bug: snapshots were stored rounded to 6 decimals while the model saw full precision, so XGBoost splits could differ by up to 0.68 points. Snapshots now keep full precision and the model reads the snapshot itself. The 57 forecasts made before the fix remain stored and are superseded by new rows.
+
+## Release readiness baseline (2026-11-02)
+
+Environment: macOS (Darwin 27.0.0, arm64), Python 3.12.15, PostgreSQL 16.15, Node 25.9.0. Branch `release-readiness`. No Docker on this machine.
+
+### Dependency lock and clean setup
+
+| Check | Command or method | Result |
+|---|---|---|
+| Lock files are reproducible | `sh scripts/lock.sh` twice | Byte-identical |
+| Hash-checked install | `pip install --require-hashes -r requirements-dev.lock`, `pip check` | Clean |
+| Bundle tests after the docstring removal | `pytest tests/integration/test_release_bundle.py` | 4 passed |
+| Real release moved between machines | `artifacts export 2026.10.29-3`, then import into a new empty database with its own artifact directory, `artifacts verify`, `activate` | 19 artifacts, 6,308,098 bytes; status `active`; 43 versions and 67 evaluations, the same as the source |
+| Clean-room setup | Fresh `git clone` into a scratch directory, following [setup.md](setup.md) with a new database and the bundle above | Install, migrations on an empty database, import, verify, activate, API start, frontend `npm ci` and build, `/about` 200, `/models` 200, `/api/v1/health` ok |
+| Backend suite in the clean-room checkout | `pytest -q` run 7 times | First run 4 failed, 1 error, 280 passed. The next 6 runs all 285 passed |
+
+The first clean-room run's failure details were not kept (only the last lines of the log). The likely cause is that `NBA_TEST_DATABASE_URL` was set in `.env`, which the test suite does not read, so that run used the shared default `nba_intelligence_test` while another session was running tests against it. This is likely, not proven. [setup.md](setup.md) now says the variable is read from the shell only.
+
+Not covered by the clean-room run: a real `ingest backfill` and `train`. Both call or depend on stats.nba.com data and were run earlier on the main checkout ([Phase 3](#live-ingestion-against-statsnbacom), [Phase 6](#training-run-on-real-data)).
+
+### CI history
+
+| Commit | Result |
+|---|---|
+| `9938ecf` (Phase 12) | Passed |
+| `e1fccc5` (Phase 9) | Passed |
+| `02b7c97`, `cb2bd67`, `6c2c900`, `d6f8b74` | Cancelled by a newer push, so those commits never had a completed run of their own |
+| `6f600ad` | Failed on a line-length lint error, fixed in `6c2c900` |
+
+### Real-backend prediction workflow
+
+```bash
+cd frontend && npm run test:fullstack
+```
+
+Real Next.js production build, real FastAPI on its own port, isolated PostgreSQL database `nba_intelligence_fullstack`, synthetic season 2099 from `backend/tests/fullstack/scenario.json`, loaded through the real ingestion jobs. The model release is registered and activated through the real registry functions, using deterministic artifacts. `stub-api.mjs` is not used and no request is intercepted. Time comes from a clock file read only by the test factory `tests.fullstack.app:build`. There are no sleeps. The test fails if the browser requests any host other than localhost, and the test factory replaces the photo cache so the API makes no NBA requests either.
+
+**Result:** 1 test passed, 14 steps, 2.4 min test time (2.7 min with the production build).
+
+Expected values are calculated in the test from the scenario's numbers, not read from application code:
+
+| Check | Expected and observed |
+|---|---|
+| First forecast (mean of 6 games) | 21.667 points, range 18.667 to 24.667 |
+| After an earlier game arrives | Appended row at 23.0 superseding the original; original row unchanged |
+| Repeated request with the same inputs | Same row returned, HTTP 200, no new row |
+| Past tip-off | HTTP 409 `game_already_started`; the page says "This game has started"; no new row |
+| Live points MAE, coverage (2 final forecasts) | 3.0, 50% |
+| Live points RMSE | 3.606 |
+| Double-double Brier (n=2) | 0.3125 |
+| Backtest points MAE, coverage (n=10) | 0.68, 90%, unaffected by live forecasts |
+| Repeated scoring | Stored evaluations for the game unchanged |
+
+Bugs this suite found, all fixed:
+
+- `/models/{version}/analytics?kind=pregame` counted superseded forecasts, so revisions were overweighted. It now counts each player-game's final forecast, the same as `/live`.
+- A refresh chose the forecast to supersede by timestamp, which is ambiguous when two forecasts share one. It now picks the forecast nothing has superseded.
+- Scoring from a sync event used the system clock rather than the worker's.
+- A refused "Update forecast" showed nothing. It now keeps the stored forecast and shows the reason (`tests/unit/forecast.test.tsx`).
+
+The backend suite after these fixes: 285 passed.
+
+## Team forecast lifecycle (2026-11-02)
+
+`tests/api/test_game_forecasts.py` covers freshness, refresh, closing at tip-off, postponed and cancelled games, scoring by sync event, repeated scoring, source corrections, and live metrics compared with values calculated in the test. Headline metrics count only the forecast nothing superseded.
+
+These run against the small fixture league with the 10-game minimum lowered to 3, because the fixture has too few games for a team forecast. The real-backend suite does not exercise team forecasts for the same reason, so team forecasts have **not** been tested through a browser against the real API. The UI is covered by stub-API tests.
+
+On a copy of the real database restored on 2026-11-02, the first maintenance run scored 49 stored score forecasts. The 22 final forecasts behind them gave a score MAE of 10.63 points, winner accuracy of 63.6% and a Brier score of 0.216. That is a small early sample, not an accuracy claim, and the real database has not been scored yet.
+
+## Security and reliability (2026-11-02)
+
+| Check | Command | Result |
+|---|---|---|
+| Python advisories | `pip-audit -r requirements.lock --require-hashes --disable-pip` | No known vulnerabilities |
+| npm advisories, production dependencies | `npm audit --omit=dev` | 0 high or critical. 4 moderate and 2 low, all through the `shadcn` CLI package (`@shadcn/registry`, `@ts-morph/common`, `deepmerge`, `minimatch`, `shadcn`, `ts-morph`) |
+| Secrets in history, local | Pattern search of `git log -p --all` | No matches. A pattern search is weaker than a real scanner |
+| Secrets in history, CI | gitleaks in the `security` job | Passed at `e90f099` |
+| Rate limiting | `tests/api/test_rate_limit.py` | Predictable 429 with `Retry-After`; per-client and global limits; reads unaffected |
+| Failure paths | `tests/api/test_failure_paths.py` | Controlled 503 for database outage, exhausted pool, missing or corrupt artifacts, no active release and inference overload; generic 500 for anything else; nothing internal in responses |
+| Source failures | `tests/integration/` (existing) | Failed runs are recorded, roll back, and leave data untouched |
+
+A real leak was found and fixed: the public `model_unavailable` message included the artifact file path and hash. It now goes to the log only.
+
+### Load test
+
+```bash
+cd backend && .venv/bin/python scripts/load_test.py --base-url http://127.0.0.1:8703 --requests 1000 --clients 20
+```
+
+- **Environment:** one uvicorn process, on a MacBook (arm64, 8 CPUs, 8 GB) shared with other running work; PostgreSQL 16.15 on the same machine; `NBA_DB_POOL_SIZE=10`, `NBA_DB_MAX_OVERFLOW=10`. No network between client and server. These numbers do not predict a hosted deployment.
+- **Data:** a restored copy of the real database, active release `2026.10.29-3`.
+- **Workload:** each scenario runs separately: 1,000 requests from 20 concurrent clients, seed 7, across 62 upcoming games and 300 distinct player-games. Rate limits were raised for this test. The first scenarios warm caches. Forecast scenarios mix first-time computation with repeats.
+- **Measured** on 2026-11-02:
+
+| Scenario | Requests | Clients | Statuses | Unexpected | p50 ms | p95 ms | p99 ms | Max ms | Requests/s |
+|---|---|---|---|---|---|---|---|---|---|
+| `read_player_profile` | 1000 | 20 | 200: 1000 | 0 | 47 | 237 | 344 | 569 | 274.0 |
+| `read_games_by_date` | 1000 | 20 | 200: 1000 | 0 | 202 | 600 | 1000 | 1159 | 81.4 |
+| `read_model_summary` | 1000 | 20 | 200: 1000 | 0 | 54 | 193 | 259 | 434 | 250.0 |
+| `forecast_player` | 1000 | 20 | 200: 640, 201: 252, 422: 108 | 0 | 1668 | 4563 | 5479 | 7133 | 10.1 |
+| `forecast_game` | 1000 | 20 | 200: 1000 | 0 | 565 | 750 | 1210 | 1523 | 34.0 |
+
+A 422 is a player with too few games, which is the correct answer. There were no 5xx responses. Forecasts handled about 10 requests per second, which is why the default global limit is 600 per minute. Under this concurrency a forecast takes seconds, far above the 69 ms p95 of the sequential run in [Phase 7](#phase-7-inference); four run at once and the rest queue. No performance gate is claimed from these numbers.
+
+### Accessibility
+
+`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 gave 434 passed and 28 failed, while another session ran Playwright on the same machine and ports and a database rehearsal ran alongside it. Those failures were not investigated one by one, so that run proves nothing either way. CI's `frontend` job, which runs the full suite without that interference, passed at `e90f099`.
+
+## Deployment and operations rehearsal (2026-11-02)
+
+Everything here ran on the development Mac against the real data, in throwaway copies. The real database was only read by `pg_dump`. Nothing has been deployed.
+
+| Check | Result |
+|---|---|
+| `scripts/backup.sh nba_intelligence` | 24,004,893-byte dump with a checksum |
+| `scripts/restore_check.sh <dump> nba_intelligence` | Checksum OK; restored into a new database; row counts of 12 main tables match the source; temporary database dropped |
+| Migrate the restored copy down one step and back up | Worked |
+| First `app.cli predictions` on the copy | Scored 49 score forecasts and 272 player forecasts |
+| `app.cli ops-check` on the copy | Correctly reported overdue jobs and waiting events, because no worker runs against the copy; `scoring` went from fail to ok after maintenance; `model` ok |
+| Roll back the model release, then forward | `2026.10.29-2` verified and activated, `-3` retired; then `-3` active again |
+| `app.cli source-check` from the Mac | Reachable, 45 rows, 0.87 s. **Not** tested from any cloud host |
+| Frontend production build with no API running | Builds, so images can be built without a live API |
+| Docker images and Compose stack | Not run locally (no Docker). CI's `containers` job built and smoke-tested them at `e90f099` |
+
+The rehearsal found one more bug, now fixed with a test: a forecast for a player who did not play kept its game in the pending list, so the game was rescored on every maintenance run.
+
+CI on `e90f099` (run 41484295687): `backend`, `frontend`, `fullstack`, `security` and `containers` all passed. Those results predate later merges from main (the redesign, team pages and defender matchups). On the merged code, locally: backend 347 passed, frontend lint and typecheck clean, unit tests 40 passed, and `npm run test:fullstack` 1 passed. Main's `player_matchups` migration and this branch's `game_prediction_evaluations` migration shared a parent, so the branch's now follows main's; upgrade, downgrade and upgrade again worked on an empty database.
+
+Not demonstrated: a hosted smoke test, a real restore on a host, alert delivery, and any of the seven-day thresholds.
+

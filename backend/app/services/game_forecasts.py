@@ -11,7 +11,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import exists, select, text
+from sqlalchemy import Float, Integer, cast, exists, func, or_, select, text
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 
@@ -20,9 +21,16 @@ from app.api.errors import ApiError, not_found
 from app.ml.conformal import MondrianConformal
 from app.ml.inference import ActiveRelease, snapshot_hash
 from app.ml.team_model import MIN_PRIOR_GAMES, TEAM_FEATURES, TEAM_GAMES_SQL, team_frame
-from app.models import Game, GamePrediction, GameStatus, ModelRelease
+from app.models import (
+    Game,
+    GamePrediction,
+    GamePredictionEvaluation,
+    GameStatus,
+    ModelRelease,
+)
 from app.schemas.predictions import (
     GameForecast,
+    GameForecastEvaluation,
     GameForecastResult,
     GameForecastReview,
     TeamScore,
@@ -30,6 +38,8 @@ from app.schemas.predictions import (
 )
 from app.services.prediction_lifecycle import (
     REFRESH_WINDOW,
+    Freshness,
+    FreshnessState,
     inference_slot,
     model_unavailable,
     serving_release,
@@ -129,8 +139,12 @@ def forecast_game(
 
     with inference_slot():
         values = _predict(release, snapshot)
+    newer = aliased(GamePrediction)
     previous = session.scalar(
-        select(GamePrediction.id).where(*key).order_by(GamePrediction.created_at.desc()).limit(1)
+        select(GamePrediction.id)
+        .where(*key, ~exists().where(newer.supersedes_prediction_id == GamePrediction.id))
+        .order_by(GamePrediction.created_at.desc())
+        .limit(1)
     )
     row = GamePrediction(
         id=uuid.uuid4(),
@@ -155,7 +169,25 @@ def forecast_game(
     return row, release.version, True
 
 
-def _out(row: GamePrediction, game: Game, version: str) -> GameForecast:
+def freshness(
+    session: Session, row: GamePrediction, game: Game, now: datetime, release: ActiveRelease | None
+) -> FreshnessState:
+    child = aliased(GamePrediction)
+    if session.scalar(select(exists().where(child.supersedes_prediction_id == row.id))):
+        return FreshnessState(Freshness.superseded, "A newer forecast replaced this one.")
+    if game.status in (GameStatus.postponed, GameStatus.cancelled):
+        return FreshnessState(Freshness.invalid, f"The game was {game.status.value}.")
+    if started(game, now):
+        return FreshnessState(Freshness.final_pregame, "Last forecast made before tip-off.")
+    if release is None or release.id != row.release_id:
+        return FreshnessState(Freshness.stale, "A different model release is now serving.")
+    snapshot, _ = _snapshot(session, game)
+    if snapshot_hash(snapshot) != row.feature_snapshot_sha256:
+        return FreshnessState(Freshness.stale, "New games have been played since this forecast.")
+    return FreshnessState(Freshness.current)
+
+
+def _out(row: GamePrediction, game: Game, version: str, state: FreshnessState) -> GameForecast:
     return GameForecast(
         id=row.id,
         game_id=row.game_id,
@@ -177,6 +209,8 @@ def _out(row: GamePrediction, game: Game, version: str) -> GameForecast:
         created_at=row.created_at,
         data_cutoff_at=row.data_cutoff_at,
         supersedes_prediction_id=row.supersedes_prediction_id,
+        freshness=state.state.value,
+        freshness_reason=state.reason,
     )
 
 
@@ -193,7 +227,8 @@ def forecasts(ctx: Context, game_ids: list[str]) -> list[GameForecastResult]:
             reason = Unavailable(code=error.code, message=error.message)
             out.append(GameForecastResult(game_id=game_id, forecast=None, unavailable=reason))
             continue
-        forecast = _out(row, ctx.session.get_one(Game, game_id), version)
+        current = FreshnessState(Freshness.current)
+        forecast = _out(row, ctx.session.get_one(Game, game_id), version, current)
         out.append(GameForecastResult(game_id=game_id, forecast=forecast, unavailable=None))
     return out
 
@@ -237,7 +272,26 @@ def review(ctx: Context, game_id: str) -> GameForecastReview:
         .limit(1)
     ).first()
     final = game.status == GameStatus.final and game.home_score is not None
-    forecast = _out(row[0], game, row[1]) if row else None
+    forecast = None
+    evaluation = None
+    if row:
+        try:
+            release = serving_release(ctx.session, ctx.state.artifacts_dir)
+        except ApiError:
+            release = None
+        state = freshness(ctx.session, row[0], game, ctx.now, release)
+        forecast = _out(row[0], game, row[1], state)
+        stored = ctx.session.get(GamePredictionEvaluation, row[0].id)
+        if stored is not None:
+            evaluation = GameForecastEvaluation(
+                home_abs_error=stored.home_abs_error,
+                away_abs_error=stored.away_abs_error,
+                home_within_interval=stored.home_within_interval,
+                away_within_interval=stored.away_within_interval,
+                winner_correct=stored.winner_correct,
+                brier=stored.brier,
+                evaluated_at=stored.evaluated_at,
+            )
     picked = None
     if forecast and final:
         predicted_home = forecast.home_win_probability >= 0.5
@@ -249,4 +303,94 @@ def review(ctx: Context, game_id: str) -> GameForecastReview:
         home_score=game.home_score if final else None,
         away_score=game.away_score if final else None,
         picked_winner=picked,
+        evaluation=evaluation,
     )
+
+
+def score_game(session: Session, game_id: str, now: datetime) -> int:
+    game = session.get(Game, game_id)
+    if (
+        game is None
+        or game.status != GameStatus.final
+        or game.home_score is None
+        or game.away_score is None
+    ):
+        return 0
+    rows = session.scalars(select(GamePrediction).where(GamePrediction.game_id == game_id)).all()
+    home_won = game.home_score > game.away_score
+    for row in rows:
+        values = {
+            "forecast_id": row.id,
+            "home_actual": game.home_score,
+            "away_actual": game.away_score,
+            "home_abs_error": abs(row.home_pts - game.home_score),
+            "away_abs_error": abs(row.away_pts - game.away_score),
+            "home_within_interval": row.home_lower <= game.home_score <= row.home_upper,
+            "away_within_interval": row.away_lower <= game.away_score <= row.away_upper,
+            "winner_correct": (row.home_win_probability >= 0.5) == home_won,
+            "brier": (row.home_win_probability - float(home_won)) ** 2,
+            "evaluated_at": now,
+        }
+        stmt = insert(GamePredictionEvaluation).values(values)
+        session.execute(
+            stmt.on_conflict_do_update(
+                index_elements=["forecast_id"],
+                set_={k: stmt.excluded[k] for k in values if k != "forecast_id"},
+            )
+        )
+    return len(rows)
+
+
+def score_pending(session: Session, now: datetime) -> int:
+    evaluation = GamePredictionEvaluation
+    games = session.scalars(
+        select(GamePrediction.game_id)
+        .join(Game, Game.id == GamePrediction.game_id)
+        .outerjoin(evaluation, evaluation.forecast_id == GamePrediction.id)
+        .where(
+            Game.status == GameStatus.final,
+            Game.stats_finalized_at.is_not(None),
+            Game.home_score.is_not(None),
+            or_(
+                evaluation.forecast_id.is_(None),
+                evaluation.home_actual != Game.home_score,
+                evaluation.away_actual != Game.away_score,
+            ),
+        )
+        .distinct()
+    ).all()
+    return sum(score_game(session, game_id, now) for game_id in games)
+
+
+def live_accuracy(session: Session, release_id: uuid.UUID) -> dict | None:
+    evaluation = GamePredictionEvaluation
+    newer = aliased(GamePrediction)
+    row = session.execute(
+        select(
+            func.count(),
+            func.avg((evaluation.home_abs_error + evaluation.away_abs_error) / 2),
+            func.avg(
+                (
+                    cast(cast(evaluation.home_within_interval, Integer), Float)
+                    + cast(cast(evaluation.away_within_interval, Integer), Float)
+                )
+                / 2
+            ),
+            func.avg(evaluation.brier),
+            func.avg(cast(cast(evaluation.winner_correct, Integer), Float)),
+        )
+        .join(GamePrediction, GamePrediction.id == evaluation.forecast_id)
+        .where(
+            GamePrediction.release_id == release_id,
+            ~exists().where(newer.supersedes_prediction_id == GamePrediction.id),
+        )
+    ).one()
+    if not row[0]:
+        return None
+    return {
+        "games": row[0],
+        "points_mae": row[1],
+        "interval_coverage": row[2],
+        "brier": row[3],
+        "winner_accuracy": row[4],
+    }

@@ -124,3 +124,22 @@ The issues found are fixed above (items 4 and 5). The one minor point left then,
 ## Timing note
 
 The full E2E suite was also run during this audit. Two runs of the forecast render-time test failed while the machine was loaded (load average about 20) and another session's tests shared the same ports. Run alone, the same test passes at every viewport (p95 105–118 ms against a 500 ms limit). In the final full run (441 passed), the Compare chart/table toggle timing test failed once at 768 px with the load average at 28. Alone it passes at every viewport (p95 106–154 ms against 200 ms). Neither timing test touches anything changed in this audit.
+
+## Manual screen-reader checklist
+
+**Status: Not Verified. No person has performed this.** The audit above checks what assistive technology receives, not how it sounds. Automated tests cannot replace this pass. Use VoiceOver with Safari on macOS (Cmd+F5); NVDA with Firefox on Windows is a useful second check. Record the date, browser and result of each row here when it is done.
+
+| # | Screen | Do this | Expected | Result |
+|---|---|---|---|---|
+| 1 | Any page | Open the rotor (VO+U) and list landmarks and headings | One main landmark, one H1, headings in order | Not done |
+| 2 | Any page | Tab from the top | Skip link is first and moves focus to the content | Not done |
+| 3 | Players | Search for a player, arrow through results, press Return | Result count and the active option are announced; the profile opens | Not done |
+| 4 | Player profile | Read through averages, then a chart | Each chart has a text summary and a data table to read | Not done |
+| 5 | Predictions | Pick a player, arrow through upcoming games, press Return | Selected game is announced; the forecast and its range read as sentences | Not done |
+| 6 | Predictions | Open "What is this based on?" | Expanded state is announced | Not done |
+| 7 | Compare | Pick two players | Results are announced as they load; the radar has a table alternative | Not done |
+| 8 | Models | Switch Backtest and Live in "Check the predictions" | Radio state and the new numbers are announced; tables have captions | Not done |
+| 9 | Games | Change date, open a game, read the score | Live and final scores read clearly and updates aren't disruptive | Not done |
+| 10 | Any error | Open a player id that doesn't exist | The message is announced and offers a way back | Not done |
+| 11 | Both themes | Repeat rows 5 and 8 in light theme | No change in what is announced | Not done |
+

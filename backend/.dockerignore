@@ -1,0 +1,9 @@
+.venv
+.cache
+.fullstack
+artifacts
+tests
+__pycache__
+*.egg-info
+.env
+.env.*

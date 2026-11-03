@@ -1,5 +1,7 @@
 import "server-only";
 
+import { headers } from "next/headers";
+
 import { ApiError, networkError, parseResponse } from "./errors";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
@@ -42,11 +44,16 @@ export async function serverTry<T>(path: string, query?: Query): Promise<ServerR
 
 /** Server-side POST for idempotent API actions (e.g. stored forecasts); errors come back as values. */
 export async function serverPostTry<T>(path: string, body: unknown): Promise<ServerResult<T>> {
+  const forwardedFor = (await headers()).get("x-forwarded-for");
   let response: Response;
   try {
     response = await fetch(apiUrl(path), {
       method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json" },
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        ...(forwardedFor ? { "x-forwarded-for": forwardedFor } : {}),
+      },
       body: JSON.stringify(body),
     });
   } catch (cause) {

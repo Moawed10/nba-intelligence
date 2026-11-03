@@ -17,6 +17,7 @@ const ERROR_TITLES: Record<string, string> = {
   game_already_started: "This game has started",
   invalid_matchup: "This player isn't in this game",
   model_unavailable: "Forecasts are unavailable right now",
+  rate_limited: "Too many forecasts requested",
 };
 
 const HEADLINE = ["pts", "reb", "ast"] as const;
@@ -104,6 +105,7 @@ function ForecastView({
   opponentName,
   onRefresh,
   pending,
+  error,
   history,
   seasonAverages,
 }: {
@@ -112,6 +114,7 @@ function ForecastView({
   opponentName: string;
   onRefresh: () => void;
   pending: boolean;
+  error: ApiError | null;
   history: PlayerGameLine[];
   seasonAverages: Record<string, number | null> | null;
 }) {
@@ -145,6 +148,12 @@ function ForecastView({
             {pending ? "Updating…" : "Update forecast"}
           </button>
         </div>
+      )}
+      {error && (
+        <p role="alert" className="rounded-xl bg-muted/60 px-4 py-3 text-subhead">
+          <strong>{ERROR_TITLES[error.code] ?? "This forecast couldn't be updated"}.</strong>{" "}
+          {ERROR_TITLES[error.code] ? error.message : describeError(error).message}
+        </p>
       )}
       <div className="space-y-3">
         <dl className="stat-grid sm:grid-cols-3">
@@ -297,6 +306,7 @@ export function Forecast({
         opponentName={opponentName}
         onRefresh={request}
         pending={pending}
+        error={error}
         history={history}
         seasonAverages={seasonAverages}
       />

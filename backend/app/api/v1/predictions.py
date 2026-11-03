@@ -1,10 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter, Depends, Query, Response
 from fastapi import Path as PathParam
 
-from app.api.deps import Ctx
+from app.api.deps import Ctx, limit_predictions
 from app.models import PredictionKind
 from app.schemas.predictions import (
     GameForecastRequest,
@@ -22,7 +22,9 @@ from app.services import game_forecasts, predictions
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
 
-@router.post("", response_model=Prediction, status_code=201)
+@router.post(
+    "", response_model=Prediction, status_code=201, dependencies=[Depends(limit_predictions)]
+)
 def create_prediction(ctx: Ctx, body: PredictionRequest, response: Response) -> Prediction:
     """Pregame forecast for a player in a scheduled game; repeating it with unchanged data returns
     the stored prediction (200) instead of creating another."""
@@ -31,13 +33,17 @@ def create_prediction(ctx: Ctx, body: PredictionRequest, response: Response) -> 
     return prediction
 
 
-@router.post("/upcoming", response_model=list[UpcomingForecast])
+@router.post(
+    "/upcoming", response_model=list[UpcomingForecast], dependencies=[Depends(limit_predictions)]
+)
 def upcoming_forecasts(ctx: Ctx, body: UpcomingRequest) -> list[UpcomingForecast]:
     """Forecast every game a player has in the next `days` days (stored, reused while current)."""
     return predictions.upcoming(ctx, body.player_id, body.days)
 
 
-@router.post("/games", response_model=list[GameForecastResult])
+@router.post(
+    "/games", response_model=list[GameForecastResult], dependencies=[Depends(limit_predictions)]
+)
 def game_forecasts_(ctx: Ctx, body: GameForecastRequest) -> list[GameForecastResult]:
     """Predicted final score and home win chance for scheduled games (stored, reused while the
     inputs are unchanged); a game that can't be forecast says why."""

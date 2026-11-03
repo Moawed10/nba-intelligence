@@ -38,7 +38,8 @@ FastAPI, versioned under `/api/v1`. OpenAPI is served at `/api/v1/openapi.json`,
 | 422 | `validation_error` | Pydantic validation failure, with field-level `details` |
 | 422 | `insufficient_data`, `invalid_matchup` | Prediction cannot be made reliably (body explains why) |
 | 429 | `rate_limited` | Includes `Retry-After` |
-| 503 | `model_unavailable`, `database_unavailable` | Dependency down; readiness fails |
+| 429 | `rate_limited` | Forecast requests over the limit. Has a `Retry-After` header. Limits: [setup.md](setup.md#3-environment-variables) |
+| 503 | `model_unavailable`, `database_unavailable`, `database_busy`, `inference_busy` | Dependency down or overloaded. A public message never names files or queries |
 | 500 | `internal_error` | Generic message only; detail is in logs under the request id |
 
 ## Endpoint contract table
@@ -73,7 +74,7 @@ Module = file under `backend/app/api/v1/`. Response models live in `backend/app/
 | GET | `/models/evaluations` | models.py | `Page[EvaluationPoint]` | Actual-vs-predicted points and residuals; `target`, `release`, `season`, `limit` ≤ 5000 | Per release |
 | GET | `/overview` | overview.py | `Overview` | Featured players, recent standout lines, upcoming games, model summary in one call | 5 min · data_version |
 | GET | `/health` | system.py | `Health` | Liveness only, no dependencies | none |
-| GET | `/readiness` | system.py | `Readiness` | DB reachable (503 if not). The model check reports `not_configured` until Phase 7 makes an active, hash-verified model required | none |
+| GET | `/readiness` | system.py | `Readiness` | DB reachable (503 if not). `checks.model` is `ok`, `no_active_release`, `failed_verification` or `unknown`. A model problem does not fail readiness, because the read API still works | none |
 | GET | `/data-status` | system.py | `DataStatus` | Last successful sync per job, seasons covered, row counts | 1 min |
 
 `/overview` is the one aggregate endpoint. The home page would otherwise make four requests.

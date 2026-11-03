@@ -5,6 +5,7 @@ row that supersedes the last one, and scoring writes `prediction_evaluations` on
 """
 
 import enum
+import logging
 import threading
 import uuid
 from collections.abc import Iterator
@@ -36,6 +37,8 @@ from app.models import (
     PredictionValue,
 )
 from app.models.predictions import EvaluatedStat, PredictedStat
+
+log = logging.getLogger(__name__)
 
 REFRESH_WINDOW = timedelta(hours=48)
 # At most this many forecasts are computed at once; others wait up to INFERENCE_WAIT_SECONDS.
@@ -76,7 +79,8 @@ def serving_release(session: Session, artifacts_dir: Path) -> ActiveRelease:
     try:
         release = active_release(session, artifacts_dir)
     except (ArtifactMismatch, LookupError, FileNotFoundError) as error:
-        raise model_unavailable(f"The active model release failed verification: {error}") from None
+        log.error("active release failed verification", extra={"reason": str(error)})
+        raise model_unavailable("The active model release failed verification.") from None
     if release is None:
         raise model_unavailable("No model release is serving predictions yet.")
     return release
@@ -144,8 +148,11 @@ def forecast(
     existing = session.scalar(same_snapshot)
     if existing is not None:
         return existing, False
+    newer = aliased(Prediction)
     previous = session.scalar(
-        select(Prediction.id).where(*key).order_by(Prediction.created_at.desc())
+        select(Prediction.id)
+        .where(*key, ~exists().where(newer.supersedes_prediction_id == Prediction.id))
+        .order_by(Prediction.created_at.desc())
     )
     row = Prediction(
         id=uuid.uuid4(),
@@ -314,7 +321,17 @@ def score_pending(session: Session, now: datetime) -> int:
     games = session.scalars(
         select(Prediction.game_id)
         .join(Game, Game.id == Prediction.game_id)
-        .where(Game.status == GameStatus.final, Game.stats_finalized_at.is_not(None), ~scored)
+        .join(
+            PlayerGameStats,
+            (PlayerGameStats.game_id == Prediction.game_id)
+            & (PlayerGameStats.player_id == Prediction.player_id),
+        )
+        .where(
+            Game.status == GameStatus.final,
+            Game.stats_finalized_at.is_not(None),
+            PlayerGameStats.minutes > 0,
+            ~scored,
+        )
         .distinct()
     ).all()
     return sum(score_game(session, game_id, now) for game_id in games)

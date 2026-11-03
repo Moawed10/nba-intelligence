@@ -210,6 +210,7 @@ function Matchup({
         <ScoreForecast game={game} headingLevel={headingLevel} {...forecast} />
       )}
       {game.status === "final" && <PredictionReview game={game} headingLevel={headingLevel} />}
+      {(game.status === "postponed" || game.status === "cancelled") && <WithdrawnForecast game={game} />}
       {game.status === "scheduled" && <PlayerShortcuts game={game} headingLevel={headingLevel} />}
 
       {stats.error ? (
@@ -411,6 +412,21 @@ function ScoreForecast({
   );
 }
 
+function WithdrawnForecast({ game }: { game: GameSummary }) {
+  const review = useQuery({
+    queryKey: ["game-review", game.id],
+    queryFn: ({ signal }) =>
+      clientGet<GameForecastReview>(`/predictions/games/${game.id}`, undefined, signal),
+  });
+  if (!review.data?.forecast) return null;
+  return (
+    <p className="rounded-xl border border-border p-5 text-subhead text-muted-foreground">
+      This game was {game.status}, so its score prediction no longer applies and won&apos;t count toward
+      accuracy.
+    </p>
+  );
+}
+
 /** A finished game: the score predicted before tip-off next to the final score. */
 function PredictionReview({ game, headingLevel }: { game: GameSummary; headingLevel: 2 | 3 }) {
   const Heading = `h${headingLevel}` as const;
@@ -442,6 +458,8 @@ function PredictionReview({ game, headingLevel }: { game: GameSummary; headingLe
       </div>
       <p className="text-subhead">
         Before tip-off, the {favorite.name} were given a {chance}% chance to win.
+        {data.evaluation &&
+          ` The predicted scores were off by ${formatStat(data.evaluation.away_abs_error)} and ${formatStat(data.evaluation.home_abs_error)} points.`}
       </p>
       <ul className="grid gap-3 sm:grid-cols-2">
         {sides.map(({ team, predicted, actual }) => {

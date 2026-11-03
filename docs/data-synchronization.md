@@ -168,6 +168,10 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 - Restart recovery: abandoned lease rerun; overdue jobs run once
 - Time zones: game-day boundaries across the March and November DST changes
 
+## Score forecast lifecycle
+
+Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
+
 ## Who guarded whom
 
 `player_matchups` holds the NBA's per-game tracking of which defender guarded which player (`boxscorematchupsv3`, one request per game, published some hours after the final). The `matchups` sync job fetches finished games of the current season every 3 hours.

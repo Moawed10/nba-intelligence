@@ -16,6 +16,8 @@ test.describe("models", () => {
     const live = page.getByRole("region", { name: "Live accuracy", exact: true });
     await expect(live.getByRole("row", { name: /Points 5\.25 4\.50 83\.3% 6/ })).toBeVisible();
     await expect(live.getByText(/across 2 games/)).toBeVisible();
+    await expect(live.getByText("Final-score forecasts, 2 games")).toBeVisible();
+    await expect(live.getByText("7.25 pts")).toBeVisible();
   });
 
   test("ranks candidate algorithms by validation error", async ({ page }) => {
