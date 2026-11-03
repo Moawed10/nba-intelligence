@@ -32,7 +32,7 @@ jobs:
       NBA_TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/nba_intelligence_test
       NBA_LOG_LEVEL: WARNING
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -60,7 +60,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
@@ -99,7 +99,7 @@ jobs:
       NBA_FULLSTACK_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/nba_intelligence_fullstack
       FULLSTACK_PYTHON: python
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -135,7 +135,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-python@v5
@@ -161,7 +161,7 @@ jobs:
       POSTGRES_PASSWORD: ci-only
       WEB_PORT: "3000"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker compose config --quiet
       - name: Build the API, worker and web images
         run: docker compose build
