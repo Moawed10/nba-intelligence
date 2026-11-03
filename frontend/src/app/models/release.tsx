@@ -277,7 +277,7 @@ function LiveGameScores({ scores }: { scores: NonNullable<LiveAccuracy["game_sco
     ["Average score miss", `${scores.points_mae.toFixed(2)} pts`],
     ["Scores inside the range", formatPercent(scores.interval_coverage)],
     ["Picked the winner", formatPercent(scores.winner_accuracy)],
-    ["Win chance Brier score", scores.brier.toFixed(3)],
+    ["Win chance error score", scores.brier.toFixed(3)],
   ];
   return (
     <section aria-labelledby="live-game-scores" className="space-y-3">

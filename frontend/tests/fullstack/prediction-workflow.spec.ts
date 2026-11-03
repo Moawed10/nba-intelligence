@@ -314,7 +314,7 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
       "across 1 game",
     );
     await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText(
-      `Brier score ${LIVE_BRIER.toFixed(3)} over 2 forecasts`,
+      `error score ${LIVE_BRIER.toFixed(3)} over 2 forecasts`,
     );
 
     const check = page.getByRole("region", { name: "Check the predictions", exact: true });
