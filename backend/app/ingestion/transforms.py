@@ -302,6 +302,11 @@ def transform_scoreboard(games: pd.DataFrame, teams: pd.DataFrame) -> dict[str, 
     return live
 
 
+def _jersey(value: Any) -> str | None:
+    """The number as printed, keeping "00"; the source's blank arrives as NaN, not as a number."""
+    return None if pd.isna(value) else (str(value).strip() or None)
+
+
 def transform_players(
     all_players: pd.DataFrame, index: pd.DataFrame | None
 ) -> list[dict[str, Any]]:
@@ -322,6 +327,7 @@ def transform_players(
             "position": (str(b.get("POSITION") or "").strip() or None) if b else None,
             "height_inches": parse_height(b.get("HEIGHT")) if b else None,
             "weight_lbs": to_int(b.get("WEIGHT")) if b else None,
+            "jersey_number": _jersey(b.get("JERSEY_NUMBER")) if b else None,
             "is_active": to_int(r.get("ROSTERSTATUS")) == 1,
             "current_team_id": team_id,
             "from_year": to_int(r.get("FROM_YEAR")),
@@ -514,3 +520,14 @@ def transform_matchups(
                 **numbers,
             })  # fmt: skip
     return out
+
+
+def transform_attendance(frames: list[pd.DataFrame]) -> int | None:
+    """The reported crowd from a box-score summary; zero means not reported (a closed arena reads
+    the same as a missing figure, so neither is stored as a real number)."""
+    for frame in frames:
+        if "attendance" in frame.columns and not frame.empty:
+            value = to_int(frame["attendance"].iloc[0])
+            return value if value else None
+    return None
+

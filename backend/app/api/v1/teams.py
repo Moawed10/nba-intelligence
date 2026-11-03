@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Query
 
 from app.api.deps import Ctx
 from app.models import SeasonType
-from app.schemas.resources import Team, TeamDetail, TeamHistory, TeamSeasonStats
+from app.schemas.resources import HomeCourt, Team, TeamDetail, TeamHistory, TeamSeasonStats
 from app.services import teams
 
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -34,6 +34,12 @@ def get_team_stats(
 ) -> TeamSeasonStats:
     ctx.always_revalidate()
     return teams.team_stats(ctx, team_id, season, season_type)
+
+
+@router.get("/{team_id}/home-court", response_model=HomeCourt)
+def get_home_court(ctx: Ctx, team_id: TeamId, season: SeasonLabel = None) -> HomeCourt:
+    ctx.always_revalidate()
+    return teams.home_court(ctx, team_id, season)
 
 
 @router.get("/{team_id}/history", response_model=TeamHistory)

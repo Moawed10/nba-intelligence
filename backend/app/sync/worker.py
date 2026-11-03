@@ -68,6 +68,8 @@ JOBS: dict[str, JobSpec] = {
     "careers": JobSpec(interval=timedelta(hours=24)),
     # Who guarded whom in finished games of this season; published some hours after the final.
     "matchups": JobSpec(interval=timedelta(hours=3)),
+    "injuries": JobSpec(interval=timedelta(minutes=30)),
+    "attendance": JobSpec(interval=timedelta(hours=6)),
     # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
     # no NBA data, so it runs outside ingestion runs and does not advance data_version.
     "predictions": JobSpec(interval=timedelta(minutes=15)),
@@ -164,6 +166,12 @@ def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -
             ("teams", {"season": season}, jobs.ingest_teams(client, season)),
             ("players", {"season": season}, jobs.ingest_players(client, season)),
         ]
+    if job == "attendance":
+        with Session(engine) as s:
+            missing = jobs.games_missing_attendance(s, MATCHUP_BATCH, season)
+        return [("attendance", {"season": season}, jobs.ingest_attendance(client, missing))]
+    if job == "injuries":
+        return [("injuries", {}, jobs.ingest_injuries())]
     if job == "careers":
         with Session(engine) as s:
             active = list(s.scalars(select(Player.id).where(Player.is_active).order_by(Player.id)))

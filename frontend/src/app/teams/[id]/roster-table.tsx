@@ -4,10 +4,11 @@ import Link from "next/link";
 
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { type Column, DataTable } from "@/components/data/data-table";
-import type { DirectoryPlayer, PlayerSummary } from "@/lib/api/types";
+import { injuryLabel, InjuryStatus } from "@/components/data/injury-note";
+import type { DirectoryPlayer, RosterPlayer } from "@/lib/api/types";
 import { formatPercent, formatStat } from "@/lib/format";
 
-export type RosterRow = PlayerSummary & { season_averages?: DirectoryPlayer["season_averages"] };
+export type RosterRow = RosterPlayer & { season_averages?: DirectoryPlayer["season_averages"] };
 
 const stat = (key: "min" | "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk", header: string, description: string): Column<RosterRow> => ({
   key,
@@ -26,12 +27,16 @@ const COLUMNS: Column<RosterRow>[] = [
     cell: (p) => (
       <span className="flex items-center gap-2 sm:gap-3">
         <PlayerAvatar id={p.id} name={p.full_name} team={p.team} size="sm" className="sm:size-10" />
-        <Link
-          href={`/players/${p.id}`}
-          className="w-24 font-medium whitespace-normal transition-colors duration-150 hover:text-primary sm:w-auto"
-        >
-          {p.full_name}
-        </Link>
+        <span className="w-28 whitespace-normal sm:w-auto">
+          <Link href={`/players/${p.id}`} className="block font-medium transition-colors duration-150 hover:text-primary">
+            {p.full_name}
+          </Link>
+          <span className="flex flex-wrap items-center gap-1.5 text-footnote text-muted-foreground">
+            {p.jersey_number && <span className="tabular-nums">#{p.jersey_number}</span>}
+            {p.injury && <InjuryStatus injury={p.injury} />}
+            {p.injury && <span className="sr-only sm:not-sr-only">{injuryLabel(p.injury)}</span>}
+          </span>
+        </span>
       </span>
     ),
   },

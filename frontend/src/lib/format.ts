@@ -85,3 +85,14 @@ export function milestoneLabel(box: {
   const tens = [box.pts, box.reb, box.ast, box.stl, box.blk].filter((v) => v >= 10).length;
   return tens >= 2 ? MILESTONES[tens - 2] : null;
 }
+
+const DAY_MS = 86_400_000;
+
+/** A rough return estimate in words, or null when the source gives no date. */
+export function roughReturn(returnDate: string | null | undefined, now: Date = new Date()): string | null {
+  if (!returnDate) return null;
+  const days = Math.ceil((Date.parse(`${returnDate}T00:00:00Z`) - now.getTime()) / DAY_MS);
+  if (days <= 0) return "Return date not updated";
+  const span = days === 1 ? "about 1 day" : days < 14 ? `about ${days} days` : `about ${Math.round(days / 7)} weeks`;
+  return `Estimated back ${formatGameDate(returnDate)} (${span})`;
+}

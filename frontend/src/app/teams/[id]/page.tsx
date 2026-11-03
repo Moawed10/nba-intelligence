@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
+import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamBand } from "@/components/brand/team-band";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
+import { injuryLabel, InjuryStatus, ReturnEstimate } from "@/components/data/injury-note";
 import { Panel } from "@/components/data/panel";
 import { StatTile } from "@/components/data/stat-tile";
 import { LoadingBlock } from "@/components/data/state-view";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
-import type { PlayerPage, TeamDetail, TeamSeasonStats } from "@/lib/api/types";
+import type { HomeCourt, PlayerPage, TeamDetail, TeamSeasonStats } from "@/lib/api/types";
 import { formatStat } from "@/lib/format";
 
+import { HomeCourtSection } from "./home-court";
 import { RosterTable } from "./roster-table";
 
 const TEAM_ID = /^\d{1,10}$/;
@@ -36,7 +40,11 @@ function TeamStats({ stats }: { stats: TeamSeasonStats }) {
         <StatTile label="Points" value={stats.pts_per_game} footnote="Scored per game" />
         <StatTile label="Allowed" value={stats.opp_pts_per_game} footnote="Given up per game" />
         <StatTile label="Offense" value={stats.offensive_rating} footnote="Points per 100 possessions" />
-        <StatTile label="Defense" value={stats.defensive_rating} footnote="Allowed per 100; lower is better" />
+        <StatTile
+          label="Defense"
+          value={stats.defensive_rating}
+          footnote="Allowed per 100; lower is better"
+        />
         <StatTile label="Net" value={stats.net_rating} footnote="Offense minus defense" />
         <StatTile label="Pace" value={stats.pace} footnote="Possessions per game" />
       </dl>
@@ -57,13 +65,15 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
   if (detail.error) return <ApiErrorView error={detail.error} />;
 
   const { team, season, record, roster, meta } = detail.data;
-  const [stats, averages] = await Promise.all([
+  const [stats, averages, homeCourt] = await Promise.all([
     serverTry<TeamSeasonStats>(`/teams/${id}/stats`, { season }),
     serverTry<PlayerPage>("/players", { team_id: id, season, sort: "-pts", limit: ROSTER_LIMIT }),
+    serverTry<HomeCourt>(`/teams/${id}/home-court`, { season }),
   ]);
   const bySeason = new Map((averages.data?.items ?? []).map((p) => [p.id, p.season_averages]));
   const players = roster.map((p) => ({ ...p, season_averages: bySeason.get(p.id) ?? null }));
   const freshness = meta.data_freshness;
+  const injured = roster.filter((p) => p.injury);
   const name = `${team.city} ${team.name}`;
 
   return (
@@ -74,7 +84,11 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
             <p className="kicker">
               {team.conference} · {team.division} · {season} regular season
             </p>
-            <h1 id="team-name" tabIndex={-1} className="display mt-4 text-[clamp(3.5rem,10vw,8.5rem)] outline-none">
+            <h1
+              id="team-name"
+              tabIndex={-1}
+              className="display mt-4 text-[clamp(3.5rem,10vw,8.5rem)] outline-none"
+            >
               {name}
             </h1>
             <dl className="mt-6 flex flex-wrap gap-x-8 gap-y-3 lg:gap-x-12">
@@ -85,7 +99,9 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
                 <dt className="kicker mt-1.5">Record</dt>
               </div>
               <div>
-                <dd className="numeral text-[clamp(3.25rem,7vw,5.5rem)]">{formatStat(stats.data?.pts_per_game)}</dd>
+                <dd className="numeral text-[clamp(3.25rem,7vw,5.5rem)]">
+                  {formatStat(stats.data?.pts_per_game)}
+                </dd>
                 <dt className="kicker mt-1.5">Points per game</dt>
               </div>
             </dl>
@@ -114,6 +130,40 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
                 A dash means the player hasn&apos;t played a regular-season game this season.
               </p>
             </>
+          )}
+        </Panel>
+        <Panel id="injuries" kicker={`${injured.length} listed`} title="Injury report">
+          {injured.length === 0 ? (
+            <Unavailable kind="empty" title="Nobody on this roster is listed as injured" />
+          ) : (
+            <>
+              <ul className="grid gap-x-10 md:grid-cols-2">
+                {injured.map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 border-b border-border py-3">
+                    <PlayerAvatar id={p.id} name={p.full_name} team={team} size="md" />
+                    <span className="min-w-0 flex-1">
+                      <Link href={`/players/${p.id}`} className="font-medium hover:text-primary">
+                        {p.full_name}
+                      </Link>
+                      <span className="block text-footnote text-muted-foreground">
+                        {injuryLabel(p.injury!)} · <ReturnEstimate injury={p.injury!} />
+                      </span>
+                    </span>
+                    <InjuryStatus injury={p.injury!} />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-footnote text-muted-foreground">
+                Status and return dates come from ESPN&apos;s injury report and are rough estimates.
+              </p>
+            </>
+          )}
+        </Panel>
+        <Panel id="home-court" kicker={`${season} regular season`} title="Home court">
+          {homeCourt.error ? (
+            <ApiErrorView error={homeCourt.error} />
+          ) : (
+            <HomeCourtSection data={homeCourt.data} teamName={name} />
           )}
         </Panel>
         <Panel id="team-stats" kicker={`${season} regular season`} title="Team stats">

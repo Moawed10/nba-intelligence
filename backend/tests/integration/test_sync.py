@@ -6,13 +6,15 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.ingestion import jobs
-from app.ingestion.client import FetchResult, RetryableSourceError
+from app.ingestion.client import FetchResult, RetryableSourceError, UnexpectedResponseError
 from app.ingestion.writer import upsert
 from app.models import (
     Game,
     GameStatus,
     IngestionRun,
+    Player,
     PlayerGameStats,
+    PlayerInjury,
     PlayerMatchup,
     RunStatus,
     SyncEvent,
@@ -42,7 +44,11 @@ def source(engine) -> FakeSource:
     with Session(engine) as s, s.begin():
         s.execute(
             update(SyncSchedule)
-            .where(SyncSchedule.job.in_(["metadata", "corrections", "careers"]))
+            .where(
+                SyncSchedule.job.in_(
+                    ["metadata", "corrections", "careers", "injuries", "attendance"]
+                )
+            )
             .values(next_run_at=NOW + timedelta(days=365))
         )
     return src
@@ -253,9 +259,11 @@ def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_repl
         finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
     source.error = RetryableSourceError("ConnectionError")
     repeated = [*finals, *finals, *finals]
-    run = jobs.run_job(engine, "player_matchups", {"t": 1},
-                       jobs.ingest_player_matchups(source, repeated))  # fmt: skip
+    refused = []
+    body = jobs.ingest_player_matchups(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_matchups", {"t": 1}, body)
     assert run.rows_rejected == jobs.MATCHUP_FAILURE_LIMIT
+    assert refused == [1]
     source.error = None
 
     class NoTables(FakeSource):
@@ -265,3 +273,37 @@ def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_repl
     run = jobs.run_job(engine, "player_matchups", {"t": 2},
                        jobs.ingest_player_matchups(NoTables(), finals[:1]))  # fmt: skip
     assert (run.status, run.rows_rejected) == (RunStatus.succeeded, 1)
+
+
+def test_injury_sync_replaces_the_report_and_drops_recovered_players(engine):
+    with Session(engine) as s, s.begin():
+        upsert(s, Player, [
+            {"id": 1, "full_name": "Zed Fixture", "is_active": True, "source_endpoint": "test"},
+            {"id": 2, "full_name": "Yan Fixture", "is_active": True, "source_endpoint": "test"},
+        ], ["id"])  # fmt: skip
+
+    def report(*names):
+        return lambda: {"injuries": [{"injuries": [
+            {"status": "Out", "date": "2099-11-03T22:08Z", "athlete": {"displayName": n},
+             "details": {"type": "Hip", "returnDate": "2099-11-06"}} for n in names
+        ]}]}  # fmt: skip
+
+    jobs.run_job(engine, "injuries", {}, jobs.ingest_injuries(report("Zed Fixture", "Yan Fixture")))
+    jobs.run_job(engine, "injuries", {}, jobs.ingest_injuries(report("Yan Fixture")))
+    with Session(engine) as s:
+        assert list(s.scalars(select(PlayerInjury.player_id))) == [2]
+    with pytest.raises(jobs.PartialResponseError):
+        jobs.run_job(engine, "injuries", {}, jobs.ingest_injuries(report()))
+
+
+def test_matchup_games_with_unusable_replies_are_skipped_without_ending_the_batch(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
+    source.error = UnexpectedResponseError("boxscorematchupsv3: no tables")
+    repeated = [*finals, *finals, *finals]
+    refused = []
+    body = jobs.ingest_player_matchups(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_matchups", {"t": 3}, body)
+    assert (run.status, run.rows_rejected) == (RunStatus.succeeded, len(repeated))
+    assert refused == []

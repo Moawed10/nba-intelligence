@@ -621,6 +621,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/teams/{team_id}/home-court": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Home Court */
+        get: operations["get_home_court_api_v1_teams__team_id__home_court_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/teams/{team_id}/stats": {
         parameters: {
             query?: never;
@@ -873,6 +890,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Position */
             position: string | null;
             season_averages: components["schemas"]["SeasonAverages"] | null;
@@ -1160,6 +1179,48 @@ export interface components {
             upper: number;
             /** Within Interval */
             within_interval: boolean | null;
+        };
+        /** HomeCourt */
+        HomeCourt: {
+            /** Attendance Games */
+            attendance_games: number;
+            /** Average Attendance */
+            average_attendance: number | null;
+            away: components["schemas"]["VenueSplit"];
+            home: components["schemas"]["VenueSplit"];
+            meta: components["schemas"]["Meta"];
+            /** Players */
+            players: components["schemas"]["PlayerVenueSplit"][];
+            /** Season */
+            season: string;
+            /** Team Id */
+            team_id: number;
+        };
+        /**
+         * InjuryReport
+         * @description Current listing from the source. `return_date` is its rough estimate, not a promise.
+         */
+        InjuryReport: {
+            /** Detail */
+            detail: string | null;
+            /** Injury */
+            injury: string | null;
+            /**
+             * Reported At
+             * Format: date-time
+             */
+            reported_at: string;
+            /** Return Date */
+            return_date: string | null;
+            /** Side */
+            side: string | null;
+            /**
+             * Source
+             * @default ESPN
+             */
+            source: string;
+            /** Status */
+            status: string;
         };
         /** Leader */
         Leader: {
@@ -1671,6 +1732,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Last Name */
             last_name: string | null;
             /** Position */
@@ -1684,6 +1747,7 @@ export interface components {
         /** PlayerProfile */
         PlayerProfile: {
             current_season: components["schemas"]["SeasonLine"] | null;
+            injury?: components["schemas"]["InjuryReport"] | null;
             /** Last Games */
             last_games: components["schemas"]["PlayerGameLine"][];
             meta: components["schemas"]["Meta"];
@@ -1729,6 +1793,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Position */
             position: string | null;
             team: components["schemas"]["TeamRef"] | null;
@@ -1754,6 +1820,25 @@ export interface components {
              * @enum {string}
              */
             stat: "pts" | "reb" | "ast" | "fg3m" | "stl" | "blk" | "min";
+        };
+        /** PlayerVenueSplit */
+        PlayerVenueSplit: {
+            /** Away */
+            away: {
+                [key: string]: number | null;
+            };
+            /** Away Games */
+            away_games: number;
+            /** Full Name */
+            full_name: string;
+            /** Home */
+            home: {
+                [key: string]: number | null;
+            };
+            /** Home Games */
+            home_games: number;
+            /** Player Id */
+            player_id: number;
         };
         /**
          * PredictedStat
@@ -1912,6 +1997,25 @@ export interface components {
             n: number;
             /** Upper */
             upper: number;
+        };
+        /** RosterPlayer */
+        RosterPlayer: {
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            injury?: components["schemas"]["InjuryReport"] | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
+            /** Position */
+            position: string | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
         };
         /** SeasonAverages */
         SeasonAverages: {
@@ -2074,7 +2178,7 @@ export interface components {
             meta: components["schemas"]["Meta"];
             record: components["schemas"]["Record"];
             /** Roster */
-            roster: components["schemas"]["PlayerSummary"][];
+            roster: components["schemas"]["RosterPlayer"][];
             /** Season */
             season: string;
             team: components["schemas"]["Team"];
@@ -2221,6 +2325,24 @@ export interface components {
             days: number;
             /** Player Id */
             player_id: number;
+        };
+        /**
+         * VenueSplit
+         * @description A team's results in one setting; a point-margin gap is an association, not a cause.
+         */
+        VenueSplit: {
+            /** Games */
+            games: number;
+            /** Losses */
+            losses: number;
+            /** Margin Per Game */
+            margin_per_game: number | null;
+            /** Opp Pts Per Game */
+            opp_pts_per_game: number | null;
+            /** Pts Per Game */
+            pts_per_game: number | null;
+            /** Wins */
+            wins: number;
         };
     };
     responses: never;
@@ -4912,6 +5034,75 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_home_court_api_v1_teams__team_id__home_court_get: {
+        parameters: {
+            query?: {
+                season?: string | null;
+            };
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeCourt"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

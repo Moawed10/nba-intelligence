@@ -3,21 +3,24 @@ import Link from "next/link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
+import { injuryLabel, InjuryStatus, isOut, ReturnEstimate } from "@/components/data/injury-note";
 import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverPostTry, serverTry } from "@/lib/api/server";
 import type {
   GameSummary,
+  HomeCourt,
   Leaders,
   ModelReleaseSummary,
   PlayerGameLine,
   PlayerGameLinePage,
   MatchupHistory,
   PlayerProfile,
+  TeamDetail,
   TeamSeasonStats,
   UpcomingForecast,
 } from "@/lib/api/types";
-import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
+import { formatCount, formatGameDate, formatGameTime, formatStat } from "@/lib/format";
 import { param, type SearchParams } from "@/lib/url";
 
 import { Forecast } from "./forecast";
@@ -93,10 +96,15 @@ function GuardedBy({ history, name }: { history: MatchupHistory | null; name: st
     <div className="space-y-2 border-t border-border pt-4">
       <h4 className="kicker">Most often guarded by</h4>
       <p className="text-footnote text-muted-foreground">
-        From past games against players now on this team. This is not a confirmed matchup: who guards{" "}
-        {name} tonight is only known after the game.
+        From past games against players now on this team. This is not a confirmed matchup: who guards {name}{" "}
+        tonight is only known after the game.
       </p>
-      <div role="region" aria-label="Most often guarded by" tabIndex={0} className="scroll-quiet overflow-x-auto">
+      <div
+        role="region"
+        aria-label="Most often guarded by"
+        tabIndex={0}
+        className="scroll-quiet overflow-x-auto"
+      >
         <table className="w-full text-subhead tabular-nums">
           <caption className="sr-only">
             Defenders now on this team, with the possessions they guarded {name} and the points {name} scored
@@ -220,6 +228,100 @@ function HeadToHead({
   );
 }
 
+/** How this player and the host team have actually done at home and away this season. */
+function HomeCourtNote({
+  own,
+  host,
+  hostName,
+  playerId,
+  name,
+  isHome,
+}: {
+  own: HomeCourt | null;
+  host: HomeCourt | null;
+  hostName: string;
+  playerId: number;
+  name: string;
+  isHome: boolean;
+}) {
+  const split = own?.players.find((p) => p.player_id === playerId);
+  if (!split && !host) return null;
+  return (
+    <section aria-labelledby="home-court" className="space-y-2">
+      <h3 id="home-court" className="kicker">
+        Home court
+      </h3>
+      {split && split.home.pts != null && split.away.pts != null && (
+        <p className="text-subhead">
+          {name} averages <strong>{formatStat(split.home.pts)}</strong> points at home ({split.home_games}{" "}
+          {split.home_games === 1 ? "game" : "games"}) and <strong>{formatStat(split.away.pts)}</strong> on
+          the road ({split.away_games} {split.away_games === 1 ? "game" : "games"}) this season. This game is{" "}
+          {isHome ? "at home" : "on the road"}.
+        </p>
+      )}
+      {host && (
+        <p className="text-subhead">
+          The {hostName} are{" "}
+          <strong>
+            {host.home.wins}–{host.home.losses}
+          </strong>{" "}
+          at home this season
+          {host.average_attendance != null &&
+            `, with an average crowd of ${formatCount(host.average_attendance)}`}
+          .
+        </p>
+      )}
+      <p className="text-footnote text-muted-foreground">
+        The forecast already knows whether a game is at home. Crowd size and atmosphere aren&apos;t part of
+        it.
+      </p>
+    </section>
+  );
+}
+
+/** Both teams' injury lists for this game. Stated plainly: the forecast doesn't adjust for them yet. */
+function WhoIsOut({ rosters, playerId }: { rosters: (TeamDetail | null | undefined)[]; playerId: number }) {
+  const teams = rosters.flatMap((r) =>
+    r ? [{ team: r.team, listed: r.roster.filter((p) => p.injury && p.id !== playerId) }] : [],
+  );
+  if (teams.length === 0) return null;
+  return (
+    <section aria-labelledby="who-is-out" className="space-y-3">
+      <h3 id="who-is-out" className="kicker">
+        Who&apos;s hurt in this game
+      </h3>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {teams.map(({ team, listed }) => (
+          <div key={team.id}>
+            <p className="font-medium">
+              {team.city} {team.name}
+            </p>
+            {listed.length === 0 ? (
+              <p className="text-footnote text-muted-foreground">Nobody listed</p>
+            ) : (
+              <ul className="mt-1 divide-y divide-border/60">
+                {listed.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center gap-x-2 py-1.5 text-subhead">
+                    <Link href={`/players/${p.id}`} className="hover:text-primary">
+                      {p.full_name}
+                    </Link>
+                    <InjuryStatus injury={p.injury!} />
+                    <span className="text-footnote text-muted-foreground">{injuryLabel(p.injury!)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-footnote text-muted-foreground">
+        From ESPN&apos;s injury report. The forecast above doesn&apos;t adjust for missing teammates or
+        opponents yet.
+      </p>
+    </section>
+  );
+}
+
 export async function PredictView({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const query = await searchParams;
   const raw = param(query, "player");
@@ -270,6 +372,15 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   const restDays = gap > 0 ? gap - 1 : null;
   const note = servingNote(releases.data);
   const serving = releases.data?.some((r) => r.status === "active") ?? false;
+  const hostId = game ? game.home.team.id : null;
+  const [ownCourt, hostCourt] = await Promise.all([
+    teamId ? serverTry<HomeCourt>(`/teams/${teamId}/home-court`) : null,
+    hostId ? serverTry<HomeCourt>(`/teams/${hostId}/home-court`) : null,
+  ]);
+  const [ownRoster, opponentRoster] = await Promise.all([
+    teamId ? serverTry<TeamDetail>(`/teams/${teamId}`) : null,
+    opponent ? serverTry<TeamDetail>(`/teams/${opponent.id}`) : null,
+  ]);
   const [forecasts, matchup] = await Promise.all([
     serving && games.length
       ? serverPostTry<UpcomingForecast[]>("/predictions/upcoming", {
@@ -339,6 +450,21 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               </div>
             </div>
 
+            {profile.data.injury && (
+              <div
+                className={`rounded-md border px-4 py-3 text-subhead ${isOut(profile.data.injury) ? "border-negative" : "border-primary"}`}
+              >
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  <InjuryStatus injury={profile.data.injury} />
+                  {injuryLabel(profile.data.injury)} · <ReturnEstimate injury={profile.data.injury} />
+                </p>
+                <p className="mt-1 text-muted-foreground">
+                  This forecast assumes {firstName} plays. The model doesn&apos;t see the injury report, so if{" "}
+                  {firstName} sits, these numbers won&apos;t apply.
+                </p>
+              </div>
+            )}
+
             {serving ? (
               <Forecast
                 key={game.id}
@@ -370,6 +496,17 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               name={firstName}
               opponent={`${opponent.city} ${opponent.name}`}
             />
+
+            <HomeCourtNote
+              own={ownCourt?.data ?? null}
+              host={hostCourt?.data ?? null}
+              hostName={game.home.team.name}
+              playerId={player.id}
+              name={firstName}
+              isHome={Boolean(isHome)}
+            />
+
+            <WhoIsOut rosters={[ownRoster?.data, opponentRoster?.data]} playerId={player.id} />
 
             <section aria-labelledby="good-to-know" className="space-y-3">
               <h3 id="good-to-know" className="kicker">

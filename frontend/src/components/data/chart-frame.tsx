@@ -40,7 +40,7 @@ export function ChartFrame({
           </Heading>
           <p className="mt-1 text-footnote text-muted-foreground">{unit}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {actions}
           <SegmentedControl
             label={`${title} view`}

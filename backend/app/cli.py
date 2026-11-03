@@ -83,17 +83,6 @@ MATCHUP_CLI_BATCH = 25
 MATCHUP_LIVE_WAIT_SECONDS = 300
 
 
-def _source_refused_matchups() -> bool:
-    with session_scope(get_engine()) as s:
-        rejected = s.scalar(
-            select(IngestionRun.rows_rejected)
-            .where(IngestionRun.job == "player_matchups")
-            .order_by(IngestionRun.id.desc())
-            .limit(1)
-        )
-    return (rejected or 0) >= jobs.MATCHUP_FAILURE_LIMIT
-
-
 def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval: float) -> bool:
     """Who guarded whom, in short runs that each keep their work, so stopping loses little and a
     re-run continues with what is missing. stats.nba.com stops answering this connection after a
@@ -104,6 +93,7 @@ def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval
         missing = jobs.games_missing_matchups(s, limit, seasons)
     print(f"matchups for {len(missing)} games, one every {interval:g} seconds", flush=True)
     ok = True
+    refused: list[bool] = []
     for start in range(0, len(missing), MATCHUP_CLI_BATCH):
         while True:
             with session_scope(get_engine()) as s:
@@ -111,9 +101,9 @@ def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval
                     break
             time.sleep(MATCHUP_LIVE_WAIT_SECONDS)
         batch = missing[start : start + MATCHUP_CLI_BATCH]
-        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)},
-                   jobs.ingest_player_matchups(client, batch))  # fmt: skip
-        if _source_refused_matchups():
+        body = jobs.ingest_player_matchups(client, batch, lambda: refused.append(True))
+        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)}, body)
+        if refused:
             print("the source is refusing requests; stopped. Re-run later to continue.", flush=True)
             return False
     return ok
@@ -222,6 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     isub.add_parser("teams")
     isub.add_parser("team-history", help="All seasons of every franchise (about 60 requests)")
     isub.add_parser("players")
+    isub.add_parser("injuries", help="The current injury report")
+    isub.add_parser("attendance", help="This season's crowds (one request per game)")
     careers = isub.add_parser("careers", help="Every season of every player (one request each)")
     careers.add_argument("--players", help="Comma-separated player ids (default: all due)")
     matchups = isub.add_parser("matchups", help="Who guarded whom (one request per game)")
@@ -311,6 +303,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.target == "matchups":
             seasons = tuple(int(y) for y in args.seasons.split(",")) if args.seasons else None
             ok = ingest_matchups(args.limit, seasons, args.interval)
+        elif args.target == "attendance":
+            with session_scope(get_engine()) as s:
+                missing = jobs.games_missing_attendance(s, 2000, current)
+            ok = _run("attendance", {"season": current}, jobs.ingest_attendance(client, missing))
+        elif args.target == "injuries":
+            ok = _run("injuries", {}, jobs.ingest_injuries())
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
         elif args.target == "schedule":

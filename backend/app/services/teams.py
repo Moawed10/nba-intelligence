@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, aliased
 
@@ -7,6 +9,8 @@ from app.models import (
     Game,
     GameStatus,
     Player,
+    PlayerGameStats,
+    PlayerInjury,
     Season,
     SeasonType,
     Team,
@@ -16,11 +20,15 @@ from app.models import (
 from app.schemas.common import Shooting
 from app.schemas.resources import (
     HistoricSeason,
-    PlayerSummary,
+    HomeCourt,
+    InjuryReport,
+    PlayerVenueSplit,
     Record,
+    RosterPlayer,
     TeamDetail,
     TeamHistory,
     TeamSeasonStats,
+    VenueSplit,
 )
 from app.schemas.resources import Team as TeamSchema
 from app.services.common import latest_season, resolve_season, team_ref
@@ -95,14 +103,22 @@ def team_detail(ctx: Context, team_id: int, season: str | None) -> TeamDetail:
             .order_by(Player.last_name, Player.full_name)
         )
         ref = team_ref(team)
+        injuries = {i.player_id: i for i in ctx.session.scalars(
+            select(PlayerInjury)
+            .join(Player, Player.id == PlayerInjury.player_id)
+            .where(Player.current_team_id == team_id)
+        )}  # fmt: skip
         return TeamDetail(
             team=_team_schema(team),
             season=current.label if current else "",
             record=_record(lines),
             roster=[
-                PlayerSummary(
-                    id=p.id, full_name=p.full_name, position=p.position, is_active=p.is_active,
-                    team=ref, from_year=p.from_year, to_year=p.to_year,
+                RosterPlayer(
+                    id=p.id, full_name=p.full_name, jersey_number=p.jersey_number,
+                    position=p.position, is_active=p.is_active, team=ref, from_year=p.from_year,
+                    to_year=p.to_year,
+                    injury=(InjuryReport.model_validate(injuries[p.id], from_attributes=True)
+                            if p.id in injuries else None),
                 )
                 for p in roster
             ],
@@ -154,6 +170,71 @@ def team_stats(
 
     key = (team_id, season, season_type)
     return ctx.cached_model("team_stats", TEAM_TTL, key, DATASET, compute)
+
+
+def _venue(lines: list[tuple[TeamGameStats, TeamGameStats]]) -> VenueSplit:
+    games = len(lines)
+    pts = _per_game(sum(own.pts for own, _ in lines), games)
+    allowed = _per_game(sum(opp.pts for _, opp in lines), games)
+    record = _record(lines)
+    return VenueSplit(
+        games=games, wins=record.wins, losses=record.losses, pts_per_game=pts,
+        opp_pts_per_game=allowed,
+        margin_per_game=None if pts is None or allowed is None else round(pts - allowed, 1),
+    )  # fmt: skip
+
+
+VENUE_STATS = ("pts", "reb", "ast")
+
+
+def home_court(ctx: Context, team_id: int, season: str | None) -> HomeCourt:
+    """Regular-season results at home and away for the team and for each rostered player."""
+
+    def compute() -> HomeCourt:
+        _team_or_404(ctx.session, team_id)
+        current = _season(ctx, season)
+        lines = _lines(ctx.session, team_id, current.id, SeasonType.regular) if current else []
+        game_ids = [own.game_id for own, _ in lines]
+        games = {g.id: g for g in ctx.session.scalars(select(Game).where(Game.id.in_(game_ids)))}
+        home_ids = {g.id for g in games.values() if g.home_team_id == team_id}
+        crowds = [games[i].attendance for i in home_ids if games[i].attendance]
+        played = ctx.session.execute(
+            select(PlayerGameStats, Player.full_name)
+            .join(Player, Player.id == PlayerGameStats.player_id)
+            .where(
+                PlayerGameStats.team_id == team_id,
+                PlayerGameStats.game_id.in_(list(games)),
+                PlayerGameStats.minutes > 0,
+                Player.current_team_id == team_id,
+            )
+        ).all()
+        by_player: dict[int, dict[str, Any]] = {}
+        for line, name in played:
+            entry = by_player.setdefault(line.player_id, {"name": name, "home": [], "away": []})
+            entry["home" if line.game_id in home_ids else "away"].append(line)
+
+        def averages(rows: list[PlayerGameStats]) -> dict[str, float | None]:
+            return {s: _per_game(sum(getattr(r, s) for r in rows), len(rows)) for s in VENUE_STATS}
+
+        players = [
+            PlayerVenueSplit(
+                player_id=pid, full_name=e["name"], home_games=len(e["home"]),
+                away_games=len(e["away"]), home=averages(e["home"]), away=averages(e["away"]),
+            )
+            for pid, e in by_player.items()
+        ]  # fmt: skip
+        return HomeCourt(
+            team_id=team_id,
+            season=current.label if current else "",
+            home=_venue([pair for pair in lines if pair[0].game_id in home_ids]),
+            away=_venue([pair for pair in lines if pair[0].game_id not in home_ids]),
+            average_attendance=round(sum(crowds) / len(crowds)) if crowds else None,
+            attendance_games=len(crowds),
+            players=sorted(players, key=lambda p: p.full_name),
+            meta=ctx.meta(DATASET),
+        )
+
+    return ctx.cached_model("home_court", TEAM_TTL, (team_id, season), DATASET, compute)
 
 
 HISTORY_PER_GAME = ("pts", "reb", "oreb", "ast", "stl", "blk", "tov", "fg3m", "pf")

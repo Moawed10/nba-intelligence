@@ -785,6 +785,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
           "position": {
             "anyOf": [
               {
@@ -1726,6 +1737,135 @@
           "within_interval"
         ],
         "title": "HistoryValue",
+        "type": "object"
+      },
+      "HomeCourt": {
+        "properties": {
+          "attendance_games": {
+            "title": "Attendance Games",
+            "type": "integer"
+          },
+          "average_attendance": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Attendance"
+          },
+          "away": {
+            "$ref": "#/components/schemas/VenueSplit"
+          },
+          "home": {
+            "$ref": "#/components/schemas/VenueSplit"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PlayerVenueSplit"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "team_id": {
+            "title": "Team Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "team_id",
+          "season",
+          "home",
+          "away",
+          "average_attendance",
+          "attendance_games",
+          "players",
+          "meta"
+        ],
+        "title": "HomeCourt",
+        "type": "object"
+      },
+      "InjuryReport": {
+        "description": "Current listing from the source. `return_date` is its rough estimate, not a promise.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Injury"
+          },
+          "reported_at": {
+            "format": "date-time",
+            "title": "Reported At",
+            "type": "string"
+          },
+          "return_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Date"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          },
+          "source": {
+            "default": "ESPN",
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "injury",
+          "detail",
+          "side",
+          "return_date",
+          "reported_at"
+        ],
+        "title": "InjuryReport",
         "type": "object"
       },
       "Leader": {
@@ -3269,6 +3409,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
           "last_name": {
             "anyOf": [
               {
@@ -3347,6 +3498,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/SeasonLine"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InjuryReport"
               },
               {
                 "type": "null"
@@ -3519,6 +3680,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
           "position": {
             "anyOf": [
               {
@@ -3634,6 +3806,64 @@
           "meta"
         ],
         "title": "PlayerTrends",
+        "type": "object"
+      },
+      "PlayerVenueSplit": {
+        "properties": {
+          "away": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Away",
+            "type": "object"
+          },
+          "away_games": {
+            "title": "Away Games",
+            "type": "integer"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "home": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Home",
+            "type": "object"
+          },
+          "home_games": {
+            "title": "Home Games",
+            "type": "integer"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "player_id",
+          "full_name",
+          "home_games",
+          "away_games",
+          "home",
+          "away"
+        ],
+        "title": "PlayerVenueSplit",
         "type": "object"
       },
       "PredictedStat": {
@@ -4011,6 +4241,97 @@
           "n"
         ],
         "title": "ResidualBin",
+        "type": "object"
+      },
+      "RosterPlayer": {
+        "properties": {
+          "from_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Year"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InjuryReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Year"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "position",
+          "is_active",
+          "team",
+          "from_year",
+          "to_year"
+        ],
+        "title": "RosterPlayer",
         "type": "object"
       },
       "SeasonAverages": {
@@ -4668,7 +4989,7 @@
           },
           "roster": {
             "items": {
-              "$ref": "#/components/schemas/PlayerSummary"
+              "$ref": "#/components/schemas/RosterPlayer"
             },
             "title": "Roster",
             "type": "array"
@@ -5146,6 +5467,66 @@
           "player_id"
         ],
         "title": "UpcomingRequest",
+        "type": "object"
+      },
+      "VenueSplit": {
+        "description": "A team's results in one setting; a point-margin gap is an association, not a cause.",
+        "properties": {
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "losses": {
+            "title": "Losses",
+            "type": "integer"
+          },
+          "margin_per_game": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin Per Game"
+          },
+          "opp_pts_per_game": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opp Pts Per Game"
+          },
+          "pts_per_game": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pts Per Game"
+          },
+          "wins": {
+            "title": "Wins",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "games",
+          "wins",
+          "losses",
+          "pts_per_game",
+          "opp_pts_per_game",
+          "margin_per_game"
+        ],
+        "title": "VenueSplit",
         "type": "object"
       }
     }
@@ -8999,6 +9380,107 @@
           }
         },
         "summary": "Get Team History",
+        "tags": [
+          "teams"
+        ]
+      }
+    },
+    "/api/v1/teams/{team_id}/home-court": {
+      "get": {
+        "operationId": "get_home_court_api_v1_teams__team_id__home_court_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "team_id",
+            "required": true,
+            "schema": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Team Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^\\d{4}-\\d{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeCourt"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Home Court",
         "tags": [
           "teams"
         ]

@@ -1106,3 +1106,9 @@ The "recent games" block from the original design was folded into the game log, 
 
 **Not done:** the backfill is partial, so no model has been trained on these features and none has been activated. Current forecasts do not use them yet. See [data-synchronization.md](data-synchronization.md#who-guarded-whom).
 
+### Session — 2026-11-03 (team pages, jerseys, injuries)
+
+**Completed:** team pages (roster, per-game and team stats) opened from team logos, team search, jersey numbers, and the current injury report on profiles, team pages and Predictions.
+
+**Not done:** forecasts do not adjust for injuries; they are shown beside the forecast with that stated.
+

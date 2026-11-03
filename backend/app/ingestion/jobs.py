@@ -7,6 +7,7 @@ from typing import Any
 
 from nba_api.stats.endpoints import (
     BoxScoreMatchupsV3,
+    BoxScoreSummaryV3,
     CommonAllPlayers,
     LeagueDashTeamStats,
     LeagueGameLog,
@@ -18,12 +19,18 @@ from nba_api.stats.endpoints import (
     TeamYearByYearStats,
 )
 from nba_api.stats.static import teams as static_teams
-from sqlalchemy import Engine, func, literal, select, tuple_, update
+from sqlalchemy import Engine, delete, func, literal, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion.client import FetchResult, StatsSource, StatsSourceError
+from app.ingestion import injuries
+from app.ingestion.client import (
+    FetchResult,
+    StatsSource,
+    StatsSourceError,
+    UnexpectedResponseError,
+)
 from app.ingestion.lifecycle import resolve_status
 from app.ingestion.transforms import (
     ADVANCED_FIRST_SEASON,
@@ -33,6 +40,7 @@ from app.ingestion.transforms import (
     Rejection,
     current_season_start_year,
     season_label,
+    transform_attendance,
     transform_matchups,
     transform_player_career,
     transform_player_logs,
@@ -52,6 +60,7 @@ from app.models import (
     IngestionRun,
     Player,
     PlayerGameStats,
+    PlayerInjury,
     PlayerMatchup,
     PlayerSeason,
     RunStatus,
@@ -348,11 +357,12 @@ def games_missing_matchups(
 
 
 def ingest_player_matchups(
-    client: StatsSource, game_ids: list[str]
+    client: StatsSource, game_ids: list[str], on_refused: Callable[[], None] | None = None
 ) -> Callable[[RunContext], None]:
     """Who guarded whom in each game (one request per game). A game the source fails on is rejected
-    and the rest are kept; after MATCHUP_FAILURE_LIMIT failures in a row the batch stops, and a
-    re-run picks up what is missing."""
+    and the rest are kept; after MATCHUP_FAILURE_LIMIT failed requests in a row the batch stops and
+    on_refused is called, and a re-run picks up what is missing. A reply with no usable table is
+    only that game's problem: the source is still answering."""
 
     def body(ctx: RunContext) -> None:
         session = ctx.session
@@ -367,12 +377,18 @@ def ingest_player_matchups(
             try:
                 result = client.fetch(BoxScoreMatchupsV3, game_id=game_id,
                                       cacheable=_is_completed_season(game.season_id))  # fmt: skip
+            except UnexpectedResponseError as error:
+                ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
+                failures = 0
+                continue
             except StatsSourceError as error:
                 ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
                 failures += 1
                 if failures >= MATCHUP_FAILURE_LIMIT:
                     log.warning("matchup source refusing requests; batch stopped early",
                                 extra={"game_id": game_id})  # fmt: skip
+                    if on_refused:
+                        on_refused()
                     return
                 continue
             failures = 0
@@ -409,6 +425,72 @@ def ingest_players(client: StatsSource, season: int) -> Callable[[RunContext], N
         ctx.valid += len(rows)
         ctx.counted(upsert(ctx.session, Player, rows, ["id"],
                            provenance=provenance(ctx.run_id, "CommonAllPlayers")))  # fmt: skip
+
+    return body
+
+
+ATTENDANCE_FAILURE_LIMIT = 2
+
+
+def games_missing_attendance(session: Session, limit: int, season: int) -> list[str]:
+    """This season's final games with no attendance yet, newest first."""
+    return list(session.scalars(
+        select(Game.id)
+        .where(Game.status == GameStatus.final, Game.season_id == season, Game.attendance.is_(None))
+        .order_by(Game.game_date.desc(), Game.id)
+        .limit(limit)
+    ))  # fmt: skip
+
+
+def ingest_attendance(client: StatsSource, game_ids: list[str]) -> Callable[[RunContext], None]:
+    """Reported attendance per game (one request per game); stops early if the source refuses."""
+
+    def body(ctx: RunContext) -> None:
+        failures = 0
+        for game_id in game_ids:
+            try:
+                result = client.fetch(BoxScoreSummaryV3, game_id=game_id)
+            except StatsSourceError as error:
+                ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
+                failures += 1
+                if failures >= ATTENDANCE_FAILURE_LIMIT:
+                    return
+                continue
+            failures = 0
+            ctx.fetched += 1
+            attendance = transform_attendance(result.frames)
+            if attendance is None:
+                ctx.reject([Rejection({"game_id": game_id}, "no attendance reported")])
+                continue
+            ctx.valid += 1
+            ctx.updated += 1
+            ctx.session.execute(
+                update(Game).where(Game.id == game_id).values(attendance=attendance)
+            )
+
+    return body
+
+
+def ingest_injuries(
+    fetch: Callable[[], dict[str, Any]] | None = None,
+) -> Callable[[RunContext], None]:
+    """Replaces the stored report with the current one: a player no longer listed has recovered."""
+
+    def body(ctx: RunContext) -> None:
+        payload = (fetch or injuries.fetch_injury_report)()
+        session = ctx.session
+        active = session.execute(select(Player.id, Player.full_name).where(Player.is_active)).all()
+        rows, rejections = injuries.transform_injuries(payload, injuries.name_index(active))
+        ctx.fetched += len(rows) + len(rejections)
+        ctx.valid += len(rows)
+        ctx.reject(rejections)
+        stored = session.scalar(select(func.count()).select_from(PlayerInjury)) or 0
+        if not rows and stored:
+            raise PartialResponseError(f"source listed no injuries, {stored} stored")
+        listed = [r["player_id"] for r in rows]
+        session.execute(delete(PlayerInjury).where(PlayerInjury.player_id.not_in(listed)))
+        ctx.counted(upsert(session, PlayerInjury, rows, ["player_id"],
+                           provenance=provenance(ctx.run_id, injuries.SOURCE)))  # fmt: skip
 
     return body
 

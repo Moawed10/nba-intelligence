@@ -35,6 +35,7 @@ const DATASET_LABELS: Record<string, string> = {
   team_stats: "Team stats",
   player_metadata: "Rosters",
   career_history: "Career history",
+  injuries: "Injuries",
 };
 
 /** Shared by the header's date and the page body within one request. */

@@ -168,6 +168,7 @@ class Player(Provenance, Base):
     position: Mapped[str | None] = mapped_column(String(16))
     height_inches: Mapped[int | None] = mapped_column(SmallInteger)
     weight_lbs: Mapped[int | None] = mapped_column(SmallInteger)
+    jersey_number: Mapped[str | None] = mapped_column(String(8))
     birthdate: Mapped[date | None] = mapped_column(Date)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     current_team_id: Mapped[int | None] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
@@ -204,6 +205,7 @@ class Game(Provenance, Base):
     home_score: Mapped[int | None] = mapped_column(SmallInteger)
     away_score: Mapped[int | None] = mapped_column(SmallInteger)
     arena: Mapped[str | None] = mapped_column(String(96))
+    attendance: Mapped[int | None] = mapped_column(Integer)
 
 
 BOX_COLUMNS = (
@@ -307,3 +309,19 @@ class PlayerMatchup(Provenance, Base):
     fga: Mapped[int] = mapped_column(SmallInteger)
     fg3m: Mapped[int] = mapped_column(SmallInteger)
     fg3a: Mapped[int] = mapped_column(SmallInteger)
+
+
+class PlayerInjury(Provenance, Base):
+    """The latest injury report: one row per currently listed player, replaced on every sync."""
+
+    __tablename__ = "player_injuries"
+
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="CASCADE"), primary_key=True
+    )
+    status: Mapped[str] = mapped_column(String(24))
+    injury: Mapped[str | None] = mapped_column(String(64))
+    detail: Mapped[str | None] = mapped_column(String(64))
+    side: Mapped[str | None] = mapped_column(String(24))
+    return_date: Mapped[date | None] = mapped_column(Date)
+    reported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
