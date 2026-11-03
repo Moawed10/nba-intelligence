@@ -247,7 +247,7 @@ function FeatureList({ features }: { features: string[] }) {
   if (other.length) grouped.push({ label: "Other", test: () => false, names: other });
   return (
     <details className="group">
-      <summary className="cursor-pointer text-subhead font-medium text-primary hover:underline">
+      <summary className="cursor-pointer py-3 text-subhead font-medium text-primary hover:underline">
         Show all {features.length} inputs
       </summary>
       <div className="mt-4 grid gap-5 sm:grid-cols-2">
@@ -422,8 +422,8 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
             tryout season, and it is scored once on {testSeason}. Every input uses only games played before
             the one being predicted.
           </p>
-          <details className="mt-3 text-footnote text-muted-foreground">
-            <summary className="cursor-pointer font-medium">Technical details</summary>
+          <details className="mt-1 text-footnote text-muted-foreground">
+            <summary className="cursor-pointer py-3.5 font-medium">Technical details</summary>
             <p className="mt-2">
               Data version {release.data_version}
               {release.git_sha && (

@@ -12,7 +12,7 @@ interface PaginationProps {
 }
 
 const LINK =
-  "inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-subhead font-medium text-primary hover:bg-muted";
+  "inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-subhead font-medium text-primary transition-colors duration-150 hover:bg-muted";
 
 export function Pagination({ label, page, pages, total, href }: PaginationProps) {
   if (pages <= 1) return null;

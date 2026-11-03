@@ -10,8 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { type DirectoryFilters, POSITIONS } from "./filters";
 
-const SELECT =
-  "h-10 w-full rounded-lg border border-input bg-card px-3 text-subhead outline-none transition-colors hover:border-foreground/20 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40";
+const SELECT = "field w-full";
 
 export function DirectoryFilterBar({
   teams,
@@ -97,12 +96,12 @@ export function DirectoryFilterBar({
           ]}
         />
       </div>
-      <label className="flex min-h-10 items-center gap-2 text-subhead lg:justify-self-end">
+      <label className="flex min-h-11 items-center gap-2 text-subhead lg:justify-self-end">
         <input
           type="checkbox"
           checked={shown.status === "all"}
           onChange={(event) => update({ status: event.target.checked ? "all" : undefined })}
-          className="size-5 accent-primary"
+          className="size-5 accent-primary pointer-coarse:size-6"
         />
         Include former players
       </label>

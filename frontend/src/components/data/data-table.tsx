@@ -43,7 +43,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
   }, [rows, columns, sort]);
 
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="relative overflow-x-auto rounded-xl bg-card">
+    <div role="region" aria-label={caption} tabIndex={0} className="scroll-quiet relative overflow-x-auto">
       <table className="w-full border-collapse text-subhead">
         <caption className="sr-only">{caption}</caption>
         <thead>
@@ -58,9 +58,9 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
                   aria-sort={active ? sort.direction : undefined}
                   title={column.description}
                   className={cn(
-                    "whitespace-nowrap px-3 py-2.5 text-footnote font-medium text-muted-foreground",
+                    "kicker whitespace-nowrap px-3 py-2",
                     column.numeric ? "text-right" : "text-left",
-                    i === 0 && "sticky left-0 bg-card",
+                    i === 0 && "sticky left-0 z-10 bg-cell shadow-[inset_0_-1px_0_var(--border)]",
                   )}
                 >
                   {column.sortValue ? (
@@ -72,7 +72,10 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
                           direction: active && sort.direction === "descending" ? "ascending" : "descending",
                         })
                       }
-                      className="inline-flex min-h-8 items-center gap-1 hover:text-foreground"
+                      className={cn(
+                        "inline-flex min-h-8 items-center gap-1 transition-colors duration-150 hover:text-foreground pointer-coarse:min-h-11",
+                        active && "text-primary",
+                      )}
                     >
                       {column.header}
                       {column.description && <span className="sr-only">, {column.description}</span>}
@@ -88,7 +91,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
         </thead>
         <tbody>
           {sorted.map((row) => (
-            <tr key={rowKey(row)} className="border-b border-border/60 last:border-0">
+            <tr key={rowKey(row)} className="border-b border-border/60 transition-colors duration-150 last:border-0 hover:bg-muted/40">
               {columns.map((column, i) => {
                 const Cell = i === 0 ? "th" : "td";
                 return (
@@ -96,9 +99,9 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
                     key={column.key}
                     scope={i === 0 ? "row" : undefined}
                     className={cn(
-                      "whitespace-nowrap px-3 py-2.5 font-normal",
+                      "whitespace-nowrap px-3 py-2 font-normal",
                       column.numeric ? "text-right tabular-nums" : "text-left",
-                      i === 0 && "sticky left-0 bg-card",
+                      i === 0 && "sticky left-0 bg-cell",
                     )}
                   >
                     {column.cell(row)}
@@ -120,7 +123,7 @@ export function DataTable<Row>({ caption, columns, rows, rowKey, initialSort, fo
                     className={cn(
                       "whitespace-nowrap px-3 py-2.5",
                       column.numeric ? "text-right tabular-nums" : "text-left",
-                      i === 0 && "sticky left-0 bg-card",
+                      i === 0 && "sticky left-0 bg-cell",
                     )}
                   >
                     {column.cell(footer)}

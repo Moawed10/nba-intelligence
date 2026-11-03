@@ -9,16 +9,16 @@ const TABS = [
 
 export function CompareTabs({ current }: { current: (typeof TABS)[number]["href"] }) {
   return (
-    <nav aria-label="Compare" className="mb-5 inline-flex rounded-full bg-muted p-1">
+    <nav aria-label="Compare" className="mb-5 inline-flex rounded-full bg-muted p-0.5">
       {TABS.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           aria-current={tab.href === current ? "page" : undefined}
           className={cn(
-            "inline-flex min-h-9 items-center rounded-full px-4 text-subhead transition-colors pointer-coarse:min-h-11",
+            "inline-flex min-h-9 items-center rounded-full px-4 text-subhead transition-colors duration-150 pointer-coarse:min-h-11",
             tab.href === current
-              ? "bg-card font-semibold text-foreground shadow-sm"
+              ? "bg-thumb font-semibold text-primary shadow-raised"
               : "text-muted-foreground hover:text-foreground",
           )}
         >

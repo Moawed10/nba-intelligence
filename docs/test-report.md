@@ -389,7 +389,7 @@ On a copy of the real database restored on 2026-11-02, the first maintenance run
 | Python advisories | `pip-audit -r requirements.lock --require-hashes --disable-pip` | No known vulnerabilities |
 | npm advisories, production dependencies | `npm audit --omit=dev` | 0 high or critical. 4 moderate and 2 low, all through the `shadcn` CLI package (`@shadcn/registry`, `@ts-morph/common`, `deepmerge`, `minimatch`, `shadcn`, `ts-morph`) |
 | Secrets in history, local | Pattern search of `git log -p --all` | No matches. A pattern search is weaker than a real scanner |
-| Secrets in history, CI | gitleaks in the `security` job | See the PR's checks |
+| Secrets in history, CI | gitleaks in the `security` job | Passed at `e90f099` |
 | Rate limiting | `tests/api/test_rate_limit.py` | Predictable 429 with `Retry-After`; per-client and global limits; reads unaffected |
 | Failure paths | `tests/api/test_failure_paths.py` | Controlled 503 for database outage, exhausted pool, missing or corrupt artifacts, no active release and inference overload; generic 500 for anything else; nothing internal in responses |
 | Source failures | `tests/integration/` (existing) | Failed runs are recorded, roll back, and leave data untouched |
@@ -419,7 +419,7 @@ A 422 is a player with too few games, which is the correct answer. There were no
 
 ### Accessibility
 
-`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 gave 434 passed and 28 failed, while another session ran Playwright on the same machine and ports and a database rehearsal ran alongside it. Those failures were not investigated one by one, so that run proves nothing either way. CI on the pull request is the result to trust.
+`frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 gave 434 passed and 28 failed, while another session ran Playwright on the same machine and ports and a database rehearsal ran alongside it. Those failures were not investigated one by one, so that run proves nothing either way. CI's `frontend` job, which runs the full suite without that interference, passed at `e90f099`.
 
 ## Deployment and operations rehearsal (2026-11-02)
 
@@ -435,9 +435,11 @@ Everything here ran on the development Mac against the real data, in throwaway c
 | Roll back the model release, then forward | `2026.10.29-2` verified and activated, `-3` retired; then `-3` active again |
 | `app.cli source-check` from the Mac | Reachable, 45 rows, 0.87 s. **Not** tested from any cloud host |
 | Frontend production build with no API running | Builds, so images can be built without a live API |
-| Docker images and Compose stack | Not run locally (no Docker). CI's `containers` job builds and smoke-tests them; see the PR's checks |
+| Docker images and Compose stack | Not run locally (no Docker). CI's `containers` job built and smoke-tested them at `e90f099` |
 
 The rehearsal found one more bug, now fixed with a test: a forecast for a player who did not play kept its game in the pending list, so the game was rescored on every maintenance run.
+
+CI on `e90f099` (run 41484295687): `backend`, `frontend`, `fullstack`, `security` and `containers` all passed. Those results predate the merge of the redesign from main. On the merged code, locally: backend 329 passed, frontend lint and typecheck clean, unit tests 40 passed, and `npm run test:fullstack` 1 passed.
 
 Not demonstrated: a hosted smoke test, a real restore on a host, alert delivery, and any of the seven-day thresholds.
 

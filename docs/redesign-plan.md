@@ -1,6 +1,13 @@
 # Product Redesign Plan
 
-Grounded in the repository as of 2026-10-28. Status is tracked in [implementation-status.md](implementation-status.md); evidence lives in [test-report.md](test-report.md).
+**Current visual direction (2026-11-02):** broadcast features, editorial sections and terminal data, specified with its references in [frontend.md](frontend.md#design-references). It replaces the earlier aesthetic guidance; the functional audit and data rules below still hold. Summary of the change:
+
+- **System:** Archivo variable display type, monospaced data labels, open sections instead of cards, full-width team-colored bands, a warm ivory light theme and graphite dark theme.
+- **Overview:** compact header, slim still game strip, one full-width feature (standout player, or a matchup when there is none), a two-pane schedule, an editorial ranking beside the leaders, and a quiet model and data band.
+- **Player profile:** team-colored dossier hero, section links, and separated season averages, recent games and next-game forecast.
+- **Predictions:** player band, game list beside the forecast; estimate, range scale, recent and season averages together; factors always visible; model version and data cutoff in a quiet line.
+- **Compare, Games, Models:** split two-team hero, split broadcast scoreboards, mirrored stat rows with side-coded markers, open tables.
+- **Removed:** the scrolling ticker animation, count-up on load, the reflective and spotlight card effects, and Barlow Condensed.
 
 ## Audit
 

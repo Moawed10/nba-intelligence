@@ -70,7 +70,7 @@ export function RecentRange({
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="img"
         aria-label={`Dot chart of ${unit} in each of the last ${results.length} games, with the forecast of ${formatStat(forecast.point)} and the expected range of ${lower} to ${upper}.`}
-        className="w-full"
+        className="w-full overflow-visible max-sm:mt-3"
       >
         <rect
           x={x(forecast.lower)}
@@ -78,7 +78,8 @@ export function RecentRange({
           width={Math.max(2, x(forecast.upper) - x(forecast.lower))}
           height={base + DOT - PAD.top + 8}
           rx={6}
-          className="fill-primary/15"
+          className="fill-primary/15 stroke-primary"
+          strokeDasharray="4 3"
         />
         <line
           x1={PAD.left}
@@ -93,7 +94,7 @@ export function RecentRange({
             x={x(t)}
             y={HEIGHT - 10}
             textAnchor="middle"
-            className="fill-muted-foreground text-[12px] tabular-nums"
+            className="fill-muted-foreground text-[12px] tabular-nums max-sm:text-[22px]"
           >
             {t}
           </text>
@@ -104,7 +105,7 @@ export function RecentRange({
             cx={x(d.v)}
             cy={d.cy}
             r={DOT}
-            className={within(d.v) ? "fill-primary" : "fill-muted-foreground/60"}
+            className={within(d.v) ? "fill-foreground" : "fill-muted-foreground/50"}
           />
         ))}
         <line
@@ -113,21 +114,21 @@ export function RecentRange({
           y1={PAD.top - 8}
           y2={base + DOT}
           strokeWidth={2.5}
-          className="stroke-foreground"
+          className="stroke-primary"
         />
         <text
           x={x(forecast.point)}
           y={PAD.top - 12}
           textAnchor="middle"
-          className="fill-foreground text-[13px] font-semibold tabular-nums"
+          className="fill-primary text-[13px] font-semibold tabular-nums max-sm:text-[24px]"
         >
           Forecast {formatStat(forecast.point)}
         </text>
       </svg>
       <p className="text-subhead">{summary}</p>
       <p className="text-footnote text-muted-foreground">
-        Each dot is a real game. Highlighted dots fell inside the shaded range, which should hold about 4
-        games in 5.
+        Each dot is a real game. Solid dots fell inside the dashed range, which should hold about 4 games in
+        5. The amber line is the forecast, not a result.
       </p>
     </section>
   );

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 
 import { Providers } from "@/components/providers";
@@ -13,10 +13,10 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
 // Condensed display face for titles, names and scoreboard numbers.
-const display = Barlow_Condensed({
+const display = Archivo({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
-  variable: "--font-barlow",
+  axes: ["wdth"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#090a0c" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f3ea" },
   ],
   viewportFit: "cover",
 };
@@ -48,9 +48,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <Providers>
           <TopNav />
-          <main id="main" className="mx-auto w-full max-w-6xl px-4 pb-28 pt-8 sm:px-6 md:pb-16 md:pt-12">
-            {children}
-          </main>
+          <div className="@container">
+            <main id="main" className="mx-auto w-full max-w-[84rem] px-4 pb-28 pt-6 sm:px-6 md:pb-20 md:pt-8 lg:px-8">
+              {children}
+            </main>
+          </div>
           <TabBar />
           <Suspense fallback={null}>
             <RouteFocus />

@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { type KeyboardEvent, useId, useRef } from "react";
 
+import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export interface Segment<T extends string> {
@@ -55,7 +56,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={cn("inline-flex rounded-full bg-muted p-1", className)}
+      className={cn("inline-flex rounded-full bg-muted p-0.5", className)}
     >
       {segments.map((segment, index) => {
         const selected = segment.value === value;
@@ -72,15 +73,15 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(segment.value)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              "relative min-h-9 shrink-0 rounded-full px-3.5 text-subhead whitespace-nowrap transition-colors pointer-coarse:min-h-11",
-              selected ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground",
+              "relative min-h-9 shrink-0 rounded-full px-3.5 text-subhead whitespace-nowrap transition-colors duration-150 active:opacity-70 pointer-coarse:min-h-11",
+              selected ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {selected && (
               <motion.span
                 layoutId={`segment-${id}`}
-                className="absolute inset-0 rounded-full bg-card shadow-sm"
-                transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                className="absolute inset-0 rounded-full bg-thumb shadow-raised"
+                transition={SPRING.snappy}
               />
             )}
             <span className="relative">{segment.label}</span>

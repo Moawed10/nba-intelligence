@@ -35,7 +35,7 @@ export function StateView({ kind, title, message, error, action, onRetry, classN
     <div
       role={kind === "error" ? "alert" : "status"}
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-xl bg-card px-6 py-12 text-center",
+        "panel flex flex-col items-center justify-center gap-3 px-6 py-12 text-center",
         className,
       )}
     >
@@ -63,11 +63,20 @@ export function StateView({ kind, title, message, error, action, onRetry, classN
   );
 }
 
-/** Skeleton sized like the content it replaces, so loading does not shift layout. */
-export function LoadingBlock({ label, className }: { label: string; className?: string }) {
+/** A generic skeleton; screens with a feature section pass `feature` so loading keeps their layout. */
+export function LoadingBlock({
+  label,
+  className,
+  feature,
+}: {
+  label: string;
+  className?: string;
+  feature?: boolean;
+}) {
   return (
     <div role="status" aria-live="polite" className={cn("space-y-3", className)}>
       <span className="sr-only">{label}</span>
+      {feature && <Skeleton className="h-[28rem] w-full rounded-2xl md:h-[26rem]" />}
       <Skeleton className="h-6 w-1/3 rounded-md" />
       <Skeleton className="h-32 w-full rounded-xl" />
     </div>

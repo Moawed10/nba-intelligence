@@ -29,18 +29,19 @@ function Item({ game }: { game: GameSummary }) {
   };
   return (
     <Link
-      href={`/games?date=${game.game_date}`}
-      className="flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-subhead transition-colors hover:bg-muted"
+      href={`/games/${game.id}`}
+      className="flex min-h-11 shrink-0 items-center gap-2.5 rounded-md px-2.5 text-subhead transition-colors duration-150 hover:bg-muted"
     >
       {side("away")}
-      <span className="text-muted-foreground">@</span>
+      <span aria-hidden className="text-footnote text-muted-foreground">@</span>
+      <span className="sr-only">at</span>
       {side("home")}
-      <span className={cn("kicker", isLive(game) && "text-primary")}>
+      <span className={cn("kicker ml-1 tracking-[0.04em]", isLive(game) && "text-primary")}>
         {final
           ? "Final"
           : game.status === "in_progress"
             ? liveLabel(game)
-            : game.tipoff_at 
+            : game.tipoff_at
               ? formatGameTime(game.tipoff_at)
               : formatGameDate(game.game_date)}
       </span>
@@ -48,40 +49,24 @@ function Item({ game }: { game: GameSummary }) {
   );
 }
 
-/**
- * A broadcast-style scoreboard strip. It scrolls slowly, pauses on hover or keyboard focus, and
- * stays still (scrollable by hand) when reduced motion is requested.
- */
+/** A slim scoreboard strip: every game in reach, scrolled by hand, never moving on its own. */
 export function GameTicker({ games, label }: { games: GameSummary[]; label: string }) {
   if (games.length === 0) return null;
-  const loop = games.length >= 4;
   return (
     <section
       aria-label={label}
-      className="ticker group relative -mx-4 overflow-x-auto sm:-mx-6 lg:mx-0 lg:overflow-hidden"
+      className="bleed min-w-0 border-y border-border"
     >
-      <div
-        className={cn("flex w-max items-center gap-1 px-4 sm:px-6 lg:px-0", loop && "ticker-track")}
-        style={{ animationDuration: `${games.length * 6}s` }}
+      <div className="scroll-quiet relative overflow-x-auto"
       >
-        <ul className="flex items-center gap-1">
+        <ul className="flex w-max items-center">
           {games.map((g) => (
-            <li key={g.id} className="flex items-center gap-1">
+            <li key={g.id} className="flex items-center">
               <Item game={g} />
-              <span aria-hidden className="h-5 w-px bg-border" />
+              <span aria-hidden className="mx-1 h-5 w-px bg-border" />
             </li>
           ))}
         </ul>
-        {loop && (
-          <ul aria-hidden className="flex items-center gap-1" inert>
-            {games.map((g) => (
-              <li key={g.id} className="flex items-center gap-1">
-                <Item game={g} />
-                <span className="h-5 w-px bg-border" />
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </section>
   );

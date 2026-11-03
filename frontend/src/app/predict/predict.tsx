@@ -73,7 +73,7 @@ async function QuickPicks() {
           <li key={l.player_id}>
             <Link
               href={`/predict?player=${l.player_id}`}
-              className="flex items-center gap-2 rounded-full border border-border py-1 pr-3 pl-1 text-subhead transition-colors hover:border-foreground/25"
+              className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pr-3 pl-1 text-subhead transition-colors duration-150 hover:bg-muted"
             >
               <PlayerAvatar id={l.player_id} name={l.full_name} team={l.team} size="sm" />
               {l.full_name}
@@ -175,7 +175,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
     </Panel>
   );
   if (!id) {
-    return <div className="grid gap-5 lg:grid-cols-12">{picker}</div>;
+    return <div className="grid gap-10 lg:grid-cols-12 lg:gap-x-12">{picker}</div>;
   }
 
   const [profile, upcoming, releases, history] = await Promise.all([
@@ -187,7 +187,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   if (profile.error && profile.error.status !== 404) return <ApiErrorView error={profile.error} />;
   if (!profile.data) {
     return (
-      <div className="grid gap-5 lg:grid-cols-12">
+      <div className="grid gap-10 lg:grid-cols-12 lg:gap-x-12">
         {picker}
         <Unavailable kind="empty" title={`No player has id ${id}`} className="lg:col-span-12">
           Search for a player by name above.
@@ -226,11 +226,10 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
   const firstName = player.full_name.split(" ")[0];
 
   return (
-    <div className="grid gap-5 lg:grid-cols-12">
+    <div className="grid gap-10 lg:grid-cols-12 lg:gap-x-12">
       {picker}
+      <PlayerCard player={player} season={season} className="lg:col-span-12" />
       <div className="grid content-start gap-5 lg:col-span-4">
-        <PlayerCard player={player} season={season} />
-
         <Panel id="games" kicker="Step 2" title="Upcoming games">
           {upcoming.error ? (
             <ApiErrorView error={upcoming.error} />
@@ -292,6 +291,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                 playerName={player.full_name}
                 opponentName={opponent.name}
                 history={history.data?.items ?? []}
+                seasonAverages={season?.per_game ?? null}
               />
             ) : (
               <Unavailable
@@ -317,12 +317,12 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               <h3 id="good-to-know" className="kicker">
                 Good to know
               </h3>
-              <ul className="grid gap-3 text-subhead sm:grid-cols-3">
-                <li className="rounded-xl bg-muted/40 p-4">
+              <ul className="stat-grid text-subhead sm:grid-cols-3">
+                <li className="p-4">
                   <span className="block text-footnote text-muted-foreground">Recent form</span>
                   {recent.length ? (
                     <>
-                      <strong className="numeral block text-title2">
+                      <strong className="numeral my-1 block text-title1">
                         {formatStat(average(recent, "pts"))} pts
                       </strong>
                       per game over the last {recent.length} {recent.length === 1 ? "game" : "games"}
@@ -331,9 +331,9 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                     "No games played yet"
                   )}
                 </li>
-                <li className="rounded-xl bg-muted/40 p-4">
+                <li className="p-4">
                   <span className="block text-footnote text-muted-foreground">Rest</span>
-                  <strong className="numeral block text-title2">
+                  <strong className="numeral my-1 block text-title1">
                     {restDays == null
                       ? "—"
                       : restDays === 0
@@ -342,9 +342,9 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                   </strong>
                   {restDays === 0 ? "Second game in two nights" : "off before this game"}
                 </li>
-                <li className="rounded-xl bg-muted/40 p-4">
+                <li className="p-4">
                   <span className="block text-footnote text-muted-foreground">{opponent.name} defense</span>
-                  <strong className="numeral block text-title2">
+                  <strong className="numeral my-1 block text-title1">
                     {formatStat(opponentStats?.data?.defensive_rating ?? null)}
                   </strong>
                   points allowed per 100 possessions this season (higher is easier to score on)

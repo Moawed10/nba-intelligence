@@ -72,7 +72,7 @@ export function AlgorithmComparison({
               <th scope="col" className="py-2 text-right font-medium">
                 {testSeason} error
               </th>
-              <th scope="col" className="py-2 text-right font-medium">
+              <th scope="col" className="py-2 pl-4 text-right font-medium">
                 R²
               </th>
             </tr>
@@ -127,7 +127,7 @@ export function AlgorithmComparison({
                     )}
                   </td>
                   <td className="py-2 text-right">{row.test_mae?.toFixed(3) ?? "—"}</td>
-                  <td className="py-2 text-right text-muted-foreground">{row.test_r2?.toFixed(2) ?? "—"}</td>
+                  <td className="py-2 pl-4 text-right text-muted-foreground">{row.test_r2?.toFixed(2) ?? "—"}</td>
                 </tr>
               );
             })}

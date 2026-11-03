@@ -21,7 +21,7 @@ export function IntervalBar({ label, point, lower, upper, level, max }: Interval
       <figcaption className="flex items-baseline justify-between gap-3">
         <span className="text-subhead text-muted-foreground">{label}</span>
         <span className="tabular-nums">
-          <span className="text-title2 font-semibold">{formatStat(point)}</span>
+          <span className="numeral text-title1 text-primary">{formatStat(point)}</span>
           <span className="ml-2 text-footnote text-muted-foreground">
             likely {formatStat(lower)}–{formatStat(upper)} ({levelText})
           </span>
@@ -29,11 +29,11 @@ export function IntervalBar({ label, point, lower, upper, level, max }: Interval
       </figcaption>
       <div role="img" aria-label={summary} className="relative h-2 rounded-full bg-muted">
         <div
-          className="absolute inset-y-0 rounded-full bg-predicted/30"
+          className="absolute inset-y-0 rounded-full border border-dashed border-predicted bg-predicted/20"
           style={{ left: pct(lower), width: `calc(${pct(upper)} - ${pct(lower)})` }}
         />
         <div
-          className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-predicted"
+          className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rotate-45 border-2 border-predicted bg-card"
           style={{ left: pct(point) }}
         />
       </div>

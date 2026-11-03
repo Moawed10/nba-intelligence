@@ -48,14 +48,14 @@ export function ProfileControls({
   return (
     <div aria-busy={pending} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <label htmlFor={`${id}-season`} className="mb-1.5 block text-subhead font-medium">
+        <label htmlFor={`${id}-season`} className="kicker mb-1.5 block">
           Season
         </label>
         <select
           id={`${id}-season`}
           value={shown.season}
           onChange={(event) => update("season", event.target.value)}
-          className="h-11 rounded-xl border border-input bg-card px-3 text-body outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="field"
         >
           {seasons.map((label) => (
             <option key={label} value={label}>
@@ -398,10 +398,10 @@ export function CareerHistory({ career, name }: { career: PlayerCareer; name: st
     null,
   );
   return (
-    <section aria-labelledby="career-heading" className="space-y-3">
+    <section aria-labelledby="career-heading" className="rule-top space-y-4 pt-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="career-heading" className="text-title2 font-semibold">
+          <h2 id="career-heading" className="headline text-[1.875rem]">
             Career
           </h2>
           <p className="text-footnote text-muted-foreground">

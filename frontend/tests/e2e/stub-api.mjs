@@ -320,7 +320,10 @@ createServer((req, res) => {
   }
   const detailMatch = path.match(/^\/games\/(\d{10})$/);
   if (detailMatch) {
-    const g = GAMES.find((x) => x.id === detailMatch[1]);
+    // Game-log rows link to their game; those fixture games exist only as a final score.
+    const g =
+      GAMES.find((x) => x.id === detailMatch[1]) ??
+      (detailMatch[1].startsWith("99") ? game(detailMatch[1], "2099-10-15", 0, 1, "final", [100, 105]) : null);
     if (!g) return error(res, 404, "game_not_found", "No such game.");
     return send(res, 200, { ...g, status_observed_at: null, stats_finalized: g.status === "final", meta: META });
   }

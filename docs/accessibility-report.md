@@ -90,7 +90,7 @@ All 46 pairs pass, 23 per theme:
 
 ### Reduced motion
 
-`shell.spec.ts` › "reduced motion" emulates `prefers-reduced-motion: reduce` and checks that transitions are effectively disabled; it passes. CountUp, the radar and list animations, and section scrolling use the reduced-motion setting.
+`shell.spec.ts` › "reduced motion" emulates `prefers-reduced-motion: reduce` and checks that transitions are effectively disabled; it passes. Number tweens, the radar and section scrolling use the reduced-motion setting.
 
 ## Fixes made in this audit
 
@@ -113,7 +113,7 @@ The ARIA snapshots of six primary screens were read in full: Overview, player pr
 - Selected and pressed states were exposed, and sortable columns announce their full meaning (for example "PTS, Points per game").
 - Panels are labelled regions with headings.
 
-The issues found are fixed above (items 4 and 5). One minor point remains: the game page goes from its level-1 title to the level-3 "Our prediction" heading, because the matchup component is shared with the schedule panel, where those headings sit under a level-2 panel title.
+The issues found are fixed above (items 4 and 5). The one minor point left then, the game page jumping from its level-1 title to a level-3 heading, was fixed in the 2026-11-02 redesign.
 
 ## Not verified
 

@@ -12,7 +12,7 @@ export function TabBar() {
   return (
     <nav
       aria-label="Primary"
-      className="material-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/70 pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="material-nav fixed inset-x-0 bottom-0 z-40 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <WithPathname>
         {(pathname) => (
@@ -25,11 +25,18 @@ export function TabBar() {
                     href={href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.6875rem] leading-tight",
-                      active ? "font-semibold text-primary" : "text-muted-foreground",
+                      "relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[0.75rem] leading-tight transition-colors duration-150",
+                      active ? "font-semibold text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    <Icon aria-hidden className="size-5" strokeWidth={active ? 2.4 : 1.8} />
+                    {active && (
+                      <span aria-hidden className="absolute inset-x-5 -top-px h-0.5 rounded-full bg-primary" />
+                    )}
+                    <Icon
+                      aria-hidden
+                      className={cn("size-5", active && "text-primary")}
+                      strokeWidth={active ? 2.4 : 1.8}
+                    />
                     {label}
                   </Link>
                 </li>

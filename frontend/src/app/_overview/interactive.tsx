@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { teamBandStyle } from "@/components/brand/team-band";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamMark } from "@/components/brand/team-mark";
 import { CompareBar } from "@/components/data/compare-bar";
@@ -48,7 +49,7 @@ function statusLabel(game: GameSummary): string {
 }
 
 const ROUND_BUTTON =
-  "inline-flex size-9 items-center justify-center rounded-full border border-border transition-colors hover:border-foreground/25";
+  "inline-flex size-10 items-center justify-center rounded-full border border-input transition-colors duration-150 hover:bg-muted active:scale-95 pointer-coarse:size-11";
 
 function GameChip({
   game,
@@ -91,8 +92,8 @@ function GameChip({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "relative flex w-40 shrink-0 snap-start flex-col gap-1.5 rounded-xl border px-3 py-2.5 text-subhead transition-colors",
-        selected ? "border-primary/70 bg-primary/10" : "border-border bg-card hover:border-foreground/25",
+        "relative flex w-40 shrink-0 snap-start flex-col gap-1.5 rounded-md border-2 px-3 py-2.5 text-subhead transition-colors duration-150 lg:w-full",
+        selected ? "border-primary" : "border-transparent bg-muted/60 hover:bg-muted",
       )}
     >
       <span className="sr-only">
@@ -114,17 +115,24 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
   const lost = game.status === "final" && (entry.score ?? 0) < (other.score ?? 0);
   return (
     <div
-      className={cn("relative flex flex-col items-center gap-2 text-center", side === "home" && "md:order-3")}
+      style={teamBandStyle(entry.team)}
+      className={cn(
+        "team-band flex min-w-0 flex-col items-center gap-3 p-5 text-center @4xl:flex-row @4xl:gap-4 @4xl:p-7",
+        side === "home" ? "@lg:order-3 @4xl:flex-row-reverse @4xl:text-right" : "@4xl:text-left",
+      )}
     >
-      <TeamMark team={entry.team} size="xl" className="max-sm:size-14" />
-      <div>
+      <TeamMark team={entry.team} size="xl" disc className="max-md:size-14" />
+      <div className="min-w-0 flex-1">
         <p className="kicker">{side === "home" ? "Home" : "Away"}</p>
-        <p className="font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase">
+        <p className="display mt-1 text-[clamp(1.75rem,4cqw,2.75rem)]">
           {entry.team.city} {entry.team.name}
         </p>
       </div>
       {entry.score != null && (
-        <p data-testid={`score-${side}`} className={cn("numeral text-[clamp(3rem,7vw,4.5rem)]", lost && "text-muted-foreground")}>
+        <p
+          data-testid={`score-${side}`}
+          className={cn("numeral text-[clamp(3.75rem,8cqw,6.5rem)]", lost && "opacity-70")}
+        >
           {entry.score}
         </p>
       )}
@@ -137,12 +145,15 @@ function Matchup({
   fullBox,
   forecast,
   pageLink = true,
+  headingLevel = 3,
 }: {
   game: GameSummary;
   fullBox?: boolean;
   forecast?: { result: GameForecastResult | undefined; pending: boolean; error: unknown };
   /** Show a link to the game's own page (off on that page). */
   pageLink?: boolean;
+  /** 2 on the game's own page, where nothing sits between these sections and the h1. */
+  headingLevel?: 2 | 3;
 }) {
   const stats = useQuery({
     queryKey: ["matchup-stats", game.away.team.id, game.home.team.id, game.season],
@@ -164,43 +175,42 @@ function Matchup({
 
   return (
     <div className="space-y-5">
-      <div className="relative grid grid-cols-2 items-center gap-4 overflow-hidden rounded-xl border border-border p-5 md:grid-cols-[1fr_auto_1fr]">
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-25"
-          style={{
-            background: `linear-gradient(90deg, ${game.away.team.primary_color ?? "transparent"} 0%, transparent 45%, transparent 55%, ${game.home.team.primary_color ?? "transparent"} 100%)`,
-          }}
-        />
-        <TeamColumn game={game} side="away" />
-        <div className="relative order-last col-span-2 text-center md:order-none md:col-span-1">
-          <p className="kicker">
-            {isLive(game) && <LiveDot />}
-            {statusLabel(game)}
-          </p>
-          {isLive(game) && (
-            <p className="text-footnote text-muted-foreground">Updates automatically</p>
-          )}
-          <p className="text-footnote text-muted-foreground">
-            {formatGameDate(game.game_date, true)}
-            {game.arena ? ` · ${game.arena}` : ""}
-          </p>
-          {pageLink && (
-            <Link
-              href={`/games/${game.id}`}
-              className="mt-2 inline-flex min-h-9 items-center text-subhead font-medium text-primary hover:underline"
-            >
-              Game page
-            </Link>
-          )}
+      <div className="@container">
+        <div className="stage grid grid-cols-2 items-stretch @lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <TeamColumn game={game} side="away" />
+          <div className="order-last col-span-2 flex flex-col items-center justify-center p-4 text-center @lg:order-none @lg:col-span-1 @lg:w-44 @lg:px-3">
+            <p className={cn("kicker", isLive(game) && "text-primary")}>
+              {isLive(game) && <LiveDot />}
+              {statusLabel(game)}
+            </p>
+            {isLive(game) && (
+              <p className="text-footnote text-muted-foreground">Updates automatically</p>
+            )}
+            {pageLink && (
+              <p className="mt-1 text-footnote text-muted-foreground">
+                {formatGameDate(game.game_date, true)}
+                {game.arena ? ` · ${game.arena}` : ""}
+              </p>
+            )}
+            {pageLink && (
+              <Link
+                href={`/games/${game.id}`}
+                className="mt-1 inline-flex min-h-9 items-center text-subhead font-medium text-primary underline underline-offset-2 pointer-coarse:min-h-11"
+              >
+                Game page
+              </Link>
+            )}
+          </div>
+          <TeamColumn game={game} side="home" />
         </div>
-        <TeamColumn game={game} side="home" />
       </div>
 
-      {game.status === "scheduled" && forecast && <ScoreForecast game={game} {...forecast} />}
-      {game.status === "final" && <PredictionReview game={game} />}
+      {game.status === "scheduled" && forecast && (
+        <ScoreForecast game={game} headingLevel={headingLevel} {...forecast} />
+      )}
+      {game.status === "final" && <PredictionReview game={game} headingLevel={headingLevel} />}
       {(game.status === "postponed" || game.status === "cancelled") && <WithdrawnForecast game={game} />}
-      {game.status === "scheduled" && <PlayerShortcuts game={game} />}
+      {game.status === "scheduled" && <PlayerShortcuts game={game} headingLevel={headingLevel} />}
 
       {stats.error ? (
         <Unavailable kind="error" title="Team statistics couldn't load">
@@ -247,7 +257,9 @@ function Matchup({
           {describeError(box.error).message}
         </Unavailable>
       )}
-      {fullBox && game.status === "final" && box.data && <BoxScoreTables box={box.data} />}
+      {fullBox && game.status === "final" && box.data && (
+        <BoxScoreTables box={box.data} />
+      )}
       {!fullBox && game.status === "final" && box.data && (
         <div className="grid gap-3 sm:grid-cols-2">
           {box.data.teams.map((team) => {
@@ -257,7 +269,7 @@ function Matchup({
               <Link
                 key={team.team.id}
                 href={`/players/${top.player_id}`}
-                className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-foreground/25"
+                className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors duration-150 hover:bg-muted"
               >
                 <PlayerAvatar id={top.player_id} name={top.full_name} team={team.team} size="sm" />
                 <span className="min-w-0 flex-1">
@@ -285,8 +297,10 @@ function ScoreForecast({
   result,
   pending,
   error,
+  headingLevel,
 }: {
   game: GameSummary;
+  headingLevel: 2 | 3;
   result: GameForecastResult | undefined;
   pending: boolean;
   error: unknown;
@@ -313,6 +327,7 @@ function ScoreForecast({
     );
   }
   const f = result.forecast;
+  const Heading = `h${headingLevel}` as const;
   const away = { team: game.away.team, ...f.away, chance: 1 - f.home_win_probability };
   const home = { team: game.home.team, ...f.home, chance: f.home_win_probability };
   const [favorite, underdog] = home.chance >= 0.5 ? [home, away] : [away, home];
@@ -326,15 +341,15 @@ function ScoreForecast({
   return (
     <section
       aria-labelledby={`forecast-${game.id}`}
-      className="space-y-4 rounded-xl border border-border p-5"
+      className="space-y-4 rounded-lg border border-border p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id={`forecast-${game.id}`} className="kicker text-primary">
+        <Heading id={`forecast-${game.id}`} className="kicker text-primary">
           Predicted score
-        </h3>
+        </Heading>
         <p className="text-footnote text-muted-foreground">Made before tip-off</p>
       </div>
-      <p className="font-[family-name:var(--font-display)] text-title2 leading-tight font-extrabold uppercase">
+      <p className="display text-title1">
         {headline}
       </p>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
@@ -349,7 +364,7 @@ function ScoreForecast({
             <TeamMark team={side.team} size="md" />
             <div className="min-w-0">
               <p className="text-subhead text-muted-foreground">{side.team.name}</p>
-              <p className="numeral text-[clamp(2.25rem,5vw,3rem)]">{Math.round(side.points)}</p>
+              <p className="numeral text-[clamp(2.5rem,5vw,3.5rem)] text-primary">{Math.round(side.points)}</p>
             </div>
           </div>
         ))}
@@ -412,7 +427,8 @@ function WithdrawnForecast({ game }: { game: GameSummary }) {
 }
 
 /** A finished game: the score predicted before tip-off next to the final score. */
-function PredictionReview({ game }: { game: GameSummary }) {
+function PredictionReview({ game, headingLevel }: { game: GameSummary; headingLevel: 2 | 3 }) {
+  const Heading = `h${headingLevel}` as const;
   const review = useQuery({
     queryKey: ["game-review", game.id],
     queryFn: ({ signal }) =>
@@ -428,11 +444,11 @@ function PredictionReview({ game }: { game: GameSummary }) {
   const favorite = f.home_win_probability >= 0.5 ? game.home.team : game.away.team;
   const chance = Math.round(Math.max(f.home_win_probability, 1 - f.home_win_probability) * 100);
   return (
-    <section aria-labelledby={`review-${game.id}`} className="space-y-4 rounded-xl border border-border p-5">
+    <section aria-labelledby={`review-${game.id}`} className="space-y-4 rounded-lg border border-border p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 id={`review-${game.id}`} className="kicker text-primary">
+        <Heading id={`review-${game.id}`} className="kicker text-primary">
           How the prediction did
-        </h3>
+        </Heading>
         <p
           className={cn("text-subhead font-semibold", data.picked_winner ? "text-positive" : "text-negative")}
         >
@@ -459,7 +475,7 @@ function PredictionReview({ game }: { game: GameSummary }) {
               </div>
               <p className="text-right">
                 <span className="numeral block text-title2">{actual}</span>
-                <span className="kicker">Final</span>
+                <span className="sr-only">final score</span>
               </p>
             </li>
           );
@@ -472,7 +488,8 @@ function PredictionReview({ game }: { game: GameSummary }) {
 const SHORTCUT_PLAYERS = 3;
 
 /** Each team's leading scorers, each a shortcut to that player's forecast for this game. */
-function PlayerShortcuts({ game }: { game: GameSummary }) {
+function PlayerShortcuts({ game, headingLevel }: { game: GameSummary; headingLevel: 2 | 3 }) {
+  const Heading = `h${headingLevel}` as const;
   const teams = [game.away.team, game.home.team];
   const leaders = useQuery({
     queryKey: ["team-leaders", teams[0].id, teams[1].id],
@@ -487,9 +504,9 @@ function PlayerShortcuts({ game }: { game: GameSummary }) {
   if (leaders.error || (leaders.data && leaders.data.every((l) => l.leaders.length === 0))) return null;
   return (
     <section aria-labelledby={`shortcuts-${game.id}`} className="space-y-3">
-      <h3 id={`shortcuts-${game.id}`} className="kicker">
+      <Heading id={`shortcuts-${game.id}`} className="kicker">
         Predict a player in this game
-      </h3>
+      </Heading>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-busy={leaders.isPending}>
         {teams.map((team, i) => (
           <ul key={team.id} className="min-w-0 space-y-2" aria-label={`${team.city} ${team.name} leading scorers`}>
@@ -497,7 +514,7 @@ function PlayerShortcuts({ game }: { game: GameSummary }) {
               <li key={l.player_id}>
                 <Link
                   href={`/predict?player=${l.player_id}&game=${game.id}`}
-                  className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-foreground/25"
+                  className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors duration-150 hover:bg-muted"
                 >
                   <PlayerAvatar id={l.player_id} name={l.full_name} team={team} size="sm" />
                   <span className="min-w-0 flex-1">
@@ -531,6 +548,7 @@ export function GameMatchup({ game }: { game: GameSummary }) {
       game={game}
       fullBox
       pageLink={false}
+      headingLevel={2}
       forecast={
         scheduled
           ? { result: forecasts.data?.[0], pending: forecasts.isPending, error: forecasts.error }
@@ -573,7 +591,7 @@ const BOX_COLUMNS = [
 
 function BoxScoreTables({ box }: { box: BoxScore }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 pt-4">
       {!box.stats_finalized && (
         <p className="text-footnote text-muted-foreground">
           Box score not finalized by the source yet; numbers may still change.
@@ -585,19 +603,19 @@ function BoxScoreTables({ box }: { box: BoxScore }) {
           role="region"
           aria-label={`${team.team.city} ${team.team.name} box score`}
           tabIndex={0}
-          className="overflow-x-auto"
+          className="scroll-quiet relative overflow-x-auto"
         >
-          <table className="w-full min-w-[40rem] text-subhead tabular-nums">
-            <caption className="mb-2 text-left font-semibold">
+          <table className="w-full min-w-[44rem] text-subhead tabular-nums">
+            <caption className="headline sticky left-0 mb-3 w-fit text-left text-title1">
               {team.team.city} {team.team.name}
             </caption>
             <thead className="text-footnote text-muted-foreground">
               <tr className="border-b border-border">
-                <th scope="col" className="py-1.5 text-left font-medium">
+                <th scope="col" className="sticky left-0 z-10 bg-cell py-1.5 pr-3 text-left font-medium">
                   Player
                 </th>
                 {BOX_COLUMNS.map((c) => (
-                  <th key={c.label} scope="col" className="py-1.5 text-right font-medium">
+                  <th key={c.label} scope="col" className="px-1.5 py-1.5 text-right font-medium">
                     <abbr title={c.title} className="no-underline">
                       {c.label}
                     </abbr>
@@ -610,13 +628,13 @@ function BoxScoreTables({ box }: { box: BoxScore }) {
                 .sort((a, b) => b.minutes - a.minutes)
                 .map((p) => (
                   <tr key={p.player_id} className="border-b border-border/50">
-                    <th scope="row" className="py-1.5 pr-3 text-left font-normal">
+                    <th scope="row" className="sticky left-0 z-10 bg-cell py-1.5 pr-3 text-left font-normal whitespace-nowrap">
                       <Link href={`/players/${p.player_id}`} className="hover:text-primary">
                         {p.full_name}
                       </Link>
                     </th>
                     {BOX_COLUMNS.map((c) => (
-                      <td key={c.label} className="py-1.5 text-right">
+                      <td key={c.label} className="px-1.5 py-1.5 text-right">
                         {c.value(p)}
                       </td>
                     ))}
@@ -625,10 +643,10 @@ function BoxScoreTables({ box }: { box: BoxScore }) {
             </tbody>
             <tfoot>
               <tr className="font-semibold">
-                <th scope="row" className="py-1.5 text-left">
+                <th scope="row" className="sticky left-0 z-10 bg-cell py-1.5 text-left">
                   Team
                 </th>
-                <td className="py-1.5 text-right">{team.minutes}</td>
+                <td className="px-1.5 py-1.5 text-right">{team.minutes}</td>
                 {[
                   team.totals.pts,
                   team.totals.reb,
@@ -641,7 +659,7 @@ function BoxScoreTables({ box }: { box: BoxScore }) {
                   `${team.totals.ftm}–${team.totals.fta}`,
                   "",
                 ].map((v, i) => (
-                  <td key={i} className="py-1.5 text-right">
+                  <td key={i} className="px-1.5 py-1.5 text-right">
                     {v}
                   </td>
                 ))}
@@ -720,48 +738,54 @@ export function ScheduleBoard({
         </p>
       </div>
 
-      {games.error ? (
-        <Unavailable kind="error" title="The schedule couldn't load">
-          {describeError(games.error).message}
-        </Unavailable>
-      ) : list.length === 0 && !games.isFetching ? (
-        <Unavailable kind="no_games" title={`No games on ${formatGameDate(date, true)}`}>
-          Use the arrows to browse other days. Dates follow the NBA&apos;s published schedule.
-        </Unavailable>
-      ) : (
-        <div
-          role="group"
-          aria-label="Games on this day"
-          className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-5 sm:px-5"
-        >
-          {list.map((game) => (
-            <GameChip
-              key={game.id}
-              game={game}
-              forecast={forecasts.data?.get(game.id)?.forecast ?? null}
-              selected={selected?.id === game.id}
-              onSelect={() => setSelectedId(game.id)}
-            />
-          ))}
+      <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-8">
+        <div className="min-w-0 space-y-3">
+          {games.error ? (
+            <Unavailable kind="error" title="The schedule couldn't load">
+              {describeError(games.error).message}
+            </Unavailable>
+          ) : list.length === 0 && !games.isFetching ? (
+            <Unavailable kind="no_games" title={`No games on ${formatGameDate(date, true)}`}>
+              Use the arrows to browse other days. Dates follow the NBA&apos;s published schedule.
+            </Unavailable>
+          ) : (
+            <div
+              role="group"
+              aria-label="Games on this day"
+              className="scroll-quiet -mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6 lg:mx-0 lg:max-h-[46rem] lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto lg:px-0.5 lg:py-0.5"
+            >
+              {list.map((game) => (
+                <GameChip
+                  key={game.id}
+                  game={game}
+                  forecast={forecasts.data?.get(game.id)?.forecast ?? null}
+                  selected={selected?.id === game.id}
+                  onSelect={() => setSelectedId(game.id)}
+                />
+              ))}
+            </div>
+          )}
+          {forecasts.data && forecasts.data.size > 0 && (
+            <p className="text-footnote text-muted-foreground">
+              Grey scores on upcoming games are predictions. Pick a game to see who&apos;s favored and why.
+            </p>
+          )}
         </div>
-      )}
-      {forecasts.data && forecasts.data.size > 0 && (
-        <p className="text-footnote text-muted-foreground">
-          Grey scores on upcoming games are predictions. Pick a game to see who&apos;s favored and why.
-        </p>
-      )}
-      {selected && (
-        <Matchup
-          key={selected.id}
-          game={selected}
-          fullBox={fullBox}
-          forecast={{
-            result: forecasts.data?.get(selected.id),
-            pending: forecasts.isPending,
-            error: forecasts.error,
-          }}
-        />
-      )}
+        {selected && (
+          <div className="min-w-0">
+            <Matchup
+              key={selected.id}
+              game={selected}
+              fullBox={fullBox}
+              forecast={{
+                result: forecasts.data?.get(selected.id),
+                pending: forecasts.isPending,
+                error: forecasts.error,
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -814,25 +838,25 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
             <motion.li key={leader.player_id} layout="position" transition={SPRING.snappy}>
               <Link
                 href={`/players/${leader.player_id}`}
-                className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors duration-150 hover:bg-muted"
               >
                 <span className="w-4 text-right text-footnote text-muted-foreground tabular-nums">
                   {leader.rank}
                 </span>
                 <PlayerAvatar id={leader.player_id} name={leader.full_name} team={leader.team} size="sm" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium group-hover:text-primary">
+                  <span className="block font-medium transition-colors duration-150 group-hover:text-primary">
                     {leader.full_name}
                   </span>
                   <span aria-hidden className="mt-1 block h-1 overflow-hidden rounded-full bg-muted">
                     <span
-                      className="block h-full rounded-full bg-primary/80 transition-[width] duration-500"
+                      className="block h-full rounded-full bg-chart-3/70 transition-[width] duration-300"
                       style={{ width: `${(leader.value / top) * 100}%` }}
                     />
                   </span>
                 </span>
                 <span className="text-right">
-                  <span className="block text-headline font-semibold tabular-nums">
+                  <span className="numeral block text-title1">
                     {formatStat(leader.value)}
                   </span>
                   <span className="text-footnote text-muted-foreground">

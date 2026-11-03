@@ -11,6 +11,11 @@ interface CompareBarProps {
   names?: [string, string];
 }
 
+/** The leader's marker: a circle on the left, a diamond on the right, so it isn't color alone. */
+function LeadMark({ className }: { className: string }) {
+  return <span aria-hidden className={cn("inline-block size-1.5 align-[0.2em]", className)} />;
+}
+
 /** Two values on a shared scale, mirrored from the centre. The leader is stated in text too. */
 export function CompareBar({
   label,
@@ -28,47 +33,38 @@ export function CompareBar({
         ? "left"
         : "right";
   const width = (value: number | null) => `${((value ?? 0) / max) * 100}%`;
-  return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 gap-y-1">
+  const side = (value: number | null, which: "left" | "right") => (
+    <div className={cn("min-w-0", which === "left" && "text-right")}>
       <span
         className={cn(
-          "text-right text-headline tabular-nums",
-          winner === "left" ? "font-semibold text-foreground" : "text-muted-foreground",
+          "numeral text-title2",
+          winner === which ? "text-foreground" : "font-semibold text-muted-foreground",
         )}
       >
-        {format(left)}
+        {winner === which && which === "left" && <LeadMark className="mr-1.5 rounded-full bg-chart-1" />}
+        {format(value)}
+        {winner === which && which === "right" && <LeadMark className="ml-1.5 rotate-45 bg-chart-2" />}
       </span>
+      <div aria-hidden className={cn("mt-1 flex h-1 rounded-full bg-muted", which === "left" && "justify-end")}>
+        <div
+          className={cn(
+            "h-full rounded-full transition-[width] duration-300",
+            which === "left" ? "bg-chart-1" : "bg-chart-2",
+            winner !== which && winner != null && "opacity-45",
+          )}
+          style={{ width: width(value) }}
+        />
+      </div>
+    </div>
+  );
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)_minmax(0,1fr)] items-center gap-x-3 sm:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1fr)]">
+      {side(left, "left")}
       <span className="text-center text-footnote text-muted-foreground">
         {label}
         {winner && <span className="sr-only">, {names[winner === "left" ? 0 : 1]} leads</span>}
       </span>
-      <span
-        className={cn(
-          "text-headline tabular-nums",
-          winner === "right" ? "font-semibold text-foreground" : "text-muted-foreground",
-        )}
-      >
-        {format(right)}
-      </span>
-      <div aria-hidden className="flex h-1.5 justify-end overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width] duration-500",
-            winner === "left" ? "bg-primary" : "bg-chart-3",
-          )}
-          style={{ width: width(left) }}
-        />
-      </div>
-      <span aria-hidden />
-      <div aria-hidden className="flex h-1.5 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full rounded-full transition-[width] duration-500",
-            winner === "right" ? "bg-primary" : "bg-chart-3",
-          )}
-          style={{ width: width(right) }}
-        />
-      </div>
+      {side(right, "right")}
     </div>
   );
 }

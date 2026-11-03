@@ -41,6 +41,7 @@ describe("Forecast", () => {
         playerName="Test Player"
         opponentName="Bears"
         history={[]}
+        seasonAverages={null}
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: "Update forecast" }));

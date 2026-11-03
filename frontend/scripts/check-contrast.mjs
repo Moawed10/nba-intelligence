@@ -57,6 +57,11 @@ const pairs = [
   ["primary", "popover", 3],
   ["positive", "card", 4.5],
   ["negative", "card", 4.5],
+  // The selected segment's label sits on the raised thumb; feature text sits on the stage.
+  ["primary", "thumb", 4.5],
+  ["foreground", "thumb", 4.5],
+  ["muted-foreground", "stage", 4.5],
+  ["primary", "stage", 4.5],
   ["chart-2", "card", 3],
   ["chart-3", "card", 3],
   ["chart-4", "card", 3],
