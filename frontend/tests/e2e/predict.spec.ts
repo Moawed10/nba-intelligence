@@ -57,6 +57,10 @@ test.describe("predictions", () => {
     await expect(forecast.getByText("Usually 16–32")).toBeVisible();
     await expect(forecast.getByText("25%")).toBeVisible();
     await expect(forecast.getByText(/In 3 games since 2097-98/)).toBeVisible();
+    const guarded = forecast.getByRole("region", { name: "Most often guarded by" });
+    await expect(guarded.getByRole("row").nth(1)).toContainText("85");
+    await expect(guarded.getByRole("row").nth(1)).toContainText("31.2");
+    await expect(forecast.getByText(/not a confirmed matchup/)).toBeVisible();
     await expect(forecast.getByText("111.9")).toBeVisible();
     await expect(forecast.getByText(/Recent games\s*23/)).toBeVisible();
   });

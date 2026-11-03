@@ -6,6 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.ingestion import jobs
+from app.ingestion.client import FetchResult, RetryableSourceError
 from app.ingestion.writer import upsert
 from app.models import (
     Game,
@@ -244,3 +245,23 @@ def test_matchups_job_stores_who_guarded_whom_for_finished_games(engine, source)
         stored = s.scalars(select(PlayerMatchup)).one()
         assert (stored.def_team_id, float(stored.partial_possessions)) == (away, 3.5)
         assert game_id not in jobs.games_missing_matchups(s)
+
+
+def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_reply(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
+    source.error = RetryableSourceError("ConnectionError")
+    repeated = [*finals, *finals, *finals]
+    run = jobs.run_job(engine, "player_matchups", {"t": 1},
+                       jobs.ingest_player_matchups(source, repeated))  # fmt: skip
+    assert run.rows_rejected == jobs.MATCHUP_FAILURE_LIMIT
+    source.error = None
+
+    class NoTables(FakeSource):
+        def fetch(self, endpoint_cls, *, cacheable=False, **params):
+            return FetchResult(frames=[], attempts=1)
+
+    run = jobs.run_job(engine, "player_matchups", {"t": 2},
+                       jobs.ingest_player_matchups(NoTables(), finals[:1]))  # fmt: skip
+    assert (run.status, run.rows_rejected) == (RunStatus.succeeded, 1)

@@ -282,7 +282,7 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
     season = current_season_start_year(now)
     outcomes: dict[str, str] = {}
     for job in due_jobs(engine, now):
-        if job == "careers":
+        if job in ("careers", "matchups"):
             with Session(engine) as s, s.begin():
                 if games_live(s, now):
                     s.execute(update(SyncSchedule).where(SyncSchedule.job == job)

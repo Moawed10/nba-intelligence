@@ -325,7 +325,7 @@ def ingest_player_careers(
     return body
 
 
-MATCHUP_FAILURE_LIMIT = 5
+MATCHUP_FAILURE_LIMIT = 2
 
 
 def games_missing_matchups(
@@ -376,6 +376,9 @@ def ingest_player_matchups(
                     return
                 continue
             failures = 0
+            if not result.frames:
+                ctx.reject([Rejection({"game_id": game_id}, "source returned no table")])
+                continue
             frame = ctx.fetched_from(result)
             out = transform_matchups(frame, game_id, (game.home_team_id, game.away_team_id), known)
             ctx.reject(out.rejections)

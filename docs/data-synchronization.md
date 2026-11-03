@@ -163,3 +163,9 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 - Cache invalidation on `data_version` bump
 - Restart recovery: abandoned lease rerun; overdue jobs run once
 - Time zones: game-day boundaries across the March and November DST changes
+
+## Who guarded whom
+
+`player_matchups` holds the NBA's per-game tracking of which defender guarded which player (`boxscorematchupsv3`, one request per game, published some hours after the final). The `matchups` sync job fetches finished games of the current season every 3 hours.
+
+**Backfill:** `python -m app.cli ingest matchups [--seasons 2025,2024] [--interval 10]`, newest games first. It is safe to stop and re-run, since it only asks for games with no rows yet. On 2026-11-03 a backfill at about one request per 3 seconds made stats.nba.com stop answering this connection after a few hundred requests, which also failed the schedule sync for two hours. So it now defaults to one request every 10 seconds, waits while games are live, keeps its work in short runs, and stops after two failed games in a row. Do not lower the interval without watching the schedule job.

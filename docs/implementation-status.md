@@ -1079,3 +1079,11 @@ The "recent games" block from the original design was folded into the game log, 
 
 **Not verified:** VoiceOver (still open from Phase 12); real-browser zoom.
 
+### Session — 2026-11-03 (defender matchups)
+
+**Phase:** model improvement, no new deliverables counted
+
+**Completed:** `player_matchups` table, resumable backfill and sync job; defender features built only from earlier games, with leakage and training-versus-serving tests; each release now serves on its own stored feature list, so the active release 2026.10.29-3 is unaffected; "Most often guarded by" from past games on Predictions.
+
+**Not done:** the backfill is partial, so no model has been trained on these features and none has been activated. Current forecasts do not use them yet. See [data-synchronization.md](data-synchronization.md#who-guarded-whom).
+
