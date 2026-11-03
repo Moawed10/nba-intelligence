@@ -498,7 +498,10 @@ createServer((req, res) => {
     return send(res, 200, {
       player_id: player.id, opponent: ref(opponent), games: 3, wins: 2, losses: 1,
       averages: { pts: 21.5, reb: 6.2, ast: 4.4, fg3m: 1.3, stl: 0.7, blk: 0.3, min: 31.2 },
-      fg_pct: 0.48, fg3_pct: 0.36, first_season: "2097-98", last_season: "2099-00", meetings, meta: META,
+      fg_pct: 0.48, fg3_pct: 0.36, first_season: "2097-98", last_season: "2099-00", meetings,
+      defenders: [{ player_id: 1001, full_name: PLAYERS.find((p) => p.id === 1001)?.full_name ?? "Fixture Defender", games: 3, possessions: 84.5, pts_per_100: 31.2 }],
+      usual_pts_per_100: 27.4,
+      meta: META,
     });
   }
   if (path === "/players") {
