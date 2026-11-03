@@ -21,7 +21,7 @@ from app.db import session_scope
 from app.ml.artifacts import load_artifact
 from app.ml.conformal import MondrianConformal
 from app.ml.dataset import load_dataset
-from app.ml.features import FEATURES, TARGETS
+from app.ml.features import TARGETS
 from app.ml.inference import snapshot_hash
 from app.models import (
     ModelRelease,
@@ -73,8 +73,11 @@ def run_backtest(
             raise LookupError(f"release {version} has no held-out model for {sorted(missing)}")
         for entry in models.values():
             v = entry["version"]
-            payload = load_artifact(artifacts_dir / v.artifact_path, v.artifact_sha256)
+            payload = load_artifact(
+                artifacts_dir / v.artifact_path, v.artifact_sha256, release.feature_schema_version
+            )
             entry["model"] = payload["model"]
+            features = list(payload["features"])
             calibration = v.interval_calibration or payload.get("conformal")
             entry["conformal"] = MondrianConformal.from_dict(calibration) if calibration else None
         release_id, schema = release.id, release.feature_schema_version
@@ -85,7 +88,7 @@ def run_backtest(
     rows = frame[(dates >= test_start) & (dates <= test_end)].reset_index(drop=True)
     if rows.empty:
         raise RuntimeError(f"no eligible games between {test_start} and {test_end}")
-    X = rows[list(FEATURES)].astype(float)
+    X = rows[features].astype(float)
     minutes = np.maximum(0, models["min"]["model"].predict(X))
     predicted: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
     for target in TARGETS:
@@ -97,7 +100,7 @@ def run_backtest(
     ids = [uuid.uuid4() for _ in range(len(rows))]
     predictions, values, evaluations = [], [], []
     for i, row in rows.iterrows():
-        snapshot = {n: None if pd.isna(row[n]) else float(row[n]) for n in FEATURES}
+        snapshot = {n: None if pd.isna(row[n]) else float(row[n]) for n in features}
         cutoff = row["game_date"].to_pydatetime().replace(tzinfo=UTC)
         predictions.append({
             "id": ids[i], "player_id": int(row["player_id"]), "game_id": row["game_id"],

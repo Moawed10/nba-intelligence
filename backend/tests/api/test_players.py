@@ -1,7 +1,10 @@
 import pytest
-from sqlalchemy import text
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
 
+from app.models import Game, GameStatus, PlayerMatchup
 from tests.api.conftest import NO_SHOTS, RETIRED, SEASON_LABEL, STAR
+from tests.fixtures import player_id
 
 pytestmark = pytest.mark.integration
 
@@ -206,3 +209,48 @@ def test_matchup_history_against_one_team(client):
         client.get(f"/api/v1/players/{STAR}/matchups/99").json()["error"]["code"]
         == "team_not_found"
     )
+
+
+def _guard(engine, game_id, offense, defender, def_team, off_team, possessions, pts):
+    with Session(engine) as s, s.begin():
+        s.add(PlayerMatchup(
+            game_id=game_id, off_player_id=offense, def_player_id=defender,
+            off_team_id=off_team, def_team_id=def_team, seconds=60, partial_possessions=possessions,
+            pts=pts, ast=0, tov=0, fgm=0, fga=0, fg3m=0, fg3a=0, source_endpoint="fixture",
+        ))  # fmt: skip
+
+
+def test_matchup_lists_who_on_that_team_has_guarded_the_player(client, loaded):
+    with Session(loaded) as session:
+        finals = session.execute(
+            select(Game.id, Game.home_team_id, Game.away_team_id, Game.game_date)
+            .where(Game.status == GameStatus.final)
+            .order_by(Game.game_date)
+        ).all()
+    meeting = next(g for g in finals if {1, 2} == {g.home_team_id, g.away_team_id})
+    later = next(
+        g
+        for g in finals
+        if g.game_date > meeting.game_date and 3 in (g.home_team_id, g.away_team_id)
+    )
+    on_opponent, traded = player_id(2, 0), player_id(2, 1)
+    _guard(loaded, meeting.id, STAR, on_opponent, 2, 1, 20, 5)
+    _guard(loaded, meeting.id, STAR, traded, 2, 1, 40, 2)
+    # His latest game defending was for another team, so he no longer counts against team 2.
+    other_team = later.home_team_id if later.away_team_id == 3 else later.away_team_id
+    _guard(loaded, later.id, player_id(other_team, 1), traded, 3, other_team, 1, 0)
+    body = client.get(f"/api/v1/players/{STAR}/matchups/2").json()
+    names = [d["player_id"] for d in body["defenders"]]
+    assert on_opponent in names
+    assert traded not in names
+    row = next(d for d in body["defenders"] if d["player_id"] == on_opponent)
+    assert row["possessions"] == pytest.approx(20)
+    assert row["pts_per_100"] == pytest.approx(25)
+    assert row["games"] == 1
+    assert body["usual_pts_per_100"] == pytest.approx(7 / 60 * 100)
+
+
+def test_matchup_without_tracking_data_lists_no_defenders(client):
+    body = client.get(f"/api/v1/players/{STAR}/matchups/2").json()
+    assert body["defenders"] == []
+    assert body["usual_pts_per_100"] is None

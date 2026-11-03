@@ -1,13 +1,18 @@
 from datetime import UTC, datetime, timedelta
 
+import pandas as pd
 import pytest
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.ingestion import jobs
 from app.ingestion.writer import upsert
 from app.models import (
     Game,
+    GameStatus,
     IngestionRun,
+    PlayerGameStats,
+    PlayerMatchup,
     RunStatus,
     SyncEvent,
     SyncEventType,
@@ -16,7 +21,7 @@ from app.models import (
 )
 from app.sync import worker
 from app.sync.freshness import Freshness, dataset_freshness
-from tests.fixtures import TEAMS, FakeSource, FixtureGame, schedule
+from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, schedule
 
 pytestmark = pytest.mark.integration
 
@@ -51,6 +56,7 @@ def test_due_jobs_run_once_and_are_rescheduled(engine, source):
     assert worker.run_due(engine, source, NOW) == {
         "schedule": "succeeded",
         "game_logs": "succeeded",
+        "matchups": "succeeded",
         "predictions": "succeeded",
     }
     nxt = schedules(engine)
@@ -211,3 +217,30 @@ def test_the_long_careers_job_waits_while_games_are_live(engine, source):
         )
     assert worker.run_due(engine, source, later)["careers"] == "deferred: games are live"
     assert schedules(engine)["careers"] == later + timedelta(minutes=30)
+
+
+def test_matchups_job_stores_who_guarded_whom_for_finished_games(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        game = s.scalars(select(Game).where(Game.status == GameStatus.final)).first()
+        offense, defense = s.scalars(
+            select(PlayerGameStats.player_id).where(PlayerGameStats.game_id == game.id)
+        ).all()[:2]
+        rows = [{
+            "teamId": game.home_team_id, "personIdOff": offense, "personIdDef": defense,
+            "matchupMinutesSort": 40.0, "partialPossessions": 3.5, "playerPoints": 2,
+            "matchupAssists": 0, "matchupTurnovers": 0, "matchupFieldGoalsMade": 1,
+            "matchupFieldGoalsAttempted": 1, "matchupThreePointersMade": 0,
+            "matchupThreePointersAttempted": 0,
+        }]  # fmt: skip
+        game_id, away = game.id, game.away_team_id
+    source.frames[("BoxScoreMatchupsV3", game_id)] = pd.DataFrame(rows)
+    run = jobs.run_job(
+        engine, "player_matchups", {"season": SEASON},
+        jobs.ingest_player_matchups(source, [game_id]),
+    )  # fmt: skip
+    assert run.rows_inserted == 1
+    with Session(engine) as s:
+        stored = s.scalars(select(PlayerMatchup)).one()
+        assert (stored.def_team_id, float(stored.partial_possessions)) == (away, 3.5)
+        assert game_id not in jobs.games_missing_matchups(s)

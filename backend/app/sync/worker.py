@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 LEASE = timedelta(minutes=15)
 RECENT_GAME_WINDOW = timedelta(hours=36)
 CAREER_BATCH = 200
+MATCHUP_BATCH = 100
 LONGEST_GAME = timedelta(hours=6)
 CAREERS_RETRY_DURING_GAMES = timedelta(minutes=30)
 LIVE_POLL_SECONDS = 5.0
@@ -65,6 +66,8 @@ JOBS: dict[str, JobSpec] = {
     "corrections": JobSpec(interval=timedelta(days=7)),
     # Active players' season-by-season careers (one request per player, about ten minutes).
     "careers": JobSpec(interval=timedelta(hours=24)),
+    # Who guarded whom in finished games of this season; published some hours after the final.
+    "matchups": JobSpec(interval=timedelta(hours=3)),
     # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
     # no NBA data, so it runs outside ingestion runs and does not advance data_version.
     "predictions": JobSpec(interval=timedelta(minutes=15)),
@@ -169,6 +172,12 @@ def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -
              jobs.ingest_player_careers(client, batch))
             for batch in (active[i : i + CAREER_BATCH] for i in range(0, len(active), CAREER_BATCH))
         ]  # fmt: skip
+    if job == "matchups":
+        with Session(engine) as s:
+            missing = jobs.games_missing_matchups(s, MATCHUP_BATCH, (season,))
+        return [
+            ("player_matchups", {"season": season}, jobs.ingest_player_matchups(client, missing))
+        ]
     raise KeyError(job)
 
 

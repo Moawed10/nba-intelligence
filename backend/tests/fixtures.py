@@ -153,6 +153,9 @@ class FakeSource:
             raise self.error
         if endpoint_cls.__name__ == "ScoreboardV3":
             return FetchResult(frames=self.live_frames, attempts=1)
+        if endpoint_cls.__name__ == "BoxScoreMatchupsV3":
+            frame = self.frames.get(("BoxScoreMatchupsV3", params["game_id"]), pd.DataFrame())
+            return FetchResult(frames=[frame.copy()], attempts=1)
         key = (endpoint_cls.__name__, params.get("player_or_team_abbreviation"))
         return FetchResult(frames=[self.frames[key].copy()], attempts=1)
 

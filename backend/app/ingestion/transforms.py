@@ -465,3 +465,52 @@ def transform_player_career(frame: pd.DataFrame, season_type: SeasonType) -> lis
             row["fg3m"] = row["fg3a"] = None
         rows.append(row)
     return rows
+
+
+def transform_matchups(
+    frame: pd.DataFrame, game_id: str, teams: tuple[int, int], known_players: set[int]
+) -> Transformed:
+    """BoxScoreMatchupsV3 to player_matchups rows. `teamId` is the offensive player's team.
+
+    A pair the tracking data credits with no possessions carries no information and is dropped.
+    """
+    out = Transformed()
+    for r in frame.to_dict("records"):
+        key = {"game_id": game_id, "off": r.get("personIdOff"), "def": r.get("personIdDef")}
+        try:
+            off_team = int(r["teamId"])
+            off_player, def_player = int(r["personIdOff"]), int(r["personIdDef"])
+            possessions = float(r["partialPossessions"])
+            seconds = float(r["matchupMinutesSort"])
+            numbers = {
+                "pts": int(r["playerPoints"]),
+                "ast": int(r["matchupAssists"]),
+                "tov": int(r["matchupTurnovers"]),
+                "fgm": int(r["matchupFieldGoalsMade"]),
+                "fga": int(r["matchupFieldGoalsAttempted"]),
+                "fg3m": int(r["matchupThreePointersMade"]),
+                "fg3a": int(r["matchupThreePointersAttempted"]),
+            }
+        except (KeyError, TypeError, ValueError) as error:
+            out.rejections.append(Rejection(key, f"unreadable matchup row: {error}"))
+            continue
+        if possessions <= 0:
+            continue
+        if off_team not in teams:
+            out.rejections.append(Rejection(key, f"team {off_team} is not in this game"))
+        elif not {off_player, def_player} <= known_players:
+            out.rejections.append(Rejection(key, "player not in the players table"))
+        elif seconds < 0 or min(numbers.values()) < 0:
+            out.rejections.append(Rejection(key, "negative matchup value"))
+        else:
+            out.rows.append({
+                "game_id": game_id,
+                "off_player_id": off_player,
+                "def_player_id": def_player,
+                "off_team_id": off_team,
+                "def_team_id": teams[0] if off_team == teams[1] else teams[1],
+                "seconds": round(seconds, 1),
+                "partial_possessions": round(possessions, 2),
+                **numbers,
+            })  # fmt: skip
+    return out

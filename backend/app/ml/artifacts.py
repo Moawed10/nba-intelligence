@@ -43,12 +43,16 @@ def save_artifact(path: Path, model: Any, **metadata: Any) -> str:
     return sha256(path)
 
 
-def load_artifact(path: Path, expected_sha256: str) -> dict[str, Any]:
-    """Refuses artifacts whose bytes or feature schema differ from the registry or running code."""
+def load_artifact(
+    path: Path, expected_sha256: str, expected_schema: str | None = None
+) -> dict[str, Any]:
+    """Refuses artifacts whose bytes or feature schema differ from the registry. A registered
+    release passes the schema it was trained with, so adding features never disables a serving
+    model; the running code's schema is the default for anything else."""
     actual = sha256(path)
     if actual != expected_sha256:
         raise ArtifactMismatch(f"{path.name}: SHA-256 {actual} does not match the registry")
     payload = joblib.load(path)
-    if payload.get("feature_schema_version") != feature_schema_version():
-        raise ArtifactMismatch(f"{path.name}: feature schema differs from the running code")
+    if payload.get("feature_schema_version") != (expected_schema or feature_schema_version()):
+        raise ArtifactMismatch(f"{path.name}: feature schema differs from what was expected")
     return payload

@@ -12,6 +12,7 @@ from app.ml.features import (
     feature_schema_version,
     leakage_violations,
 )
+from app.ml.matchups import MATCHUP_FEATURES
 from app.ml.splits import SplitPlan, split
 from tests.ml_fixtures import PLAN, league
 
@@ -81,7 +82,9 @@ def test_leakage_check_detects_a_same_day_source(frame):
 def test_eligibility_requires_prior_games(frame):
     assert (frame.loc[frame["eligible"], "prior_games"] >= MIN_PRIOR_GAMES).all()
     assert not frame.loc[frame["prior_games"] < MIN_PRIOR_GAMES, "eligible"].any()
-    assert frame.loc[frame["eligible"], list(FEATURES)].notna().all().all()
+    # Defender history is optional: a player may never have met this opponent.
+    always = [f for f in FEATURES if f not in MATCHUP_FEATURES]
+    assert frame.loc[frame["eligible"], always].notna().all().all()
 
 
 def test_first_game_of_a_season_falls_back_to_the_previous_season(history, frame):

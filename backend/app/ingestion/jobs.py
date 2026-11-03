@@ -6,6 +6,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 
 from nba_api.stats.endpoints import (
+    BoxScoreMatchupsV3,
     CommonAllPlayers,
     LeagueDashTeamStats,
     LeagueGameLog,
@@ -32,6 +33,7 @@ from app.ingestion.transforms import (
     Rejection,
     current_season_start_year,
     season_label,
+    transform_matchups,
     transform_player_career,
     transform_player_logs,
     transform_players,
@@ -50,6 +52,7 @@ from app.models import (
     IngestionRun,
     Player,
     PlayerGameStats,
+    PlayerMatchup,
     PlayerSeason,
     RunStatus,
     Season,
@@ -317,6 +320,71 @@ def ingest_player_careers(
                     upsert(ctx.session, PlayerSeason, rows,
                            ["player_id", "season_type", "season_id", "team_abbreviation"],
                            provenance=provenance(ctx.run_id, "PlayerCareerStats"))
+                )  # fmt: skip
+
+    return body
+
+
+MATCHUP_FAILURE_LIMIT = 5
+
+
+def games_missing_matchups(
+    session: Session, limit: int | None = None, seasons: tuple[int, ...] | None = None
+) -> list[str]:
+    """Final games with no matchup rows yet, newest first, so a partial backfill helps today's
+    forecasts most. A game the source has nothing for stays listed; completed seasons answer from
+    the disk cache, so asking again costs no request."""
+    stmt = (
+        select(Game.id)
+        .where(Game.status == GameStatus.final,
+               ~select(PlayerMatchup.game_id)
+               .where(PlayerMatchup.game_id == Game.id)
+               .exists())
+        .order_by(Game.game_date.desc(), Game.id)
+    )  # fmt: skip
+    if seasons:
+        stmt = stmt.where(Game.season_id.in_(seasons))
+    return list(session.scalars(stmt.limit(limit)))
+
+
+def ingest_player_matchups(
+    client: StatsSource, game_ids: list[str]
+) -> Callable[[RunContext], None]:
+    """Who guarded whom in each game (one request per game). A game the source fails on is rejected
+    and the rest are kept; after MATCHUP_FAILURE_LIMIT failures in a row the batch stops, and a
+    re-run picks up what is missing."""
+
+    def body(ctx: RunContext) -> None:
+        session = ctx.session
+        games = {g.id: g for g in session.scalars(select(Game).where(Game.id.in_(game_ids)))}
+        known = set(session.scalars(select(Player.id)))
+        failures = 0
+        for game_id in game_ids:
+            game = games.get(game_id)
+            if game is None:
+                ctx.reject([Rejection({"game_id": game_id}, "game not stored")])
+                continue
+            try:
+                result = client.fetch(BoxScoreMatchupsV3, game_id=game_id,
+                                      cacheable=_is_completed_season(game.season_id))  # fmt: skip
+            except StatsSourceError as error:
+                ctx.reject([Rejection({"game_id": game_id}, f"{type(error).__name__}: {error}")])
+                failures += 1
+                if failures >= MATCHUP_FAILURE_LIMIT:
+                    log.warning("matchup source refusing requests; batch stopped early",
+                                extra={"game_id": game_id})  # fmt: skip
+                    return
+                continue
+            failures = 0
+            frame = ctx.fetched_from(result)
+            out = transform_matchups(frame, game_id, (game.home_team_id, game.away_team_id), known)
+            ctx.reject(out.rejections)
+            ctx.valid += len(out.rows)
+            if out.rows:
+                ctx.counted(
+                    upsert(session, PlayerMatchup, out.rows,
+                           ["game_id", "off_player_id", "def_player_id"],
+                           provenance=provenance(ctx.run_id, "BoxScoreMatchupsV3"))
                 )  # fmt: skip
 
     return body

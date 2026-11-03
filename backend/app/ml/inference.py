@@ -21,8 +21,9 @@ from sqlalchemy.orm import Session
 
 from app.ml.artifacts import load_artifact
 from app.ml.conformal import MondrianConformal
-from app.ml.dataset import LINES_SQL, TEAM_SQL
+from app.ml.dataset import LINES_SQL, MATCHUPS_SQL, TEAM_SQL
 from app.ml.features import FEATURES, TARGETS, build_features
+from app.ml.matchups import MATCHUP_FEATURES, POSITION_GAMES, ROSTER_DAYS
 from app.models import ModelRelease, ModelVersion, ReleaseStatus
 
 PLAYER_LINES_SQL = LINES_SQL + " AND s.player_id = :player_id AND g.game_date < :before"
@@ -34,6 +35,24 @@ TEAMS_SQL = (
       t.team_id IN (:team_id, :opponent_id)
       OR (t.game_id, t.team_id) IN (
         SELECT game_id, team_id FROM player_game_stats WHERE player_id = :player_id))"""
+)
+
+# Everything the defender features read for one player, so a forecast needs no full-table scan: his
+# own matchups, the last year or so of each defender who has guarded him (their team and rates), and
+# the opponent's recent games. Producing the same values as training is covered by a test.
+PLAYER_MATCHUPS_SQL = (
+    MATCHUPS_SQL
+    + """ AND g.game_date < :before AND (
+      m.off_player_id = :player_id
+      OR (g.game_date >= CAST(:before AS date) - :roster_days AND m.def_player_id IN (
+        SELECT def_player_id FROM player_matchups WHERE off_player_id = :player_id))
+      OR (m.def_team_id = :opponent_id AND m.game_id IN (
+        SELECT o.id FROM games o
+        WHERE o.status = 'final' AND o.game_date < :before
+          AND :opponent_id IN (o.home_team_id, o.away_team_id)
+          AND EXISTS (SELECT 1 FROM player_matchups x
+                      WHERE x.game_id = o.id AND x.def_team_id = :opponent_id)
+        ORDER BY o.game_date DESC, o.id LIMIT :position_games)))"""
 )
 
 # Inputs shown next to a forecast: the statistic's own recent form plus the shared context.
@@ -65,6 +84,8 @@ class ActiveRelease:
     double_double: Any
     # Game score models ("team_pts" payload with conformal, "home_win" margin calibrator), if any.
     team: dict[str, Any] = field(default_factory=dict)
+    # The inputs this release's models were trained on, in order; older releases have fewer.
+    features: tuple[str, ...] = FEATURES
 
 
 @dataclass(frozen=True)
@@ -104,8 +125,11 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
         regressors: dict[str, RegressionModel] = {}
         double_double = None
         team: dict[str, Any] = {}
+        features = FEATURES
         for v in versions:
-            payload = load_artifact(artifacts_dir / v.artifact_path, v.artifact_sha256)
+            payload = load_artifact(
+                artifacts_dir / v.artifact_path, v.artifact_sha256, release.feature_schema_version
+            )
             if v.target.value == "double_double":
                 double_double = payload["model"]
             elif v.target.value in TEAM_TARGETS:
@@ -115,6 +139,7 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
                     v.interval_calibration or payload["conformal"]
                 )
                 regressors[v.target.value] = RegressionModel(payload["model"], conformal)
+                features = tuple(payload["features"])
         missing = set(TARGETS) - set(regressors)
         if missing:
             raise LookupError(
@@ -127,6 +152,7 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
             regressors,
             double_double,
             team,
+            features,
         )
         _cache[release.id] = loaded
         return loaded
@@ -181,11 +207,23 @@ def pregame_features(
             }
         ]
     )
-    return build_features(target, lines, teams).iloc[0]
+    matchups = pd.read_sql(
+        text(PLAYER_MATCHUPS_SQL),
+        connection,
+        params={
+            **params,
+            "opponent_id": opponent_id,
+            "roster_days": ROSTER_DAYS,
+            "position_games": POSITION_GAMES,
+        },
+        parse_dates=["game_date"],
+    )
+    return build_features(target, lines, teams, matchups).iloc[0]
 
 
 def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
-    snapshot = {name: _value(features[name]) for name in FEATURES}
+    names = release.features
+    snapshot = {name: _value(features[name]) for name in names}
     digest = snapshot_hash(snapshot)
     prior = int(features["prior_games"])
     if not bool(features["eligible"]):
@@ -193,7 +231,7 @@ def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
 
     # The model reads the snapshot itself, so a stored snapshot always reproduces its prediction.
     X = pd.DataFrame(
-        [[np.nan if snapshot[n] is None else snapshot[n] for n in FEATURES]], columns=list(FEATURES)
+        [[np.nan if snapshot[n] is None else snapshot[n] for n in names]], columns=list(names)
     )
     minutes = np.maximum(0, release.regressors["min"].model.predict(X))
     values: dict[str, tuple[float, float, float]] = {}
@@ -223,7 +261,11 @@ def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
             }
             for target in TARGETS
         },
-        "context": {name: snapshot[name] for name in CONTEXT_INPUTS},
+        "context": {
+            name: snapshot[name]
+            for name in (*CONTEXT_INPUTS, *MATCHUP_FEATURES)
+            if name in snapshot
+        },
     }
     return Forecast(True, prior, snapshot, digest, values, level, probability, explanation)
 
@@ -248,7 +290,9 @@ def activate(session: Session, version: str, artifacts_dir: Path, now: datetime)
             f"Release {version} has no selected model for {sorted(set(TARGETS) - targets)}"
         )
     for v in versions:
-        load_artifact(artifacts_dir / v.artifact_path, v.artifact_sha256)
+        load_artifact(
+            artifacts_dir / v.artifact_path, v.artifact_sha256, release.feature_schema_version
+        )
     for current in session.scalars(
         select(ModelRelease).where(ModelRelease.status == ReleaseStatus.active)
     ):

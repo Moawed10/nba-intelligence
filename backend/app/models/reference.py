@@ -273,3 +273,37 @@ class PlayerGameStats(_BoxScore, Provenance, Base):
     )
     team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
     minutes: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+
+
+class PlayerMatchup(Provenance, Base):
+    """Who guarded whom in one final game, from the NBA's tracking data (boxscorematchupsv3)."""
+
+    __tablename__ = "player_matchups"
+    __table_args__ = (
+        CheckConstraint("partial_possessions > 0", name="possessions_positive"),
+        CheckConstraint("seconds >= 0", name="seconds_nonnegative"),
+        Index("ix_matchups_offense", "off_player_id", "game_id"),
+        Index("ix_matchups_defense", "def_player_id", "game_id"),
+        Index("ix_matchups_def_team", "def_team_id", "game_id"),
+    )
+
+    game_id: Mapped[str] = mapped_column(
+        ForeignKey("games.id", ondelete="RESTRICT"), primary_key=True
+    )
+    off_player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="RESTRICT"), primary_key=True
+    )
+    def_player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="RESTRICT"), primary_key=True
+    )
+    off_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
+    def_team_id: Mapped[int] = mapped_column(ForeignKey("teams.id", ondelete="RESTRICT"))
+    seconds: Mapped[Decimal] = mapped_column(Numeric(7, 1))
+    partial_possessions: Mapped[Decimal] = mapped_column(Numeric(6, 2))
+    pts: Mapped[int] = mapped_column(SmallInteger)
+    ast: Mapped[int] = mapped_column(SmallInteger)
+    tov: Mapped[int] = mapped_column(SmallInteger)
+    fgm: Mapped[int] = mapped_column(SmallInteger)
+    fga: Mapped[int] = mapped_column(SmallInteger)
+    fg3m: Mapped[int] = mapped_column(SmallInteger)
+    fg3a: Mapped[int] = mapped_column(SmallInteger)

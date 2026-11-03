@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
 from app.api.errors import invalid_parameter, not_found
+from app.ml.matchups import RATE_DAYS, ROSTER_DAYS
 from app.models import (
     Game,
     GameStatus,
@@ -25,6 +26,7 @@ from app.schemas.resources import (
     CareerStint,
     CareerTable,
     DirectoryPlayer,
+    MatchupDefender,
     MatchupHistory,
     PlayerCareer,
     PlayerGameLine,
@@ -442,6 +444,34 @@ MATCHUP_AVERAGES = ("pts", "reb", "ast", "fg3m", "stl", "blk")
 MATCHUP_MEETINGS = 10
 
 
+MATCHUP_DEFENDERS = 4
+DEFENDERS_SQL = text("""
+    WITH latest AS (
+        SELECT DISTINCT ON (m.def_player_id) m.def_player_id, m.def_team_id, g.game_date
+        FROM player_matchups m JOIN games g ON g.id = m.game_id
+        WHERE m.def_player_id IN (
+            SELECT def_player_id FROM player_matchups WHERE off_player_id = :p)
+        ORDER BY m.def_player_id, g.game_date DESC
+    )
+    SELECT m.def_player_id AS player_id, d.full_name, COUNT(DISTINCT m.game_id) AS games,
+           SUM(m.partial_possessions)::float AS possessions,
+           SUM(m.pts)::float / SUM(m.partial_possessions) * 100 AS pts_per_100
+    FROM player_matchups m
+    JOIN latest l ON l.def_player_id = m.def_player_id
+    JOIN players d ON d.id = m.def_player_id
+    WHERE m.off_player_id = :p AND l.def_team_id = :t AND l.game_date >= CURRENT_DATE - :roster
+    GROUP BY m.def_player_id, d.full_name
+    ORDER BY possessions DESC
+    LIMIT :limit""")
+USUAL_RATE_SQL = text("""
+    SELECT SUM(m.pts)::float / NULLIF(SUM(m.partial_possessions), 0) * 100
+    FROM player_matchups m JOIN games g ON g.id = m.game_id
+    WHERE m.off_player_id = :p AND g.game_date >= (
+        SELECT MAX(g2.game_date) FROM player_matchups m2 JOIN games g2 ON g2.id = m2.game_id
+        WHERE m2.off_player_id = :p
+    ) - :window""")
+
+
 def matchup(ctx: Context, player_id: int, team_id: int) -> MatchupHistory:
     """Every stored game the player played against one team (did-not-play lines excluded)."""
 
@@ -477,6 +507,17 @@ def matchup(ctx: Context, player_id: int, team_id: int) -> MatchupHistory:
             first_season=rows[-1].season if rows else None,
             last_season=rows[0].season if rows else None,
             meetings=lines[:MATCHUP_MEETINGS],
+            defenders=[
+                MatchupDefender(**row._mapping)
+                for row in ctx.session.execute(
+                    DEFENDERS_SQL,
+                    {"p": player_id, "t": team_id, "roster": ROSTER_DAYS,
+                     "limit": MATCHUP_DEFENDERS},
+                )
+            ],  # fmt: skip
+            usual_pts_per_100=ctx.session.scalar(
+                USUAL_RATE_SQL, {"p": player_id, "window": RATE_DAYS}
+            ),
             meta=ctx.meta(DATASET),
         )
 

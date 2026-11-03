@@ -75,6 +75,31 @@ def ingest_careers(client: NBAStatsClient, player_ids: list[int] | None) -> bool
     return ok
 
 
+def ingest_matchups(client: NBAStatsClient, limit: int | None) -> bool:
+    """Who guarded whom, in batches of worker.MATCHUP_BATCH games, each its own run, so an
+    interrupted backfill keeps finished batches and a re-run continues with what is missing."""
+    with session_scope(get_engine()) as s:
+        missing = jobs.games_missing_matchups(s, limit)
+    print(f"matchups for {len(missing)} games")
+    ok = True
+    for start in range(0, len(missing), worker.MATCHUP_BATCH):
+        batch = missing[start : start + worker.MATCHUP_BATCH]
+        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)},
+                   jobs.ingest_player_matchups(client, batch))  # fmt: skip
+        with session_scope(get_engine()) as s:
+            run = s.scalars(
+                select(IngestionRun)
+                .where(IngestionRun.job == "player_matchups")
+                .order_by(IngestionRun.id.desc())
+                .limit(1)
+            ).first()
+            refused = run is not None and (run.rows_rejected or 0) >= jobs.MATCHUP_FAILURE_LIMIT
+            if refused and not run.rows_inserted:
+                print("the source is refusing requests; stopped. Re-run later to continue.")
+                return False
+    return ok
+
+
 def train_command(args: argparse.Namespace) -> int:
     from app.ml.features import TARGETS
     from app.ml.models import FAST_CONFIG, TrainConfig
@@ -129,6 +154,8 @@ def main(argv: list[str] | None = None) -> int:
     isub.add_parser("players")
     careers = isub.add_parser("careers", help="Every season of every player (one request each)")
     careers.add_argument("--players", help="Comma-separated player ids (default: all due)")
+    matchups = isub.add_parser("matchups", help="Who guarded whom (one request per game)")
+    matchups.add_argument("--limit", type=int, help="Newest games first (default: all missing)")
     for name in ("schedule", "season"):
         p = isub.add_parser(name)
         p.add_argument("--season", type=int, default=current, help="Start year, e.g. 2025")
@@ -186,6 +213,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.target == "careers":
             ids = [int(i) for i in args.players.split(",")] if args.players else None
             ok = ingest_careers(client, ids)
+        elif args.target == "matchups":
+            ok = ingest_matchups(client, args.limit)
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
         elif args.target == "schedule":
