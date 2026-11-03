@@ -146,4 +146,3 @@ def test_home_court_splits_add_up_to_the_season(client):
         assert player["home_games"] + player["away_games"] > 0
         if player["home_games"] == 0:
             assert player["home"]["pts"] is None
-

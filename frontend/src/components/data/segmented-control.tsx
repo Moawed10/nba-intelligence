@@ -73,7 +73,7 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(segment.value)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              "relative min-h-9 shrink-0 rounded-full px-3.5 text-subhead whitespace-nowrap transition-colors duration-150 active:opacity-70 pointer-coarse:min-h-11",
+              "relative min-h-9 shrink-0 rounded-full px-2.5 sm:px-3.5 text-subhead whitespace-nowrap transition-colors duration-150 active:opacity-70 pointer-coarse:min-h-11",
               selected ? "font-semibold text-primary" : "text-muted-foreground hover:text-foreground",
             )}
           >
