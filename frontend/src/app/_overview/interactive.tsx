@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { teamBandStyle } from "@/components/brand/team-band";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
+import { TeamLink } from "@/components/brand/team-link";
 import { TeamMark } from "@/components/brand/team-mark";
 import { CompareBar } from "@/components/data/compare-bar";
 import { SegmentedControl } from "@/components/data/segmented-control";
@@ -121,7 +122,7 @@ function TeamColumn({ game, side }: { game: GameSummary; side: "away" | "home" }
         side === "home" ? "@lg:order-3 @4xl:flex-row-reverse @4xl:text-right" : "@4xl:text-left",
       )}
     >
-      <TeamMark team={entry.team} size="xl" disc className="max-md:size-14" />
+      <TeamLink team={entry.team} size="xl" className="max-md:size-14" />
       <div className="min-w-0 flex-1">
         <p className="kicker">{side === "home" ? "Home" : "Away"}</p>
         <p className="display mt-1 text-[clamp(1.75rem,4cqw,2.75rem)]">

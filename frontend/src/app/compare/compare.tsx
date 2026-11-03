@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { teamBandStyle } from "@/components/brand/team-band";
 import { PlayerCutout } from "@/components/brand/player-cutout";
-import { TeamMark } from "@/components/brand/team-mark";
+import { TeamLink } from "@/components/brand/team-link";
 import { ApiErrorView } from "@/components/data/api-error";
 import { CompareBar } from "@/components/data/compare-bar";
 import { Panel } from "@/components/data/panel";
@@ -112,7 +112,11 @@ function Hero({
           <div key={p.id} style={teamBandStyle(p.team)} className="team-band min-w-0 pt-5">
             <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager plain className="h-40 w-full sm:h-72 lg:h-80" />
             <div className="p-4 text-center sm:p-6">
-              {p.team && <TeamMark team={p.team} size="sm" disc className="mx-auto mb-2" />}
+              {p.team && (
+                <div className="mb-2">
+                  <TeamLink team={p.team} size="md" />
+                </div>
+              )}
               <Link
                 href={`/players/${p.id}?season=${season}`}
                 className="display flex min-h-11 items-center justify-center text-[clamp(2rem,6vw,5rem)] underline-offset-4 hover:underline"

@@ -40,7 +40,7 @@ test.describe("player directory", () => {
 
   test("filters live in the URL and change the results", async ({ page, isMobile }) => {
     await page.goto("/players");
-    await page.getByLabel("Team").selectOption({ label: "Alpha Ants" });
+    await page.getByLabel("Team", { exact: true }).selectOption({ label: "Alpha Ants" });
     await expect(page).toHaveURL(/team=1/);
     await expect(directoryRows(page, isMobile)).toHaveCount(15);
     await page.getByRole("radio", { name: "Centers" }).click();
@@ -69,7 +69,7 @@ test.describe("player directory", () => {
 
   test("search opens a profile and focuses its heading", async ({ page, isMobile }) => {
     await page.goto("/players");
-    await page.getByRole("combobox", { name: "Search players" }).fill("zed");
+    await page.getByRole("combobox", { name: "Search players and teams" }).fill("zed");
     await page.getByRole("option", { name: /Zed Fixture/ }).click();
     await expect(page).toHaveURL(`/players/${STAR}`);
     const heading = page.getByRole("heading", { level: 1, name: "Zed Fixture" });

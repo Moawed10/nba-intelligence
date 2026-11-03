@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("search lists players and stays accessible while open", async ({ page }) => {
-  const input = page.getByRole("combobox", { name: "Search players" });
+  const input = page.getByRole("combobox", { name: "Search players and teams" });
   await input.fill("tes");
   const listbox = page.getByRole("listbox", { name: "Matching players" });
   await expect(listbox.getByRole("option")).toHaveCount(2);
@@ -34,7 +34,7 @@ test("search lists players and stays accessible while open", async ({ page }) =>
 
 test("search is fully keyboard operable", async ({ page, isMobile }) => {
   test.skip(isMobile, "keyboard flow is covered on pointer devices");
-  const input = page.getByRole("combobox", { name: "Search players" });
+  const input = page.getByRole("combobox", { name: "Search players and teams" });
   await input.focus();
   await page.keyboard.type("tes");
   await expect(page.getByRole("listbox").getByRole("option")).toHaveCount(2);

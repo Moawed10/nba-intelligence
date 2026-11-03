@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
 import { TeamBand } from "@/components/brand/team-band";
+import { TeamLink } from "@/components/brand/team-link";
 import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
@@ -230,7 +231,7 @@ function ProfileHero({
         <div className="relative z-10 order-2 flex flex-col gap-7 py-8 md:max-w-[58%] md:py-12">
           <div>
             <p className="kicker flex items-center gap-2.5">
-              {player.team && <TeamMark team={player.team} size="sm" disc />}
+              {player.team && <TeamLink team={player.team} size="md" />}
               {player.team
                 ? `${player.team.city} ${player.team.name}`
                 : player.is_active
