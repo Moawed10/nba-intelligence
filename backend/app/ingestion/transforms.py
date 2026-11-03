@@ -530,4 +530,3 @@ def transform_attendance(frames: list[pd.DataFrame]) -> int | None:
             value = to_int(frame["attendance"].iloc[0])
             return value if value else None
     return None
-

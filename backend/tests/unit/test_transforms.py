@@ -189,4 +189,3 @@ def test_attendance_of_zero_or_missing_is_not_a_crowd():
 def test_a_missing_jersey_number_stays_missing():
     assert _jersey(float("nan")) is None and _jersey(None) is None and _jersey(" ") is None
     assert _jersey("00") == "00"
-
