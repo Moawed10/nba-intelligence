@@ -11,6 +11,7 @@ interface Props {
   player: {
     id: number;
     full_name: string;
+    jersey_number?: string | null;
     position: string | null;
     is_active: boolean;
     team: TeamRef | null;
@@ -36,6 +37,7 @@ export function PlayerCard({ player, season, className }: Props & { className?: 
             <p className="kicker flex items-center gap-2">
               {player.team && <TeamLink team={player.team} size="xs" />}
               {player.team ? `${player.team.city} ${player.team.name}` : "Not on a current roster"}
+              {player.jersey_number && ` · #${player.jersey_number}`}
               {" · "}
               {player.is_active ? "Active" : "Former"}
             </p>

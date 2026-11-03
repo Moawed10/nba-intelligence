@@ -18,11 +18,12 @@ from nba_api.stats.endpoints import (
     TeamYearByYearStats,
 )
 from nba_api.stats.static import teams as static_teams
-from sqlalchemy import Engine, func, literal, select, tuple_, update
+from sqlalchemy import Engine, delete, func, literal, select, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.ingestion import injuries
 from app.ingestion.client import FetchResult, StatsSource, StatsSourceError
 from app.ingestion.lifecycle import resolve_status
 from app.ingestion.transforms import (
@@ -52,6 +53,7 @@ from app.models import (
     IngestionRun,
     Player,
     PlayerGameStats,
+    PlayerInjury,
     PlayerMatchup,
     PlayerSeason,
     RunStatus,
@@ -409,6 +411,30 @@ def ingest_players(client: StatsSource, season: int) -> Callable[[RunContext], N
         ctx.valid += len(rows)
         ctx.counted(upsert(ctx.session, Player, rows, ["id"],
                            provenance=provenance(ctx.run_id, "CommonAllPlayers")))  # fmt: skip
+
+    return body
+
+
+def ingest_injuries(
+    fetch: Callable[[], dict[str, Any]] | None = None,
+) -> Callable[[RunContext], None]:
+    """Replaces the stored report with the current one: a player no longer listed has recovered."""
+
+    def body(ctx: RunContext) -> None:
+        payload = (fetch or injuries.fetch_injury_report)()
+        session = ctx.session
+        active = session.execute(select(Player.id, Player.full_name).where(Player.is_active)).all()
+        rows, rejections = injuries.transform_injuries(payload, injuries.name_index(active))
+        ctx.fetched += len(rows) + len(rejections)
+        ctx.valid += len(rows)
+        ctx.reject(rejections)
+        stored = session.scalar(select(func.count()).select_from(PlayerInjury)) or 0
+        if not rows and stored:
+            raise PartialResponseError(f"source listed no injuries, {stored} stored")
+        listed = [r["player_id"] for r in rows]
+        session.execute(delete(PlayerInjury).where(PlayerInjury.player_id.not_in(listed)))
+        ctx.counted(upsert(session, PlayerInjury, rows, ["player_id"],
+                           provenance=provenance(ctx.run_id, injuries.SOURCE)))  # fmt: skip
 
     return body
 

@@ -74,7 +74,7 @@ def test_data_status(client, loaded):
     datasets = {d["dataset"]: d for d in body["datasets"]}
     assert set(datasets) == {"schedule", "final_box_scores", "player_game_logs", "season_stats",
                              "team_stats", "player_metadata",
-                             "career_history"}  # fmt: skip
+                             "career_history", "injuries"}  # fmt: skip
     assert datasets["player_game_logs"]["coverage_end"] == "2099-11-07"
 
 

@@ -130,3 +130,7 @@ A scheduled job finds pregame predictions whose games are final, writes `predict
 - Fixed seeds (`random_state`, XGBoost `seed`).
 - The training run records `data_version`, git SHA, library versions, split dates and hyperparameters in the release.
 - Retraining with the same `data_version` and seed must reproduce test MAE within 1e-6 for deterministic models and 1e-3 for XGBoost with `tree_method="hist"` (a Phase 6 test).
+
+## Injuries
+
+The models do not see injury reports. Predictions shows the player's own listing and both teams' lists beside the forecast and says so plainly. Report history is not stored from past seasons, so a feature trained on it isn't possible yet; a "missing teammates" feature could be derived from box scores.

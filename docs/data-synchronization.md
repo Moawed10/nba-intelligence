@@ -51,6 +51,8 @@ Live in-game scores are **not** ingested. The live `cdn.nba.com` scoreboard is a
 
 The worker sleeps when nothing is due. Outside the season, only `metadata` and `corrections` run. These cadences are polling intervals, not provider freshness guarantees. The UI never says "real time."
 
+**Injuries** sync every 30 minutes from ESPN's public, unofficial injury feed, because the NBA's official report has no expected return date. Each sync replaces the stored report, so a player no longer listed counts as recovered. A name is matched only when exactly one active player has it; anything else is rejected and counted. An empty report never wipes stored rows. Return dates are the source's rough estimates. The feed has no published contract and could change without notice, in which case the dataset goes stale and the site shows its last sync time.
+
 ## Game lifecycle
 
 `games.status`: `scheduled → delayed → in_progress → final`, with side exits `postponed` and `cancelled`. Each game also stores `provider_status` (raw `gameStatus` + `gameStatusText`), `status_observed_at` and `stats_finalized_at`.

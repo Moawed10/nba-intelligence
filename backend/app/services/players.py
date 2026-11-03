@@ -14,6 +14,7 @@ from app.models import (
     GameStatus,
     Player,
     PlayerGameStats,
+    PlayerInjury,
     PlayerSeason,
     Season,
     SeasonType,
@@ -26,6 +27,7 @@ from app.schemas.resources import (
     CareerStint,
     CareerTable,
     DirectoryPlayer,
+    InjuryReport,
     MatchupDefender,
     MatchupHistory,
     PlayerCareer,
@@ -85,6 +87,7 @@ def _summary(player: Player, team: Team | None) -> PlayerSummary:
     return PlayerSummary(
         id=player.id,
         full_name=player.full_name,
+        jersey_number=player.jersey_number,
         position=player.position,
         is_active=player.is_active,
         team=team_ref(team) if team else None,
@@ -294,8 +297,10 @@ def profile(ctx: Context, player_id: int) -> PlayerProfile:
             weight_lbs=player.weight_lbs,
             birthdate=player.birthdate,
         )
+        injury = ctx.session.get(PlayerInjury, player_id)
         return PlayerProfile(
             player=identity,
+            injury=InjuryReport.model_validate(injury, from_attributes=True) if injury else None,
             current_season=current[0] if current else None,
             last_games=[_game_line(r) for r in reversed(rows[-PROFILE_RECENT_GAMES:])],
             meta=ctx.meta(DATASET),

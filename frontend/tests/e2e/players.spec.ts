@@ -184,3 +184,25 @@ test.describe("player profile", () => {
     await expectAccessible(page);
   });
 });
+
+test.describe("player chart time span", () => {
+  test("switches between this season, each year and the career total", async ({ page }) => {
+    await page.goto("/players/1000");
+    const span = page.getByRole("radiogroup", { name: "Time span" });
+    await span.getByRole("radio", { name: "By year" }).click();
+    await expect(page).toHaveURL(/view=years/);
+    await expect(page.getByRole("heading", { name: "Points by year" })).toBeVisible();
+    await span.getByRole("radio", { name: "All time" }).click();
+    await expect(page).toHaveURL(/view=all/);
+    await expect(page.getByRole("heading", { name: "Points, all time" })).toBeVisible();
+    await span.getByRole("radio", { name: "This season" }).click();
+    await expect(page.getByRole("heading", { name: "Points by game" })).toBeVisible();
+    await expect(page).not.toHaveURL(/view=/);
+  });
+
+  test("a former player opens on by-year, with no current-season option", async ({ page }) => {
+    await page.goto("/players/1990");
+    await expect(page.getByRole("heading", { name: "Points by year" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "This season" })).toHaveCount(0);
+  });
+});

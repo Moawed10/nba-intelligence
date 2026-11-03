@@ -873,6 +873,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Position */
             position: string | null;
             season_averages: components["schemas"]["SeasonAverages"] | null;
@@ -1132,6 +1134,32 @@ export interface components {
             upper: number;
             /** Within Interval */
             within_interval: boolean | null;
+        };
+        /**
+         * InjuryReport
+         * @description Current listing from the source. `return_date` is its rough estimate, not a promise.
+         */
+        InjuryReport: {
+            /** Detail */
+            detail: string | null;
+            /** Injury */
+            injury: string | null;
+            /**
+             * Reported At
+             * Format: date-time
+             */
+            reported_at: string;
+            /** Return Date */
+            return_date: string | null;
+            /** Side */
+            side: string | null;
+            /**
+             * Source
+             * @default ESPN
+             */
+            source: string;
+            /** Status */
+            status: string;
         };
         /** Leader */
         Leader: {
@@ -1629,6 +1657,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Last Name */
             last_name: string | null;
             /** Position */
@@ -1642,6 +1672,7 @@ export interface components {
         /** PlayerProfile */
         PlayerProfile: {
             current_season: components["schemas"]["SeasonLine"] | null;
+            injury?: components["schemas"]["InjuryReport"] | null;
             /** Last Games */
             last_games: components["schemas"]["PlayerGameLine"][];
             meta: components["schemas"]["Meta"];
@@ -1687,6 +1718,8 @@ export interface components {
             id: number;
             /** Is Active */
             is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
             /** Position */
             position: string | null;
             team: components["schemas"]["TeamRef"] | null;
@@ -1871,6 +1904,25 @@ export interface components {
             /** Upper */
             upper: number;
         };
+        /** RosterPlayer */
+        RosterPlayer: {
+            /** From Year */
+            from_year: number | null;
+            /** Full Name */
+            full_name: string;
+            /** Id */
+            id: number;
+            injury?: components["schemas"]["InjuryReport"] | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Jersey Number */
+            jersey_number?: string | null;
+            /** Position */
+            position: string | null;
+            team: components["schemas"]["TeamRef"] | null;
+            /** To Year */
+            to_year: number | null;
+        };
         /** SeasonAverages */
         SeasonAverages: {
             /** Ast */
@@ -2032,7 +2084,7 @@ export interface components {
             meta: components["schemas"]["Meta"];
             record: components["schemas"]["Record"];
             /** Roster */
-            roster: components["schemas"]["PlayerSummary"][];
+            roster: components["schemas"]["RosterPlayer"][];
             /** Season */
             season: string;
             team: components["schemas"]["Team"];

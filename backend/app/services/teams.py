@@ -7,6 +7,7 @@ from app.models import (
     Game,
     GameStatus,
     Player,
+    PlayerInjury,
     Season,
     SeasonType,
     Team,
@@ -16,8 +17,9 @@ from app.models import (
 from app.schemas.common import Shooting
 from app.schemas.resources import (
     HistoricSeason,
-    PlayerSummary,
+    InjuryReport,
     Record,
+    RosterPlayer,
     TeamDetail,
     TeamHistory,
     TeamSeasonStats,
@@ -95,14 +97,22 @@ def team_detail(ctx: Context, team_id: int, season: str | None) -> TeamDetail:
             .order_by(Player.last_name, Player.full_name)
         )
         ref = team_ref(team)
+        injuries = {i.player_id: i for i in ctx.session.scalars(
+            select(PlayerInjury)
+            .join(Player, Player.id == PlayerInjury.player_id)
+            .where(Player.current_team_id == team_id)
+        )}  # fmt: skip
         return TeamDetail(
             team=_team_schema(team),
             season=current.label if current else "",
             record=_record(lines),
             roster=[
-                PlayerSummary(
-                    id=p.id, full_name=p.full_name, position=p.position, is_active=p.is_active,
-                    team=ref, from_year=p.from_year, to_year=p.to_year,
+                RosterPlayer(
+                    id=p.id, full_name=p.full_name, jersey_number=p.jersey_number,
+                    position=p.position, is_active=p.is_active, team=ref, from_year=p.from_year,
+                    to_year=p.to_year,
+                    injury=(InjuryReport.model_validate(injuries[p.id], from_attributes=True)
+                            if p.id in injuries else None),
                 )
                 for p in roster
             ],

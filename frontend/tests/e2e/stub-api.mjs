@@ -26,6 +26,7 @@ const PLAYERS = [
   ...Array.from({ length: 30 }, (_, i) => ({
     id: 1000 + i,
     full_name: i === 0 ? "Zed Fixture" : `Test Player ${String(i).padStart(2, "0")}`,
+    jersey_number: String(i + 1),
     position: POSITIONS[i % POSITIONS.length],
     is_active: true,
     team: ref(TEAMS[i % 2]),
@@ -118,6 +119,13 @@ function error(res, status, code, message) {
   send(res, status, { error: { code, message, request_id: "stub", details: [] } });
 }
 
+// Listed as hurt: Test Player 02 on team 1. Everyone else in the fixture is healthy.
+const INJURED_ID = 1002;
+const INJURY = {
+  status: "Out", injury: "Hip", detail: "Strain", side: "Left", return_date: "2099-11-20",
+  reported_at: "2099-11-09T12:00:00Z", source: "ESPN",
+};
+
 function playerRoute(res, id, resource, q, page) {
   if (id === UNAVAILABLE_PLAYER) return error(res, 503, "database_unavailable", "The database is temporarily unavailable.");
   const player = PLAYERS.find((p) => p.id === id);
@@ -129,6 +137,7 @@ function playerRoute(res, id, resource, q, page) {
   if (!resource) {
     return send(res, 200, {
       player: { ...player, first_name: null, last_name: null, height_inches: 79, weight_lbs: 215, birthdate: null },
+      injury: id === INJURED_ID ? INJURY : null,
       current_season: season ? { ...summary(lines), season, season_type: "regular" } : null,
       last_games: lines.slice(0, 5),
       meta: META,
@@ -342,7 +351,10 @@ createServer((req, res) => {
   if (teamMatch) {
     const team = TEAMS.find((t) => t.id === Number(teamMatch[1]));
     if (!team) return error(res, 404, "team_not_found", "No team with that id.");
-    const roster = PLAYERS.filter((p) => p.team?.id === team.id);
+    const roster = PLAYERS.filter((p) => p.team?.id === team.id).map((p) => ({
+      ...p,
+      injury: p.id === INJURED_ID ? INJURY : null,
+    }));
     // Listed on the roster but absent from the season averages: a player yet to appear this season.
     const unplayed = { ...PLAYERS.find((p) => p.id === 1990), team: ref(team) };
     return send(res, 200, {

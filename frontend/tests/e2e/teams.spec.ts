@@ -42,4 +42,22 @@ test.describe("team page", () => {
     await expect(page).toHaveURL("/teams/2");
     await expect(page.getByRole("heading", { level: 1, name: "Bravo Bears" })).toBeVisible();
   });
+
+  test("jersey numbers and the injury report show on the team page", async ({ page }) => {
+    await page.goto("/teams/1");
+    await expect(page.getByRole("row", { name: /Zed Fixture/ }).getByText("#1", { exact: true })).toBeVisible();
+    const report = page.getByRole("region", { name: "Injury report" });
+    await expect(report.getByRole("link", { name: "Test Player 02" })).toBeVisible();
+    await expect(report.getByText(/Left hip strain/)).toBeVisible();
+    await expect(report.getByText("Out", { exact: true })).toBeVisible();
+    await expect(report.getByText(/Return date not updated|Estimated back/)).toBeVisible();
+  });
+
+  test("an injured player's profile and forecast say so", async ({ page }) => {
+    await page.goto("/players/1002");
+    await expect(page.getByText(/Left hip strain/)).toBeVisible();
+    await expect(page.getByText(/· #3/)).toBeVisible();
+    await page.goto("/predict?player=1002");
+    await expect(page.getByText(/This forecast assumes Test plays/)).toBeVisible();
+  });
 });

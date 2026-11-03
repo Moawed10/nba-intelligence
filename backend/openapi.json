@@ -785,6 +785,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
           "position": {
             "anyOf": [
               {
@@ -1647,6 +1658,80 @@
           "within_interval"
         ],
         "title": "HistoryValue",
+        "type": "object"
+      },
+      "InjuryReport": {
+        "description": "Current listing from the source. `return_date` is its rough estimate, not a promise.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Injury"
+          },
+          "reported_at": {
+            "format": "date-time",
+            "title": "Reported At",
+            "type": "string"
+          },
+          "return_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Date"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          },
+          "source": {
+            "default": "ESPN",
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "injury",
+          "detail",
+          "side",
+          "return_date",
+          "reported_at"
+        ],
+        "title": "InjuryReport",
         "type": "object"
       },
       "Leader": {
@@ -3146,6 +3231,17 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
           "last_name": {
             "anyOf": [
               {
@@ -3224,6 +3320,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/SeasonLine"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InjuryReport"
               },
               {
                 "type": "null"
@@ -3395,6 +3501,17 @@
           "is_active": {
             "title": "Is Active",
             "type": "boolean"
+          },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
           },
           "position": {
             "anyOf": [
@@ -3888,6 +4005,97 @@
           "n"
         ],
         "title": "ResidualBin",
+        "type": "object"
+      },
+      "RosterPlayer": {
+        "properties": {
+          "from_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Year"
+          },
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "injury": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InjuryReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "jersey_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jersey Number"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Year"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "position",
+          "is_active",
+          "team",
+          "from_year",
+          "to_year"
+        ],
+        "title": "RosterPlayer",
         "type": "object"
       },
       "SeasonAverages": {
@@ -4545,7 +4753,7 @@
           },
           "roster": {
             "items": {
-              "$ref": "#/components/schemas/PlayerSummary"
+              "$ref": "#/components/schemas/RosterPlayer"
             },
             "title": "Roster",
             "type": "array"

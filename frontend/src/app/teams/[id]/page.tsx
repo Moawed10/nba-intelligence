@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 
+import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { TeamBand } from "@/components/brand/team-band";
 import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
+import { injuryLabel, InjuryStatus, ReturnEstimate } from "@/components/data/injury-note";
 import { Panel } from "@/components/data/panel";
 import { StatTile } from "@/components/data/stat-tile";
 import { LoadingBlock } from "@/components/data/state-view";
@@ -64,6 +67,7 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
   const bySeason = new Map((averages.data?.items ?? []).map((p) => [p.id, p.season_averages]));
   const players = roster.map((p) => ({ ...p, season_averages: bySeason.get(p.id) ?? null }));
   const freshness = meta.data_freshness;
+  const injured = roster.filter((p) => p.injury);
   const name = `${team.city} ${team.name}`;
 
   return (
@@ -112,6 +116,33 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
               <RosterTable players={players} caption={`${name} roster and ${season} per-game stats`} />
               <p className="mt-3 text-footnote text-muted-foreground">
                 A dash means the player hasn&apos;t played a regular-season game this season.
+              </p>
+            </>
+          )}
+        </Panel>
+        <Panel id="injuries" kicker={`${injured.length} listed`} title="Injury report">
+          {injured.length === 0 ? (
+            <Unavailable kind="empty" title="Nobody on this roster is listed as injured" />
+          ) : (
+            <>
+              <ul className="grid gap-x-10 md:grid-cols-2">
+                {injured.map((p) => (
+                  <li key={p.id} className="flex items-center gap-3 border-b border-border py-3">
+                    <PlayerAvatar id={p.id} name={p.full_name} team={team} size="md" />
+                    <span className="min-w-0 flex-1">
+                      <Link href={`/players/${p.id}`} className="font-medium hover:text-primary">
+                        {p.full_name}
+                      </Link>
+                      <span className="block text-footnote text-muted-foreground">
+                        {injuryLabel(p.injury!)} · <ReturnEstimate injury={p.injury!} />
+                      </span>
+                    </span>
+                    <InjuryStatus injury={p.injury!} />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-footnote text-muted-foreground">
+                Status and return dates come from ESPN&apos;s injury report and are rough estimates.
               </p>
             </>
           )}

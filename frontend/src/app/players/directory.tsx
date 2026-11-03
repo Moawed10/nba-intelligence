@@ -69,6 +69,7 @@ function PlayerCell({ player }: { player: DirectoryPlayer }) {
           {player.full_name}
         </Link>
         <p className="flex items-center gap-1.5 text-footnote text-muted-foreground">
+          {player.jersey_number && <span className="tabular-nums">#{player.jersey_number}</span>}
           {player.team ? (
             <>
               <TeamMark team={player.team} size="xs" className="size-4 rounded text-[0.4375rem]" />

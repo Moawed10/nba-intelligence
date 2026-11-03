@@ -322,6 +322,7 @@ def transform_players(
             "position": (str(b.get("POSITION") or "").strip() or None) if b else None,
             "height_inches": parse_height(b.get("HEIGHT")) if b else None,
             "weight_lbs": to_int(b.get("WEIGHT")) if b else None,
+            "jersey_number": (str(b.get("JERSEY_NUMBER") or "").strip() or None) if b else None,
             "is_active": to_int(r.get("ROSTERSTATUS")) == 1,
             "current_team_id": team_id,
             "from_year": to_int(r.get("FROM_YEAR")),

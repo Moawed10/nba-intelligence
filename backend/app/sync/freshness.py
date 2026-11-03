@@ -36,6 +36,7 @@ POLICIES: dict[str, DatasetPolicy] = {
     "team_stats": DatasetPolicy(("game_logs",), timedelta(hours=12), timedelta(hours=24)),
     "player_metadata": DatasetPolicy(("players", "teams"), timedelta(days=2), timedelta(days=4)),
     "career_history": DatasetPolicy(("player_careers",), timedelta(days=2), timedelta(days=4)),
+    "injuries": DatasetPolicy(("injuries",), timedelta(hours=2), timedelta(hours=6)),
 }
 FAILURES_FOR_UNAVAILABLE = 3
 
@@ -99,7 +100,7 @@ def dataset_freshness(session: Session, now: datetime) -> list[DatasetFreshness]
         last_error = next((r.error for r in recent if r.status != RunStatus.succeeded), None)
         if recent and recent[0].status == RunStatus.succeeded:
             last_error = None
-        has_games = dataset not in ("player_metadata", "career_history")
+        has_games = dataset not in ("player_metadata", "career_history", "injuries")
         result.append(DatasetFreshness(
             dataset=dataset,
             status=classify(now, last_success, [r.status for r in recent], policy),

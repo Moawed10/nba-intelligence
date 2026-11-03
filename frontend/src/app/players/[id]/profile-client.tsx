@@ -2,8 +2,18 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
+import { ChartFrame } from "@/components/data/chart-frame";
 import { type Column, DataTable } from "@/components/data/data-table";
 import { SegmentedControl } from "@/components/data/segmented-control";
 import { TeamMark } from "@/components/brand/team-mark";
@@ -17,7 +27,7 @@ import type {
 } from "@/lib/api/types";
 import { formatGameDate, formatGameValue, formatPercent, formatStat } from "@/lib/format";
 
-import { TREND_STATS, type TrendStat } from "./stats";
+import { TREND_STATS, TREND_VIEWS, type TrendStat, type TrendView } from "./stats";
 
 export function ProfileControls({
   seasons,
@@ -47,23 +57,26 @@ export function ProfileControls({
 
   return (
     <div aria-busy={pending} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <label htmlFor={`${id}-season`} className="kicker mb-1.5 block">
-          Season
-        </label>
-        <select
-          id={`${id}-season`}
-          value={shown.season}
-          onChange={(event) => update("season", event.target.value)}
-          className="field"
-        >
-          {seasons.map((label) => (
-            <option key={label} value={label}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {seasons.length > 0 && (
+        <div>
+          <label htmlFor={`${id}-season`} className="kicker mb-1.5 block">
+            Season
+          </label>
+          <select
+            id={`${id}-season`}
+            value={shown.season}
+            onChange={(event) => update("season", event.target.value)}
+            className="field"
+          >
+            {seasons.map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <SegmentedControl
           label="Trend statistic"
@@ -80,6 +93,186 @@ export function ProfileControls({
 }
 
 const AXIS = { fontSize: 12, fill: "var(--muted-foreground)" };
+
+/** Switches the chart between this season, each year of the career and the running career total. */
+export function TrendViewControl({ view, hasSeason = true }: { view: TrendView; hasSeason?: boolean }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [shown, setShown] = useOptimistic(view);
+  const [, startTransition] = useTransition();
+  return (
+    <SegmentedControl
+      label="Time span"
+      value={shown}
+      segments={TREND_VIEWS.filter((v) => hasSeason || v.value !== "season").map((v) => ({
+        value: v.value,
+        label: v.label,
+      }))}
+      onChange={(value) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value === "season") params.delete("view");
+        else params.set("view", value);
+        const query = params.toString();
+        startTransition(() => {
+          setShown(value);
+          router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+        });
+      }}
+    />
+  );
+}
+
+const WHOLE = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+/** Regular-season career by year (per-game averages) or all time (running total), oldest first. */
+export function CareerTrend({
+  career,
+  name,
+  stat,
+  view,
+  hasSeason,
+}: {
+  career: PlayerCareer;
+  name: string;
+  stat: TrendStat;
+  view: "years" | "all";
+  hasSeason: boolean;
+}) {
+  const label = TREND_STATS.find((s) => s.value === stat)!.label;
+  const { seasons, totals, partial } = career.regular;
+  const recorded = seasons.flatMap((s) => {
+    const average = s.per_game[stat];
+    return average == null
+      ? []
+      : [{ season: s.season, games: s.games, average, total: Math.round(average * s.games) }];
+  });
+  const rows = recorded.map((r, i) => ({
+    ...r,
+    running: recorded.slice(0, i + 1).reduce((sum, x) => sum + x.total, 0),
+  }));
+  const running = rows.at(-1)?.running ?? 0;
+  const control = <TrendViewControl view={view} hasSeason={hasSeason} />;
+  if (rows.length === 0) {
+    return (
+      <ChartFrame
+        title={`${label} by year`}
+        unit="Regular season"
+        summary={`No ${label.toLowerCase()} are on record for ${name}.`}
+        actions={control}
+        chart={null}
+        table={null}
+      />
+    );
+  }
+  const best = rows.reduce((top, r) => (r.average > top.average ? r : top), rows[0]);
+  const games = rows.reduce((sum, r) => sum + r.games, 0);
+  const span = `${rows[0].season} to ${rows.at(-1)!.season}`;
+  const careerAverage = totals?.per_game[stat] ?? null;
+  const years = view === "years";
+  const dataKey = years ? "average" : "running";
+  const color = years ? "var(--chart-3)" : "var(--chart-1)";
+  const since = partial[stat] ? ` ${label} weren't tracked until ${partial[stat]}.` : "";
+  const summary =
+    (years
+      ? `${name} averaged ${formatStat(careerAverage)} ${label.toLowerCase()} per game over ${rows.length} ${rows.length === 1 ? "season" : "seasons"}, ${span}. Best year: ${formatStat(best.average)} in ${best.season}.`
+      : `${name} has ${WHOLE.format(running)} career ${label.toLowerCase()} in ${WHOLE.format(games)} regular-season games, ${span}.`) +
+    since;
+  return (
+    <ChartFrame
+      title={years ? `${label} by year` : `${label}, all time`}
+      unit={
+        years
+          ? `${label} per game each regular season`
+          : `Running career total at the end of each regular season`
+      }
+      summary={summary}
+      actions={control}
+      chart={
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="season" tick={AXIS} tickLine={false} axisLine={false} minTickGap={24} />
+              <YAxis
+                tick={AXIS}
+                tickLine={false}
+                axisLine={false}
+                width={60}
+                tickFormatter={(v) => WHOLE.format(Number(v))}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  color: "var(--foreground)",
+                }}
+                formatter={(value) => [
+                  years ? formatStat(Number(value)) : WHOLE.format(Number(value)),
+                  years ? `${label} per game` : `Career ${label.toLowerCase()}`,
+                ]}
+              />
+              {years && careerAverage != null && (
+                <ReferenceLine
+                  y={careerAverage}
+                  stroke="var(--chart-2)"
+                  strokeDasharray="4 3"
+                  label={{
+                    value: `Career ${formatStat(careerAverage)}`,
+                    position: "insideTopRight",
+                    fill: "var(--chart-2)",
+                    fontSize: 12,
+                  }}
+                />
+              )}
+              <Line dataKey={dataKey} stroke={color} strokeWidth={2.5} dot={{ r: 3, fill: color }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      }
+      table={
+        <DataTable
+          caption={`${name}, ${label.toLowerCase()} by regular season`}
+          rows={[...rows].reverse()}
+          rowKey={(r) => r.season}
+          columns={[
+            { key: "season", header: "Season", cell: (r) => r.season, sortValue: (r) => r.season },
+            {
+              key: "games",
+              header: "GP",
+              description: "Games played",
+              numeric: true,
+              cell: (r) => r.games,
+              sortValue: (r) => r.games,
+            },
+            {
+              key: "average",
+              header: "Per game",
+              numeric: true,
+              cell: (r) => formatStat(r.average),
+              sortValue: (r) => r.average,
+            },
+            {
+              key: "total",
+              header: "Season total",
+              numeric: true,
+              cell: (r) => WHOLE.format(r.total),
+              sortValue: (r) => r.total,
+            },
+            {
+              key: "running",
+              header: "Career total",
+              numeric: true,
+              cell: (r) => WHOLE.format(r.running),
+              sortValue: (r) => r.running,
+            },
+          ]}
+        />
+      }
+    />
+  );
+}
 
 function LegendSwatch({
   color,

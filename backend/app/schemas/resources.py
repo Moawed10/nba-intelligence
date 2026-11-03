@@ -15,9 +15,22 @@ class Team(TeamRef):
     division: str | None
 
 
+class InjuryReport(BaseModel):
+    """Current listing from the source. `return_date` is its rough estimate, not a promise."""
+
+    status: str
+    injury: str | None
+    detail: str | None
+    side: str | None
+    return_date: date | None
+    reported_at: datetime
+    source: str = "ESPN"
+
+
 class PlayerSummary(BaseModel):
     id: int
     full_name: str
+    jersey_number: str | None = None
     position: str | None
     is_active: bool
     team: TeamRef | None
@@ -67,6 +80,7 @@ class SeasonLine(StatSummary):
 
 class PlayerProfile(BaseModel):
     player: PlayerIdentity
+    injury: InjuryReport | None = None
     current_season: SeasonLine | None
     last_games: list[PlayerGameLine]
     meta: Meta
@@ -114,11 +128,15 @@ class Record(BaseModel):
     losses: int
 
 
+class RosterPlayer(PlayerSummary):
+    injury: InjuryReport | None = None
+
+
 class TeamDetail(BaseModel):
     team: Team
     season: str
     record: Record
-    roster: list[PlayerSummary]
+    roster: list[RosterPlayer]
     meta: Meta
 
 

@@ -168,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     isub.add_parser("teams")
     isub.add_parser("team-history", help="All seasons of every franchise (about 60 requests)")
     isub.add_parser("players")
+    isub.add_parser("injuries", help="The current injury report")
     careers = isub.add_parser("careers", help="Every season of every player (one request each)")
     careers.add_argument("--players", help="Comma-separated player ids (default: all due)")
     matchups = isub.add_parser("matchups", help="Who guarded whom (one request per game)")
@@ -234,6 +235,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.target == "matchups":
             seasons = tuple(int(y) for y in args.seasons.split(",")) if args.seasons else None
             ok = ingest_matchups(args.limit, seasons, args.interval)
+        elif args.target == "injuries":
+            ok = _run("injuries", {}, jobs.ingest_injuries())
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
         elif args.target == "schedule":

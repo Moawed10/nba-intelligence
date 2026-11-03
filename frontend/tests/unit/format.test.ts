@@ -10,7 +10,7 @@ import {
   formatSigned,
   formatStat,
 } from "@/lib/format";
-import { milestoneLabel } from "@/lib/format";
+import { milestoneLabel, roughReturn } from "@/lib/format";
 
 describe("number formatting", () => {
   it("uses one decimal and never renders missing values as zero", () => {
@@ -74,5 +74,20 @@ describe("milestoneLabel", () => {
     expect(milestoneLabel(box(45, 15, 6))).toBe("Double-double");
     expect(milestoneLabel(box(20, 10, 10, 10))).toBe("Quadruple-double");
     expect(milestoneLabel(box(44, 8, 6))).toBeNull();
+  });
+});
+
+describe("roughReturn", () => {
+  const now = new Date("2099-11-03T18:00:00Z");
+
+  it("states a date and a rough span", () => {
+    expect(roughReturn("2099-11-06", now)).toBe("Estimated back Nov 6 (about 3 days)");
+    expect(roughReturn("2099-11-04", now)).toBe("Estimated back Nov 4 (about 1 day)");
+    expect(roughReturn("2099-12-15", now)).toBe("Estimated back Dec 15 (about 6 weeks)");
+  });
+
+  it("never invents a date", () => {
+    expect(roughReturn(null, now)).toBeNull();
+    expect(roughReturn("2099-11-01", now)).toBe("Return date not updated");
   });
 });

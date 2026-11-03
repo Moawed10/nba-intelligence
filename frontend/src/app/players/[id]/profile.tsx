@@ -13,6 +13,7 @@ import { FreshnessBadge } from "@/components/data/freshness-badge";
 import { PageHeader } from "@/components/data/page-header";
 import { Pagination } from "@/components/data/pagination";
 import { StatTile } from "@/components/data/stat-tile";
+import { injuryLabel, ReturnEstimate } from "@/components/data/injury-note";
 import { LoadingBlock, StateView } from "@/components/data/state-view";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverPostTry, serverTry } from "@/lib/api/server";
@@ -33,13 +34,15 @@ import { hrefWith, oneOf, param, positiveInt, type SearchParams } from "@/lib/ur
 
 import {
   CareerHistory,
+  CareerTrend,
   GameLogTable,
   ProfileControls,
   SplitsTable,
   TrendChart,
   TrendTable,
+  TrendViewControl,
 } from "./profile-client";
-import { TREND_STAT_VALUES, TREND_STATS, type TrendStat } from "./stats";
+import { TREND_STAT_VALUES, TREND_STATS, TREND_VIEW_VALUES, type TrendStat, type TrendView } from "./stats";
 
 export const LOG_PAGE_SIZE = 20;
 const RECENT_GAMES = 5;
@@ -97,6 +100,7 @@ export async function PlayerProfileView({
   const season = requested && seasons.includes(requested) ? requested : seasons[0];
   const stat = oneOf(param(query, "stat"), TREND_STAT_VALUES, "pts");
   const logPage = positiveInt(param(query, "log"));
+  const view = oneOf(param(query, "view"), TREND_VIEW_VALUES, "season");
 
   return (
     <>
@@ -114,7 +118,17 @@ export async function PlayerProfileView({
             <ApiErrorView error={career.error} />
           ) : (
             career.data.regular.seasons.length + career.data.playoffs.seasons.length > 0 && (
-              <CareerHistory career={career.data} name={data.player.full_name} />
+              <>
+                <ProfileControls seasons={[]} season="" stat={stat} />
+                <CareerTrend
+                  career={career.data}
+                  name={data.player.full_name}
+                  stat={stat}
+                  view={view === "all" ? "all" : "years"}
+                  hasSeason={false}
+                />
+                <CareerHistory career={career.data} name={data.player.full_name} />
+              </>
             )
           )}
           <StateView
@@ -146,9 +160,19 @@ export async function PlayerProfileView({
             </Suspense>
           )}
           <div id="trend-section">
-            <Suspense key={`trend-${season}-${stat}`} fallback={<LoadingBlock label="Loading trend" />}>
-              <Trends id={id} season={season} stat={stat} name={data.player.full_name} />
-            </Suspense>
+            {view !== "season" && career.data ? (
+              <CareerTrend
+                career={career.data}
+                name={data.player.full_name}
+                stat={stat}
+                view={view}
+                hasSeason
+              />
+            ) : (
+              <Suspense key={`trend-${season}-${stat}`} fallback={<LoadingBlock label="Loading trend" />}>
+                <Trends id={id} season={season} stat={stat} name={data.player.full_name} />
+              </Suspense>
+            )}
           </div>
           <Suspense key={`splits-${season}`} fallback={<LoadingBlock label="Loading splits" />}>
             <Splits
@@ -164,6 +188,7 @@ export async function PlayerProfileView({
               stat={stat}
               page={logPage}
               explicitSeason={requested === season}
+              view={view}
             />
           </Suspense>
           {career.error ? (
@@ -237,12 +262,23 @@ function ProfileHero({
                 : player.is_active
                   ? "Free agent"
                   : "Former player"}
+              {player.jersey_number && ` · #${player.jersey_number}`}
             </p>
             <h1 id="player-name" tabIndex={-1} className="display mt-5 text-[clamp(4rem,11vw,9.5rem)] outline-none">
               {player.full_name}
             </h1>
             <p className="mt-4 text-subhead font-medium">{identity(profile) || "Biography not available"}</p>
             <div className="mt-1.5 [&_*]:text-[color:var(--on)]">{freshness}</div>
+            {profile.injury && (
+              <p className="mt-4 inline-flex flex-wrap items-center gap-x-2 rounded-md border border-[color:var(--on)] px-3 py-2 text-subhead font-medium">
+                <span className="font-mono uppercase">{profile.injury.status}</span>
+                <span aria-hidden>·</span>
+                {injuryLabel(profile.injury)}
+                <span aria-hidden>·</span>
+                <ReturnEstimate injury={profile.injury} />
+                <span className="font-normal">Source: {profile.injury.source}</span>
+              </p>
+            )}
           </div>
           {!line && career && (
             <HeroLine
@@ -496,6 +532,7 @@ async function Trends({
       title={title}
       unit={`${label} per game, ${season}, including playoffs`}
       summary={summary}
+      actions={<TrendViewControl view="season" />}
       chart={<TrendChart points={points} statLabel={label} />}
       table={<TrendTable points={points} caption={`${title}, ${season}`} />}
     />
@@ -540,12 +577,14 @@ async function GameLog({
   stat,
   page,
   explicitSeason,
+  view,
 }: {
   id: string;
   season: string;
   stat: TrendStat;
   page: number;
   explicitSeason: boolean;
+  view: TrendView;
 }) {
   const result = await serverTry<PlayerGameLinePage>(`/players/${id}/games`, {
     season,
@@ -572,7 +611,11 @@ async function GameLog({
             href={(p) =>
               hrefWith(
                 `/players/${id}`,
-                { season: explicitSeason ? season : undefined, stat: stat === "pts" ? undefined : stat },
+                {
+                  season: explicitSeason ? season : undefined,
+                  stat: stat === "pts" ? undefined : stat,
+                  view: view === "season" ? undefined : view,
+                },
                 { log: p === 1 ? undefined : p },
               )
             }
