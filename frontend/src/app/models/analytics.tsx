@@ -291,7 +291,7 @@ export function PredictionCheck({
                 `${formatGameDate(data.first_game!, true)} – ${formatGameDate(data.last_game!, true)}`,
               ],
               ["Average miss", formatStat(data.mae), unit],
-              ["Typical big miss", formatStat(data.rmse), "root mean squared error"],
+              ["Typical big miss", formatStat(data.rmse), "counts large misses more"],
               ["Inside the range", formatPercent(data.coverage), "target 80%"],
             ].map(([term, value, note]) => (
               <div key={term} className="rounded-xl bg-muted/40 px-4 py-3">

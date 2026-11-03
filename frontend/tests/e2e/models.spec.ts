@@ -37,7 +37,7 @@ test.describe("models", () => {
     await expect(ranges.getByText(/held 80%–81% of results/)).toBeVisible();
     const dd = page.getByRole("region", { name: "Double-double" });
     await expect(dd.getByText("0.050")).toBeVisible();
-    await expect(dd.getByText("Logistic regression with isotonic calibration")).toBeVisible();
+    await expect(dd.getByText("Logistic regression with its chances adjusted")).toBeVisible();
   });
 
   test("falls back to the latest release for an unknown version", async ({ page }) => {

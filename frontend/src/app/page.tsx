@@ -176,7 +176,7 @@ function ModelPanel({ model }: { model: ModelSnapshot | null }) {
         Miss is how far off a prediction is per game, on average. The simple average predicts each player&apos;s
         average over their previous 10 games.
         {doubleDouble?.brier != null &&
-          ` Double-double probability: Brier score ${doubleDouble.brier.toFixed(3)} over ${doubleDouble.n.toLocaleString("en-US")} player-games.`}
+          ` Double-double chances: error score ${doubleDouble.brier.toFixed(3)} over ${doubleDouble.n.toLocaleString("en-US")} stat lines, where 0 is perfect.`}
       </p>
       <Link href="/models" className="inline-flex min-h-11 items-center text-subhead font-medium text-primary hover:underline">
         Full evaluation

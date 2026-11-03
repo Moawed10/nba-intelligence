@@ -119,22 +119,22 @@ function AccuracyTable({ metrics, testSeason }: { metrics: TargetMetrics[]; test
             <th scope="col" className="py-2 text-left font-medium">
               Model
             </th>
-            <th scope="col" className="py-2 text-right font-medium">
+            <th scope="col" className="py-2 pl-4 text-right font-medium">
               Avg miss
             </th>
-            <th scope="col" className="py-2 text-right font-medium">
+            <th scope="col" className="py-2 pl-4 text-right font-medium">
               Simple average miss
             </th>
             <th scope="col" className="w-36 py-2 pl-4 text-left font-medium">
               Improvement
             </th>
-            <th scope="col" className="py-2 text-right font-medium">
+            <th scope="col" className="py-2 pl-4 text-right font-medium">
               Typical big miss
             </th>
-            <th scope="col" className="py-2 text-right font-medium">
+            <th scope="col" className="py-2 pl-4 text-right font-medium">
               In 80% range
             </th>
-            <th scope="col" className="py-2 text-right font-medium">
+            <th scope="col" className="py-2 pl-4 text-right font-medium">
               Stat lines checked
             </th>
           </tr>
@@ -216,7 +216,7 @@ function RangesTable({ calibration }: { calibration: Record<string, Calibration>
               Statistic
             </th>
             {bins.map((b) => (
-              <th key={b} scope="col" className="py-2 text-right font-medium">
+              <th key={b} scope="col" className="py-2 pl-4 text-right font-medium">
                 {b}
               </th>
             ))}
@@ -314,16 +314,16 @@ function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetri
               <th scope="col" className="py-2 text-left font-medium">
                 Statistic
               </th>
-              <th scope="col" className="py-2 text-right font-medium">
+              <th scope="col" className="py-2 pl-4 text-right font-medium">
                 Live miss
               </th>
-              <th scope="col" className="py-2 text-right font-medium">
+              <th scope="col" className="py-2 pl-4 text-right font-medium">
                 Held-out miss
               </th>
-              <th scope="col" className="py-2 text-right font-medium">
+              <th scope="col" className="py-2 pl-4 text-right font-medium">
                 In range
               </th>
-              <th scope="col" className="py-2 text-right font-medium">
+              <th scope="col" className="py-2 pl-4 text-right font-medium">
                 Forecasts
               </th>
             </tr>
@@ -349,7 +349,7 @@ function LiveTable({ live, heldOut }: { live: LiveAccuracy; heldOut: TargetMetri
         Each player-game counts once, using the last forecast made before tip-off, across {live.games}{" "}
         {live.games === 1 ? "game" : "games"}.
         {live.double_double?.brier != null &&
-          ` Double-double Brier score ${live.double_double.brier.toFixed(3)} over ${live.double_double.n} forecasts.`}{" "}
+          ` Double-double chances: error score ${live.double_double.brier.toFixed(3)} over ${live.double_double.n} forecasts, where 0 is perfect.`}{" "}
         Small samples swing widely; compare with the test season only after many games.
       </p>
     </div>
@@ -484,7 +484,7 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
               </p>
             </div>
           ) : (
-            <Unavailable kind="not_built" title="No interval calibration stored for this release" />
+            <Unavailable kind="not_built" title="No prediction ranges stored for this release" />
           )}
         </Panel>
 
@@ -524,8 +524,8 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
             <div className="space-y-3">
               <dl className="grid grid-cols-3 gap-3 text-center">
                 {[
-                  ["Brier score", doubleDouble.brier.toFixed(3)],
-                  ["Log loss", doubleDouble.log_loss?.toFixed(3) ?? "—"],
+                  ["Error score", doubleDouble.brier.toFixed(3)],
+                  ["Overconfidence score", doubleDouble.log_loss?.toFixed(3) ?? "—"],
                   ["Stat lines checked", doubleDouble.n.toLocaleString("en-US")],
                 ].map(([term, value]) => (
                   <div key={term} className="rounded-lg bg-muted/60 p-3">
@@ -535,8 +535,9 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
                 ))}
               </dl>
               <p className="text-footnote text-muted-foreground">
-                {algorithmLabel(doubleDouble.algorithm)} with isotonic calibration, scored on {testSeason}.
-                Both scores are lower-is-better measures of probability accuracy.
+                {algorithmLabel(doubleDouble.algorithm)} with its chances adjusted to match how often double-doubles
+                really happened, scored on {testSeason}. Lower is better on both scores, and the overconfidence
+                score punishes being sure and wrong the most. Technical names: Brier score and log loss.
               </p>
             </div>
           ) : (

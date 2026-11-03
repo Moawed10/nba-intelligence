@@ -40,7 +40,7 @@ export function CommandSearch() {
         className="inline-flex size-10 items-center justify-center gap-2 rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground pointer-coarse:size-11 lg:h-10 lg:w-full lg:max-w-md lg:justify-start lg:bg-muted lg:px-4 lg:hover:bg-thumb"
       >
         <Search aria-hidden className="size-4" />
-        <span className="sr-only lg:not-sr-only">Search players and teams</span>
+        <span className="sr-only lg:not-sr-only lg:whitespace-nowrap">Search players and teams</span>
         <kbd
           aria-hidden
           className="ml-auto hidden rounded bg-background px-1.5 font-mono text-[0.75rem] lg:inline"
