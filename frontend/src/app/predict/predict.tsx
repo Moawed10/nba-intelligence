@@ -85,6 +85,63 @@ async function QuickPicks() {
   );
 }
 
+/** Who has actually guarded this player in past meetings. The real matchup is only known afterwards. */
+function GuardedBy({ history, name }: { history: MatchupHistory | null; name: string }) {
+  const defenders = history?.defenders ?? [];
+  if (defenders.length === 0) return null;
+  return (
+    <div className="space-y-2 border-t border-border pt-4">
+      <h4 className="kicker">Most often guarded by</h4>
+      <p className="text-footnote text-muted-foreground">
+        From past games against players now on this team. This is not a confirmed matchup: who guards{" "}
+        {name} tonight is only known after the game.
+      </p>
+      <div role="region" aria-label="Most often guarded by" tabIndex={0} className="scroll-quiet overflow-x-auto">
+        <table className="w-full text-subhead tabular-nums">
+          <caption className="sr-only">
+            Defenders now on this team, with the possessions they guarded {name} and the points {name} scored
+          </caption>
+          <thead>
+            <tr className="border-b border-border">
+              <th scope="col" className="kicker py-1.5 text-left font-medium">
+                Defender
+              </th>
+              <th scope="col" className="kicker py-1.5 text-right font-medium">
+                Possessions
+              </th>
+              <th scope="col" className="kicker py-1.5 pl-3 text-right font-medium">
+                Points per 100
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {defenders.map((d) => (
+              <tr key={d.player_id} className="border-b border-border/50 last:border-0">
+                <th scope="row" className="py-1.5 text-left font-normal">
+                  <span className="flex items-center gap-2">
+                    <PlayerAvatar id={d.player_id} name={d.full_name} size="sm" />
+                    <Link href={`/players/${d.player_id}`} className="hover:text-primary">
+                      {d.full_name}
+                    </Link>
+                  </span>
+                </th>
+                <td className="py-1.5 text-right">{Math.round(d.possessions)}</td>
+                <td className="py-1.5 pl-3 text-right font-semibold">{formatStat(d.pts_per_100)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {history?.usual_pts_per_100 != null && (
+        <p className="text-footnote text-muted-foreground">
+          For comparison, {name} usually scores {formatStat(history.usual_pts_per_100)} per 100 possessions. A
+          small number of possessions can swing this a lot.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function HeadToHead({
   history,
   name,
@@ -158,6 +215,7 @@ function HeadToHead({
           </div>
         </>
       )}
+      <GuardedBy history={history} name={name} />
     </section>
   );
 }

@@ -5,10 +5,11 @@ through `run_job`, whose per-job advisory lock keeps concurrent workers from dup
 """
 
 import logging
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -39,8 +40,12 @@ log = logging.getLogger(__name__)
 LEASE = timedelta(minutes=15)
 RECENT_GAME_WINDOW = timedelta(hours=36)
 CAREER_BATCH = 200
+MATCHUP_BATCH = 100
 LONGEST_GAME = timedelta(hours=6)
 CAREERS_RETRY_DURING_GAMES = timedelta(minutes=30)
+LIVE_POLL_SECONDS = 5.0
+LIVE_IDLE_SECONDS = 30.0
+LIVE_MAX_BACKOFF_SECONDS = 60.0
 NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 
 
@@ -48,7 +53,6 @@ NOT_FINAL = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 class JobSpec:
     interval: timedelta
     active_interval: timedelta | None = None
-    live_interval: timedelta | None = None
 
 
 JOBS: dict[str, JobSpec] = {
@@ -56,13 +60,14 @@ JOBS: dict[str, JobSpec] = {
     "schedule": JobSpec(
         interval=timedelta(minutes=30),
         active_interval=timedelta(seconds=60),
-        live_interval=timedelta(seconds=5),
     ),
     "game_logs": JobSpec(interval=timedelta(hours=6), active_interval=timedelta(minutes=10)),
     "metadata": JobSpec(interval=timedelta(hours=24)),
     "corrections": JobSpec(interval=timedelta(days=7)),
     # Active players' season-by-season careers (one request per player, about ten minutes).
     "careers": JobSpec(interval=timedelta(hours=24)),
+    # Who guarded whom in finished games of this season; published some hours after the final.
+    "matchups": JobSpec(interval=timedelta(hours=3)),
     # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
     # no NBA data, so it runs outside ingestion runs and does not advance data_version.
     "predictions": JobSpec(interval=timedelta(minutes=15)),
@@ -97,8 +102,6 @@ def stats_pending(session: Session, now: datetime) -> bool:
 
 def next_interval(job: str, session: Session, now: datetime) -> timedelta:
     spec = JOBS[job]
-    if spec.live_interval is not None and games_live(session, now):
-        return spec.live_interval
     if spec.active_interval is None:
         return spec.interval
     active = games_active(session, now) or (job == "game_logs" and stats_pending(session, now))
@@ -169,6 +172,12 @@ def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -
              jobs.ingest_player_careers(client, batch))
             for batch in (active[i : i + CAREER_BATCH] for i in range(0, len(active), CAREER_BATCH))
         ]  # fmt: skip
+    if job == "matchups":
+        with Session(engine) as s:
+            missing = jobs.games_missing_matchups(s, MATCHUP_BATCH, (season,))
+        return [
+            ("player_matchups", {"season": season}, jobs.ingest_player_matchups(client, missing))
+        ]
     raise KeyError(job)
 
 
@@ -280,7 +289,7 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
     season = current_season_start_year(now)
     outcomes: dict[str, str] = {}
     for job in due_jobs(engine, now):
-        if job == "careers":
+        if job in ("careers", "matchups"):
             with Session(engine) as s, s.begin():
                 if games_live(s, now):
                     s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
@@ -310,8 +319,6 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
             finalize_stable_box_scores(engine, started, now)
         with Session(engine) as s, s.begin():
             interval = next_interval(job, s, now)
-            if outcome == "failed" and JOBS[job].active_interval is not None:
-                interval = max(interval, JOBS[job].active_interval)
             s.execute(update(SyncSchedule).where(SyncSchedule.job == job)
                       .values(next_run_at=now + interval))  # fmt: skip
         outcomes[job] = outcome
@@ -319,8 +326,46 @@ def run_due(engine: Engine, client: StatsSource, now: datetime | None = None) ->
     return outcomes
 
 
-def run_forever(engine: Engine, client: StatsSource, max_sleep: float = 30.0) -> None:
+def live_game_dates(session: Session, now: datetime) -> list[date]:
+    return list(session.scalars(select(Game.game_date).where(
+        Game.tipoff_at <= now + timedelta(minutes=15),
+        Game.tipoff_at >= now - LONGEST_GAME,
+        Game.status.in_(NOT_FINAL),
+    ).distinct()))  # fmt: skip
+
+
+def poll_live_once(engine: Engine, client: StatsSource, now: datetime) -> int | None:
+    with Session(engine) as s:
+        dates = live_game_dates(s, now)
+    if not dates:
+        return None
+    return jobs.poll_live_scores(engine, client, dates, now)
+
+
+def next_live_wait(failures: int, active: bool) -> float:
+    if failures:
+        return min(LIVE_POLL_SECONDS * 2.0**failures, LIVE_MAX_BACKOFF_SECONDS)
+    return LIVE_POLL_SECONDS if active else LIVE_IDLE_SECONDS
+
+
+def run_live_scores(engine: Engine, client: StatsSource) -> None:
+    failures = 0
+    while True:
+        active = False
+        try:
+            active = poll_live_once(engine, client, datetime.now(UTC)) is not None
+            failures = 0
+        except Exception as error:
+            failures += 1
+            log.warning("live score poll failed", extra={"error": type(error).__name__})
+        time.sleep(next_live_wait(failures, active))
+
+
+def run_forever(
+    engine: Engine, client: StatsSource, live_client: StatsSource, max_sleep: float = 30.0
+) -> None:
     log.info("sync worker started", extra={"jobs": list(JOBS)})
+    threading.Thread(target=run_live_scores, args=(engine, live_client), daemon=True).start()
     while True:
         outcomes = run_due(engine, client)
         if outcomes:

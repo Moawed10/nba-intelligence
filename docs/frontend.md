@@ -82,6 +82,7 @@ Sizes are in `rem`, so 200% zoom and browser text scaling work. Nothing smaller 
 | `/compare` | Player Comparison | Primary |
 | `/models` | Model Analytics | Primary |
 | `/games`, `/games/[id]` | Games, Game detail | Secondary ("More") |
+| `/teams/[id]` | Team roster with season stats | Reached from any team logo on a team band or scoreboard |
 | `/about` | About & Methodology | Secondary ("More") |
 
 - **≥ 768 px:** a translucent top bar with a large search pill (⌘K / Ctrl+K and `/` open it), the five primary destinations (amber underline on the current one) and a "More" menu.

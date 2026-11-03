@@ -1,13 +1,19 @@
 from datetime import UTC, datetime, timedelta
 
+import pandas as pd
 import pytest
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.ingestion import jobs
+from app.ingestion.client import FetchResult, RetryableSourceError
 from app.ingestion.writer import upsert
 from app.models import (
     Game,
+    GameStatus,
     IngestionRun,
+    PlayerGameStats,
+    PlayerMatchup,
     RunStatus,
     SyncEvent,
     SyncEventType,
@@ -16,7 +22,7 @@ from app.models import (
 )
 from app.sync import worker
 from app.sync.freshness import Freshness, dataset_freshness
-from tests.fixtures import TEAMS, FakeSource, FixtureGame, schedule
+from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, schedule
 
 pytestmark = pytest.mark.integration
 
@@ -51,6 +57,7 @@ def test_due_jobs_run_once_and_are_rescheduled(engine, source):
     assert worker.run_due(engine, source, NOW) == {
         "schedule": "succeeded",
         "game_logs": "succeeded",
+        "matchups": "succeeded",
         "predictions": "succeeded",
     }
     nxt = schedules(engine)
@@ -85,9 +92,6 @@ def test_polling_speeds_up_only_while_games_are_live(engine, source):
     with Session(engine) as s:
         # Tip-off is 06:30; the live window opens 15 minutes before.
         assert worker.next_interval("schedule", s, NOW + timedelta(minutes=20)) == timedelta(
-            seconds=5
-        )
-        assert worker.next_interval("schedule", s, NOW + timedelta(hours=8)) == timedelta(
             seconds=60
         )
         assert worker.next_interval("schedule", s, NOW + timedelta(days=2)) == timedelta(minutes=30)
@@ -195,12 +199,15 @@ def _live_game(engine, source) -> datetime:
     return NOW + timedelta(hours=1)
 
 
-def test_a_failed_fetch_during_a_game_waits_a_minute_instead_of_5_seconds(engine, source):
-    later = _live_game(engine, source)
-    source.error = RuntimeError("source refused the request")
-    outcomes = worker.run_due(engine, source, later)
-    assert outcomes["schedule"] == "failed"
-    assert schedules(engine)["schedule"] == later + timedelta(seconds=60)
+def test_a_live_poll_needs_no_source_call_when_no_game_is_on(engine, source):
+    assert worker.poll_live_once(engine, source, NOW) is None
+    assert not [c for c in source.calls if c["endpoint"] == "ScoreboardV3"]
+
+
+def test_live_polling_slows_down_when_the_source_fails_or_nothing_is_on():
+    assert worker.next_live_wait(0, True) == 5
+    assert worker.next_live_wait(0, False) == 30
+    assert [worker.next_live_wait(n, True) for n in (1, 2, 5)] == [10, 20, 60]
 
 
 def test_the_long_careers_job_waits_while_games_are_live(engine, source):
@@ -211,3 +218,50 @@ def test_the_long_careers_job_waits_while_games_are_live(engine, source):
         )
     assert worker.run_due(engine, source, later)["careers"] == "deferred: games are live"
     assert schedules(engine)["careers"] == later + timedelta(minutes=30)
+
+
+def test_matchups_job_stores_who_guarded_whom_for_finished_games(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        game = s.scalars(select(Game).where(Game.status == GameStatus.final)).first()
+        offense, defense = s.scalars(
+            select(PlayerGameStats.player_id).where(PlayerGameStats.game_id == game.id)
+        ).all()[:2]
+        rows = [{
+            "teamId": game.home_team_id, "personIdOff": offense, "personIdDef": defense,
+            "matchupMinutesSort": 40.0, "partialPossessions": 3.5, "playerPoints": 2,
+            "matchupAssists": 0, "matchupTurnovers": 0, "matchupFieldGoalsMade": 1,
+            "matchupFieldGoalsAttempted": 1, "matchupThreePointersMade": 0,
+            "matchupThreePointersAttempted": 0,
+        }]  # fmt: skip
+        game_id, away = game.id, game.away_team_id
+    source.frames[("BoxScoreMatchupsV3", game_id)] = pd.DataFrame(rows)
+    run = jobs.run_job(
+        engine, "player_matchups", {"season": SEASON},
+        jobs.ingest_player_matchups(source, [game_id]),
+    )  # fmt: skip
+    assert run.rows_inserted == 1
+    with Session(engine) as s:
+        stored = s.scalars(select(PlayerMatchup)).one()
+        assert (stored.def_team_id, float(stored.partial_possessions)) == (away, 3.5)
+        assert game_id not in jobs.games_missing_matchups(s)
+
+
+def test_matchups_stop_at_once_when_the_source_refuses_and_survive_an_empty_reply(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        finals = list(s.scalars(select(Game.id).where(Game.status == GameStatus.final)))
+    source.error = RetryableSourceError("ConnectionError")
+    repeated = [*finals, *finals, *finals]
+    run = jobs.run_job(engine, "player_matchups", {"t": 1},
+                       jobs.ingest_player_matchups(source, repeated))  # fmt: skip
+    assert run.rows_rejected == jobs.MATCHUP_FAILURE_LIMIT
+    source.error = None
+
+    class NoTables(FakeSource):
+        def fetch(self, endpoint_cls, *, cacheable=False, **params):
+            return FetchResult(frames=[], attempts=1)
+
+    run = jobs.run_job(engine, "player_matchups", {"t": 2},
+                       jobs.ingest_player_matchups(NoTables(), finals[:1]))  # fmt: skip
+    assert (run.status, run.rows_rejected) == (RunStatus.succeeded, 1)

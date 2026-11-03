@@ -28,6 +28,14 @@ TEAM_SQL = """
     JOIN team_game_stats o ON o.game_id = t.game_id AND o.team_id <> t.team_id
     WHERE g.status = 'final'"""
 
+MATCHUPS_SQL = """
+    SELECT m.game_id, g.game_date, m.off_player_id, m.def_player_id, m.def_team_id,
+           m.partial_possessions::float AS poss, m.pts, m.ast, m.fg3m, p.position AS off_position
+    FROM player_matchups m
+    JOIN games g ON g.id = m.game_id
+    JOIN players p ON p.id = m.off_player_id
+    WHERE g.status = 'final'"""
+
 LABELS = (*TARGETS, "double_double")
 
 
@@ -42,19 +50,22 @@ class Dataset:
         return self.frame[self.frame["eligible"]]
 
 
-def load_history(engine: Engine) -> tuple[pd.DataFrame, pd.DataFrame, int]:
+def load_history(engine: Engine) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, int]:
     with session_scope(engine) as session:
         version = current_data_version(session) or 0
         connection = session.connection()
         lines = pd.read_sql(text(LINES_SQL), connection, parse_dates=["game_date"])
         teams = pd.read_sql(text(TEAM_SQL), connection, parse_dates=["game_date"])
-    return lines, teams, version
+        matchups = pd.read_sql(text(MATCHUPS_SQL), connection, parse_dates=["game_date"])
+    return lines, teams, matchups, version
 
 
-def training_frame(lines: pd.DataFrame, team_games: pd.DataFrame) -> pd.DataFrame:
+def training_frame(
+    lines: pd.DataFrame, team_games: pd.DataFrame, matchups: pd.DataFrame | None = None
+) -> pd.DataFrame:
     """One row per player-game played: pregame features plus the observed outcomes."""
     played = lines[lines["minutes"] > 0].reset_index(drop=True)
-    features = build_features(played, lines, team_games)
+    features = build_features(played, lines, team_games, matchups)
     outcomes = played[["season_type", "pts", "reb", "ast", "fg3m", "stl", "blk"]].copy()
     outcomes["min"] = played["minutes"]
     outcomes["double_double"] = double_double_flags(played).astype(int)
@@ -62,8 +73,8 @@ def training_frame(lines: pd.DataFrame, team_games: pd.DataFrame) -> pd.DataFram
 
 
 def load_dataset(engine: Engine) -> Dataset:
-    lines, teams, version = load_history(engine)
-    frame = training_frame(lines, teams)
+    lines, teams, matchups, version = load_history(engine)
+    frame = training_frame(lines, teams, matchups)
     return Dataset(frame=frame, data_version=version, leakage_violations=leakage_violations(frame))
 
 

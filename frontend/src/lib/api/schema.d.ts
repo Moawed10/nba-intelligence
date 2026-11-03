@@ -1242,6 +1242,23 @@ export interface components {
             stat: string;
         };
         /**
+         * MatchupDefender
+         * @description Someone now on the opponent who has guarded this player in past games. Not a prediction of
+         *     tonight's matchup: the NBA's tracking data is only published after a game.
+         */
+        MatchupDefender: {
+            /** Full Name */
+            full_name: string;
+            /** Games */
+            games: number;
+            /** Player Id */
+            player_id: number;
+            /** Possessions */
+            possessions: number;
+            /** Pts Per 100 */
+            pts_per_100: number;
+        };
+        /**
          * MatchupHistory
          * @description A player's games against one opponent, every season stored (2018-19 onward).
          */
@@ -1250,6 +1267,11 @@ export interface components {
             averages: {
                 [key: string]: number | null;
             };
+            /**
+             * Defenders
+             * @default []
+             */
+            defenders: components["schemas"]["MatchupDefender"][];
             /** Fg3 Pct */
             fg3_pct: number | null;
             /** Fg Pct */
@@ -1268,6 +1290,8 @@ export interface components {
             opponent: components["schemas"]["TeamRef"];
             /** Player Id */
             player_id: number;
+            /** Usual Pts Per 100 */
+            usual_pts_per_100?: number | null;
             /** Wins */
             wins: number;
         };

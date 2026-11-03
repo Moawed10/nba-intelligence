@@ -124,6 +124,20 @@ def schedule(games: list[FixtureGame], status: int = 3, tipoff_hour: int = 0) ->
     )
 
 
+def scoreboard(games: list[FixtureGame], status: int, text: str, home: int, away: int):
+    game_rows = pd.DataFrame(
+        [{"gameId": g.id, "gameStatus": status, "gameStatusText": text} for g in games]
+    )
+    team_rows = pd.DataFrame(
+        [
+            {"gameId": g.id, "teamId": team, "score": score}
+            for g in games
+            for team, score in ((g.home, home), (g.away, away))
+        ]
+    )
+    return [pd.DataFrame(), game_rows, team_rows]
+
+
 @dataclass
 class FakeSource:
     """Stands in for NBAStatsClient. Frames are keyed by (endpoint class name, P/T or None)."""
@@ -131,11 +145,17 @@ class FakeSource:
     frames: dict[tuple[str, str | None], pd.DataFrame] = field(default_factory=dict)
     calls: list[dict[str, Any]] = field(default_factory=list)
     error: Exception | None = None
+    live_frames: list[pd.DataFrame] = field(default_factory=list)
 
     def fetch(self, endpoint_cls: type, *, cacheable: bool = False, **params: Any) -> FetchResult:
         self.calls.append({"endpoint": endpoint_cls.__name__, **params})
         if self.error:
             raise self.error
+        if endpoint_cls.__name__ == "ScoreboardV3":
+            return FetchResult(frames=self.live_frames, attempts=1)
+        if endpoint_cls.__name__ == "BoxScoreMatchupsV3":
+            frame = self.frames.get(("BoxScoreMatchupsV3", params["game_id"]), pd.DataFrame())
+            return FetchResult(frames=[frame.copy()], attempts=1)
         key = (endpoint_cls.__name__, params.get("player_or_team_abbreviation"))
         return FetchResult(frames=[self.frames[key].copy()], attempts=1)
 

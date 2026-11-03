@@ -11,9 +11,11 @@ import json
 import numpy as np
 import pandas as pd
 
+from app.ml.matchups import MATCHUP_FEATURES, MATCHUP_LABELS, defender_features
+from app.ml.matchups import SOURCE_DATES as MATCHUP_SOURCE_DATES
 from app.stats import possessions, rest_days_from_gap
 
-FEATURE_MODULE_VERSION = "1"
+FEATURE_MODULE_VERSION = "2"
 TARGETS = ("pts", "reb", "ast", "fg3m", "stl", "blk", "min")
 VOLUME = ("fga", "fg3a", "fta")
 WINDOWS = (3, 5, 10)
@@ -49,6 +51,7 @@ FEATURES: tuple[str, ...] = (
     "team_pace_10",
     *(f"{s}_vs_opponent" for s in TARGETS),
     "games_vs_opponent",
+    *MATCHUP_FEATURES,
 )
 
 STAT_NAMES = {
@@ -86,9 +89,16 @@ FEATURE_LABELS: dict[str, str] = {
     "team_pace_10": "Team pace, last 10",
     **{f"{s}_vs_opponent": f"{STAT_NAMES[s]} against this opponent" for s in TARGETS},
     "games_vs_opponent": "Previous games against this opponent",
+    **MATCHUP_LABELS,
 }
 
-SOURCE_DATES = ("player_source_date", "team_source_date", "opp_source_date", "vs_source_date")
+SOURCE_DATES = (
+    "player_source_date",
+    "team_source_date",
+    "opp_source_date",
+    "vs_source_date",
+    *MATCHUP_SOURCE_DATES,
+)
 
 
 def feature_schema_version() -> str:
@@ -174,7 +184,10 @@ def _asof(left: pd.DataFrame, right: pd.DataFrame, on: str, left_by, right_by) -
 
 
 def build_features(
-    targets: pd.DataFrame, lines: pd.DataFrame, team_games: pd.DataFrame
+    targets: pd.DataFrame,
+    lines: pd.DataFrame,
+    team_games: pd.DataFrame,
+    matchups: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Features for each target row (a player in a game) from history strictly before its date.
 
@@ -232,6 +245,8 @@ def build_features(
         df[f"{s}_vs_opponent"] = weight * vs_avg + (1 - weight) * df[f"{s}_season_avg"]
 
     df = df.sort_values("_row").reset_index(drop=True)
+    guarded = defender_features(base, matchups)
+    df = pd.concat([df, guarded.reset_index(drop=True)], axis=1)
     identity = [c for c in TARGET_COLUMNS if c not in FEATURES]
     return df[[*identity, *FEATURES, "prior_games", "eligible", *SOURCE_DATES]]
 

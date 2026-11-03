@@ -4,6 +4,7 @@ The release uses the 10-game rolling baseline for every statistic, so expected v
 computed by hand, and a prior-only classifier for the double-double probability.
 """
 
+import random
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
@@ -23,14 +24,18 @@ from app.ml.artifacts import ArtifactMismatch, save_artifact
 from app.ml.conformal import MondrianConformal
 from app.ml.dataset import load_dataset
 from app.ml.features import FEATURES, TARGETS, feature_schema_version
+from app.ml.matchups import MATCHUP_FEATURES
 from app.ml.models import RollingBaseline
 from app.models import (
     Algorithm,
+    Game,
+    GameStatus,
     ModelRelease,
     ModelTarget,
     ModelVersion,
     Player,
     PlayerGameStats,
+    PlayerMatchup,
     Prediction,
     ReleaseStatus,
     SeasonType,
@@ -246,6 +251,62 @@ def test_served_features_match_the_training_row_for_the_same_game(league):
         )  # fmt: skip
     for name in FEATURES:
         assert served[name] == pytest.approx(expected[name], nan_ok=True), name
+
+
+def test_served_defender_features_match_training_with_tracking_data(league):
+    """Serving reads a subset of player_matchups; it must give the same values as the full table."""
+    rng = random.Random(3)
+    with Session(league) as s, s.begin():
+        games = s.execute(
+            select(Game.id, Game.home_team_id, Game.away_team_id).where(
+                Game.status == GameStatus.final
+            )
+        ).all()
+        teams = {g.home_team_id for g in games} | {g.away_team_id for g in games}
+        ids = {t: list(s.scalars(select(Player.id).where(Player.current_team_id == t)))
+               for t in teams}  # fmt: skip
+        for game in games:
+            for offense_team, defense_team in ((game.home_team_id, game.away_team_id),
+                                               (game.away_team_id, game.home_team_id)):  # fmt: skip
+                for offense in ids[offense_team][:3]:
+                    for defender in ids[defense_team][:3]:
+                        s.add(PlayerMatchup(
+                            game_id=game.id, off_player_id=offense, def_player_id=defender,
+                            off_team_id=offense_team, def_team_id=defense_team, seconds=60,
+                            partial_possessions=rng.randint(1, 20), pts=rng.randint(0, 6), ast=0,
+                            tov=0, fgm=0, fga=0, fg3m=rng.randint(0, 1), fg3a=0,
+                            source_endpoint="fixture",
+                        ))  # fmt: skip
+    frame = load_dataset(league).frame
+    game = EXTRA[1]
+    expected = frame[(frame["player_id"] == STAR) & (frame["game_id"] == game.id)].iloc[0]
+    with Session(league) as s:
+        served = inference.pregame_features(
+            s, player_id=STAR, team_id=1, opponent_id=2, is_home=False, game_id=game.id,
+            game_date=date.fromisoformat(game.date), season_id=SEASON,
+        )  # fmt: skip
+    assert expected["matchup_possessions"] > 0
+    for name in MATCHUP_FEATURES:
+        assert served[name] == pytest.approx(expected[name], nan_ok=True), name
+
+
+def test_a_release_keeps_serving_on_the_features_it_was_trained_with():
+    """Adding features to the code must not disable or change an older active release."""
+    older = tuple(f for f in FEATURES if f not in MATCHUP_FEATURES)
+
+    class ChecksItsInputs:
+        def predict(self, X):
+            assert tuple(X.columns) == older
+            return [5.0]
+
+    model = inference.RegressionModel(ChecksItsInputs(), CONFORMAL)
+    release = inference.ActiveRelease(
+        uuid.uuid4(), "2099.old", "old-schema", dict.fromkeys(TARGETS, model), None, {}, older
+    )
+    features = pd.Series({**dict.fromkeys(FEATURES, 1.0), "prior_games": 9, "eligible": True})
+    forecast = inference.predict(release, features)
+    assert tuple(forecast.snapshot) == older
+    assert forecast.values["pts"][0] == 5.0
 
 
 def test_activation_verifies_artifacts_and_retires_the_previous_release(league, tmp_path):

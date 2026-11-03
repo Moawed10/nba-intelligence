@@ -338,6 +338,21 @@ createServer((req, res) => {
     if (!team) return error(res, 404, "team_not_found", "No team with that id.");
     return send(res, 200, { team: ref(team), seasons: HISTORY[team.id], meta: META });
   }
+  const teamMatch = path.match(/^\/teams\/(\d+)$/);
+  if (teamMatch) {
+    const team = TEAMS.find((t) => t.id === Number(teamMatch[1]));
+    if (!team) return error(res, 404, "team_not_found", "No team with that id.");
+    const roster = PLAYERS.filter((p) => p.team?.id === team.id);
+    // Listed on the roster but absent from the season averages: a player yet to appear this season.
+    const unplayed = { ...PLAYERS.find((p) => p.id === 1990), team: ref(team) };
+    return send(res, 200, {
+      team,
+      season: "2099-00",
+      record: teamStats(team.id).record,
+      roster: [...roster, unplayed],
+      meta: META,
+    });
+  }
   const statsMatch = path.match(/^\/teams\/(\d+)\/stats$/);
   if (statsMatch) return send(res, 200, teamStats(Number(statsMatch[1])));
   if (path === "/models") return send(res, 200, [{ ...RELEASE }]);
@@ -484,7 +499,10 @@ createServer((req, res) => {
     return send(res, 200, {
       player_id: player.id, opponent: ref(opponent), games: 3, wins: 2, losses: 1,
       averages: { pts: 21.5, reb: 6.2, ast: 4.4, fg3m: 1.3, stl: 0.7, blk: 0.3, min: 31.2 },
-      fg_pct: 0.48, fg3_pct: 0.36, first_season: "2097-98", last_season: "2099-00", meetings, meta: META,
+      fg_pct: 0.48, fg3_pct: 0.36, first_season: "2097-98", last_season: "2099-00", meetings,
+      defenders: [{ player_id: 1001, full_name: PLAYERS.find((p) => p.id === 1001)?.full_name ?? "Fixture Defender", games: 3, possessions: 84.5, pts_per_100: 31.2 }],
+      usual_pts_per_100: 27.4,
+      meta: META,
     });
   }
   if (path === "/players") {

@@ -439,7 +439,7 @@ Everything here ran on the development Mac against the real data, in throwaway c
 
 The rehearsal found one more bug, now fixed with a test: a forecast for a player who did not play kept its game in the pending list, so the game was rescored on every maintenance run.
 
-CI on `e90f099` (run 41484295687): `backend`, `frontend`, `fullstack`, `security` and `containers` all passed. Those results predate the merge of the redesign from main. On the merged code, locally: backend 329 passed, frontend lint and typecheck clean, unit tests 40 passed, and `npm run test:fullstack` 1 passed.
+CI on `e90f099` (run 41484295687): `backend`, `frontend`, `fullstack`, `security` and `containers` all passed. Those results predate later merges from main (the redesign, team pages and defender matchups). On the merged code, locally: backend 347 passed, frontend lint and typecheck clean, unit tests 40 passed, and `npm run test:fullstack` 1 passed. Main's `player_matchups` migration and this branch's `game_prediction_evaluations` migration shared a parent, so the branch's now follows main's; upgrade, downgrade and upgrade again worked on an empty database.
 
 Not demonstrated: a hosted smoke test, a real restore on a host, alert delivery, and any of the seven-day thresholds.
 

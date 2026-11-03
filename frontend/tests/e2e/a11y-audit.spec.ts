@@ -23,6 +23,7 @@ const PAGES = [
   { path: "/games/0099000102", name: "Game page (upcoming)" },
   { path: "/games/0099000101", name: "Game page (final)" },
   { path: "/about", name: "About" },
+  { path: "/teams/1", name: "Team" },
   { path: "/players/424242", name: "Not found" },
 ];
 

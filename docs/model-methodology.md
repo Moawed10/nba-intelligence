@@ -57,6 +57,22 @@ All features for game *g* are computed from games with `game_date < g.game_date`
 
 After the test evaluation, the selected configuration (same hyperparameters; XGBoost with its early-stopped round count) is refit on train + validation as the production model, and its conformal intervals and probability calibration are fitted on the test season, the most recent completed season. The reported test metrics belong to the held-out fit. The registry stores both: held-out model versions carry the validation and test evaluations, and the production version per target is the one marked `is_selected`. Live accuracy of the production models is measured on 2026-27 games after they finish (Phase 7).
 
+## Defender matchups
+
+Who actually guards a player is only published after a game, so a forecast can never use the real matchup. Implementation: `backend/app/ml/matchups.py`, from `player_matchups`. The sweep handles each date's targets before adding that date's matchups, so a target sees earlier days only; `matchup_source_date` and `position_source_date` are in the leakage check.
+
+**Likely defenders** are the opponents' players who have guarded this player before and whose most recent defensive game (within 400 days) was for this opponent. Past meetings count by possessions, halving in weight per year. Injuries and tonight's rotation are not known, so a likely defender may not play.
+
+| Feature | Meaning |
+|---|---|
+| `matchup_possessions` | Possessions against these defenders (0 when never met) |
+| `likely_defender_share` | Share of those possessions with the most frequent defender |
+| `pts_per100_edge_vs_likely`, `ast_…`, `fg3m_…` | Player's rate against them minus his rate over the last year, pulled toward zero until about 50 possessions |
+| `likely_defender_pts_allowed_per100` | What those defenders allowed to everyone over the last year, pulled toward the league's 23 until about 200 possessions; the position rate when there is no history |
+| `opp_pts_allowed_to_position_per100` | What the opponent allowed to this player's position (G, F, C) over its last 10 tracked games |
+
+Rates are "points by one offensive player per 100 possessions he is on the floor", about 23 league-wide. A release serves on the feature list stored with its artifacts, so these features change nothing until a release trained on them is activated.
+
 ## Models compared
 
 Every target is trained with each family on identical rows:

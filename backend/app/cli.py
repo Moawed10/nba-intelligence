@@ -79,6 +79,46 @@ def ingest_careers(client: NBAStatsClient, player_ids: list[int] | None) -> bool
     return ok
 
 
+MATCHUP_CLI_BATCH = 25
+MATCHUP_LIVE_WAIT_SECONDS = 300
+
+
+def _source_refused_matchups() -> bool:
+    with session_scope(get_engine()) as s:
+        rejected = s.scalar(
+            select(IngestionRun.rows_rejected)
+            .where(IngestionRun.job == "player_matchups")
+            .order_by(IngestionRun.id.desc())
+            .limit(1)
+        )
+    return (rejected or 0) >= jobs.MATCHUP_FAILURE_LIMIT
+
+
+def ingest_matchups(limit: int | None, seasons: tuple[int, ...] | None, interval: float) -> bool:
+    """Who guarded whom, in short runs that each keep their work, so stopping loses little and a
+    re-run continues with what is missing. stats.nba.com stops answering this connection after a
+    few hundred quick requests, and live scores come from the same source, so this goes slowly,
+    waits while games are live, and stops at the first sign of refusal."""
+    client = NBAStatsClient(interval=interval, max_attempts=2, timeout=20.0)
+    with session_scope(get_engine()) as s:
+        missing = jobs.games_missing_matchups(s, limit, seasons)
+    print(f"matchups for {len(missing)} games, one every {interval:g} seconds", flush=True)
+    ok = True
+    for start in range(0, len(missing), MATCHUP_CLI_BATCH):
+        while True:
+            with session_scope(get_engine()) as s:
+                if not worker.games_live(s, datetime.now(UTC)):
+                    break
+            time.sleep(MATCHUP_LIVE_WAIT_SECONDS)
+        batch = missing[start : start + MATCHUP_CLI_BATCH]
+        ok &= _run("player_matchups", {"first": batch[0], "count": len(batch)},
+                   jobs.ingest_player_matchups(client, batch))  # fmt: skip
+        if _source_refused_matchups():
+            print("the source is refusing requests; stopped. Re-run later to continue.", flush=True)
+            return False
+    return ok
+
+
 def train_command(args: argparse.Namespace) -> int:
     from app.ml.features import TARGETS
     from app.ml.models import FAST_CONFIG, TrainConfig
@@ -184,6 +224,10 @@ def main(argv: list[str] | None = None) -> int:
     isub.add_parser("players")
     careers = isub.add_parser("careers", help="Every season of every player (one request each)")
     careers.add_argument("--players", help="Comma-separated player ids (default: all due)")
+    matchups = isub.add_parser("matchups", help="Who guarded whom (one request per game)")
+    matchups.add_argument("--limit", type=int, help="Newest games first (default: all missing)")
+    matchups.add_argument("--seasons", help="Comma-separated start years (default: all)")
+    matchups.add_argument("--interval", type=float, default=10.0, help="Seconds between requests")
     for name in ("schedule", "season"):
         p = isub.add_parser(name)
         p.add_argument("--season", type=int, default=current, help="Start year, e.g. 2025")
@@ -264,6 +308,9 @@ def main(argv: list[str] | None = None) -> int:
         elif args.target == "careers":
             ids = [int(i) for i in args.players.split(",")] if args.players else None
             ok = ingest_careers(client, ids)
+        elif args.target == "matchups":
+            seasons = tuple(int(y) for y in args.seasons.split(",")) if args.seasons else None
+            ok = ingest_matchups(args.limit, seasons, args.interval)
         elif args.target == "players":
             ok = _run("players", {"season": current}, jobs.ingest_players(client, current))
         elif args.target == "schedule":
@@ -279,7 +326,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if ok else 1
 
     if args.command == "sync-worker":
-        worker.run_forever(get_engine(), client)
+        worker.run_forever(
+            get_engine(), client, NBAStatsClient(max_attempts=1, timeout=8.0, interval=0.0)
+        )
         return 0
     if args.command == "sync-once":
         print(json.dumps(worker.run_due(get_engine(), client), indent=2))

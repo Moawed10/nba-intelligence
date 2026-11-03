@@ -7,7 +7,7 @@ import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState 
 import { TeamMark } from "@/components/brand/team-mark";
 import { clientGet } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
-import type { PlayerSearchResult } from "@/lib/api/types";
+import type { PlayerSearchResult, Team } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 export const MIN_QUERY_LENGTH = 2;
@@ -64,6 +64,8 @@ interface PlayerSearchProps {
   /** "inline" keeps the results in the document flow, e.g. inside a dialog. */
   listMode?: "popover" | "inline";
   hideLabel?: boolean;
+  /** Also match teams, listed above players; the list of 30 is filtered in the browser. */
+  onSelectTeam?: (team: Team) => void;
 }
 
 /** WAI-ARIA combobox (list autocomplete) over GET /players/search. */
@@ -74,6 +76,7 @@ export function PlayerSearch({
   startOpen,
   listMode = "popover",
   hideLabel,
+  onSelectTeam,
 }: PlayerSearchProps) {
   const id = useId();
   const listId = `${id}-list`;
@@ -92,15 +95,35 @@ export function PlayerSearch({
     staleTime: 5 * 60_000,
   });
 
-  const results = enabled ? (data ?? []) : [];
+  const { data: allTeams } = useQuery({
+    queryKey: ["teams"],
+    queryFn: ({ signal }) => clientGet<Team[]>("/teams", undefined, signal),
+    enabled: Boolean(onSelectTeam),
+    staleTime: 60 * 60_000,
+  });
+
+  const players = enabled ? (data ?? []) : [];
+  const needle = fold(term);
+  const teams =
+    enabled && onSelectTeam
+      ? (allTeams ?? []).filter((t) => fold(`${t.city} ${t.name} ${t.abbreviation}`).includes(needle))
+      : [];
+  const count = teams.length + players.length;
   const typing = input.trim().length >= MIN_QUERY_LENGTH && input.trim() !== term;
   const loading = typing || (enabled && isFetching);
   const settled = enabled && input.trim() === term && !isFetching;
-  const expanded = open && enabled && results.length > 0;
+  const expanded = open && enabled && count > 0;
 
   function choose(player: PlayerSearchResult) {
     onSelect(player);
     setInput(player.full_name);
+    setOpen(false);
+    setActive(-1);
+  }
+
+  function chooseTeam(team: Team) {
+    onSelectTeam?.(team);
+    setInput(`${team.city} ${team.name}`);
     setOpen(false);
     setActive(-1);
   }
@@ -113,14 +136,15 @@ export function PlayerSearch({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      if (!results.length) return;
+      if (!count) return;
       event.preventDefault();
       setOpen(true);
       const step = event.key === "ArrowDown" ? 1 : -1;
-      setActive((current) => (current + step + results.length) % results.length);
+      setActive((current) => (current + step + count) % count);
     } else if (event.key === "Enter" && expanded && active >= 0) {
       event.preventDefault();
-      choose(results[active]);
+      if (active < teams.length) chooseTeam(teams[active]);
+      else choose(players[active - teams.length]);
     } else if (event.key === "Escape" && (expanded || input)) {
       event.preventDefault();
       event.stopPropagation();
@@ -137,9 +161,15 @@ export function PlayerSearch({
   } else if (settled && error) {
     status = describeError(error).message;
   } else if (settled) {
-    status = results.length
-      ? `${results.length} ${results.length === 1 ? "player" : "players"} found.`
-      : "No players match that name.";
+    const found = [
+      teams.length ? `${teams.length} ${teams.length === 1 ? "team" : "teams"}` : null,
+      players.length ? `${players.length} ${players.length === 1 ? "player" : "players"}` : null,
+    ].filter(Boolean);
+    status = found.length
+      ? `${found.join(" and ")} found.`
+      : onSelectTeam
+        ? "No players or teams match that name."
+        : "No players match that name.";
   }
 
   const Icon = loading ? LoaderCircle : Search;
@@ -170,7 +200,7 @@ export function PlayerSearch({
           aria-describedby={`${id}-status`}
           aria-busy={loading}
           value={input}
-          placeholder="Player name"
+          placeholder={onSelectTeam ? "Player or team" : "Player name"}
           onChange={(event) => {
             setInput(event.target.value);
             setOpen(true);
@@ -195,13 +225,13 @@ export function PlayerSearch({
       <p id={`${id}-status`} role="status" aria-live="polite" className="sr-only">
         {status}
       </p>
-      {settled && open && (error != null || results.length === 0) && (
+      {settled && open && (error != null || count === 0) && (
         <p className={cn("mt-2 text-subhead", error ? "text-negative" : "text-muted-foreground")}>{status}</p>
       )}
       <ul
         id={listId}
         role="listbox"
-        aria-label="Matching players"
+        aria-label={onSelectTeam ? "Matching players and teams" : "Matching players"}
         hidden={!expanded}
         className={cn(
           "mt-2 max-h-80 w-full overflow-y-auto p-1",
@@ -209,45 +239,76 @@ export function PlayerSearch({
             "absolute z-20 rounded-xl border border-border bg-popover shadow-xl shadow-black/30",
         )}
       >
-        {results.map((player, index) => (
+        {teams.map((team, index) => (
           // Keyboard selection happens on the combobox input via aria-activedescendant.
           // eslint-disable-next-line jsx-a11y/click-events-have-key-events
           <li
-            key={player.id}
+            key={`team-${team.id}`}
             id={`${listId}-${index}`}
             role="option"
             aria-selected={index === active}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => choose(player)}
+            onClick={() => chooseTeam(team)}
             onMouseMove={() => setActive(index)}
             className={cn(
               "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors",
               index === active && "bg-accent text-accent-foreground",
             )}
           >
-            <TeamMark
-              size="xs"
-              team={
-                player.team_abbreviation
-                  ? {
-                      id: player.team_id ?? 0,
-                      abbreviation: player.team_abbreviation,
-                      primary_color: player.team_primary_color ?? null,
-                    }
-                  : null
-              }
-            />
-            <span className="min-w-0 flex-1 truncate">{highlight(player.full_name, input)}</span>
+            <TeamMark size="xs" team={team} />
+            <span className="min-w-0 flex-1 truncate">{highlight(`${team.city} ${team.name}`, input)}</span>
             <span
               className={cn(
                 "shrink-0 text-footnote",
                 index === active ? "text-accent-foreground" : "text-muted-foreground",
               )}
             >
-              {playerDetails(player)}
+              Team
             </span>
           </li>
         ))}
+        {players.map((player, playerIndex) => {
+          const index = playerIndex + teams.length;
+          return (
+            // Keyboard selection happens on the combobox input via aria-activedescendant.
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+            <li
+              key={player.id}
+              id={`${listId}-${index}`}
+              role="option"
+              aria-selected={index === active}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => choose(player)}
+              onMouseMove={() => setActive(index)}
+              className={cn(
+                "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2 transition-colors",
+                index === active && "bg-accent text-accent-foreground",
+              )}
+            >
+              <TeamMark
+                size="xs"
+                team={
+                  player.team_abbreviation
+                    ? {
+                        id: player.team_id ?? 0,
+                        abbreviation: player.team_abbreviation,
+                        primary_color: player.team_primary_color ?? null,
+                      }
+                    : null
+                }
+              />
+              <span className="min-w-0 flex-1 truncate">{highlight(player.full_name, input)}</span>
+              <span
+                className={cn(
+                  "shrink-0 text-footnote",
+                  index === active ? "text-accent-foreground" : "text-muted-foreground",
+                )}
+              >
+                {playerDetails(player)}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

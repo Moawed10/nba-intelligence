@@ -1,28 +1,20 @@
-import pandas as pd
+from datetime import date
+
 import pytest
 
 from app.ingestion import jobs
-from tests.api.conftest import SCHEDULED
-from tests.fixtures import SEASON, FakeSource, schedule
+from tests.api.conftest import NOW, SCHEDULED
+from tests.fixtures import FakeSource, scoreboard
 
 pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
 def live_game(client, loaded):
-    source = FakeSource()
-    source.frames[("ScheduleLeagueV2", None)] = pd.concat(
-        [
-            schedule(SCHEDULED[:1], status=2).assign(
-                homeTeam_score=61, awayTeam_score=58, gameStatusText="Q3 5:12"
-            ),
-            schedule(SCHEDULED[1:], status=1),
-        ],
-        ignore_index=True,
-    )
-    jobs.run_job(loaded, "schedule", {"season": SEASON}, jobs.ingest_schedule(source, SEASON))
-    client.app.state.api.reset()
-    return SCHEDULED[0]
+    game = SCHEDULED[0]
+    source = FakeSource(live_frames=scoreboard([game], 2, "Q3 5:12", 61, 58))
+    jobs.poll_live_scores(loaded, source, [date.fromisoformat(game.date)], NOW)
+    return game
 
 
 def test_a_live_game_reports_its_score_and_clock(client, live_game):

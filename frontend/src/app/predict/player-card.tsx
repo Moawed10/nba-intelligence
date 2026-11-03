@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamBand } from "@/components/brand/team-band";
-import { TeamMark } from "@/components/brand/team-mark";
+import { TeamLink } from "@/components/brand/team-link";
 import type { TeamRef } from "@/lib/api/types";
 import { formatStat } from "@/lib/format";
 import { targetLabel } from "@/lib/models";
@@ -34,7 +34,7 @@ export function PlayerCard({ player, season, className }: Props & { className?: 
           />
           <div className="min-w-0 pb-4">
             <p className="kicker flex items-center gap-2">
-              {player.team && <TeamMark team={player.team} size="xs" disc />}
+              {player.team && <TeamLink team={player.team} size="xs" />}
               {player.team ? `${player.team.city} ${player.team.name}` : "Not on a current roster"}
               {" · "}
               {player.is_active ? "Active" : "Former"}

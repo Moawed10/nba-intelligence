@@ -414,6 +414,17 @@ class LiveAccuracy(BaseModel):
     game_scores: LiveGameScores | None
 
 
+class MatchupDefender(BaseModel):
+    """Someone now on the opponent who has guarded this player in past games. Not a prediction of
+    tonight's matchup: the NBA's tracking data is only published after a game."""
+
+    player_id: int
+    full_name: str
+    games: int
+    possessions: float
+    pts_per_100: float
+
+
 class MatchupHistory(BaseModel):
     """A player's games against one opponent, every season stored (2018-19 onward)."""
 
@@ -428,6 +439,8 @@ class MatchupHistory(BaseModel):
     first_season: str | None
     last_season: str | None
     meetings: list[PlayerGameLine]
+    defenders: list[MatchupDefender] = []
+    usual_pts_per_100: float | None = None
     meta: Meta
 
 

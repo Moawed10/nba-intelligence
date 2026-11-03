@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.ml.dataset import training_frame
+from app.ml.features import FEATURES
 from app.ml.models import FAST_CONFIG
 from app.ml.train import report, train_release, write_release
 from app.models import Season
@@ -90,7 +91,7 @@ def test_model_registry_endpoints_report_recorded_evaluations(client, loaded, tm
     assert pts["baseline_mae"] == pytest.approx(expected["baseline_mae"])
     assert pts["interval_coverage"] == pytest.approx(result.targets["pts"].test_coverage["overall"])
     assert len([a for a in detail["algorithms"] if a["target"] == "pts"]) == 4
-    assert len(detail["features"]) == 60
+    assert len(detail["features"]) == len(FEATURES)
     assert set(detail["interval_calibration"]) == {"pts", "reb", "ast", "fg3m", "stl", "blk", "min"}
 
     overview = client.get("/api/v1/overview").json()

@@ -1,9 +1,11 @@
 import json
+from datetime import UTC, date, datetime
 
 import pytest
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from app.db import current_data_version
 from app.ingestion import jobs
 from app.ingestion.client import RetryableSourceError
 from app.ingestion.integrity import integrity_report
@@ -22,7 +24,7 @@ from app.models import (
     Team,
     TeamGameStats,
 )
-from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, schedule
+from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, schedule, scoreboard
 
 pytestmark = pytest.mark.integration
 
@@ -194,23 +196,34 @@ def _with_scores(frame, home, away, text="Q3 5:12"):
     return frame.assign(homeTeam_score=home, awayTeam_score=away, gameStatusText=text)
 
 
-def test_live_scores_follow_the_feed_and_the_box_score_has_the_last_word(engine, source):
+LIVE_NOW = datetime(2099, 11, 10, 2, tzinfo=UTC)
+
+
+def _poll(engine, source, status, text, home, away, now=LIVE_NOW):
+    source.live_frames = scoreboard(GAMES, status, text, home, away)
+    return jobs.poll_live_scores(engine, source, [date.fromisoformat(GAMES[0].date)], now)
+
+
+def test_live_scores_follow_the_scoreboard_and_the_box_score_has_the_last_word(engine, source):
     run_schedule(engine, source, schedule(GAMES, status=1))
-    run_schedule(engine, source, _with_scores(schedule(GAMES, status=1), 0, 0, "7:30 pm ET"))
+    assert _poll(engine, source, 1, "7:30 pm ET", 0, 0) == 0
     with Session(engine) as s:
         assert set(s.scalars(select(Game.home_score))) == {None}
 
-    run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 61, 58))
+    assert _poll(engine, source, 2, "Q3 5:12", 61, 58) == len(GAMES)
     with Session(engine) as s:
         game = s.get(Game, GAMES[0].id)
+        assert game.status == GameStatus.in_progress
         assert (game.home_score, game.away_score) == (61, 58)
         assert game.provider_status["gameStatusText"] == "Q3 5:12"
+        assert game.status_observed_at == LIVE_NOW
+        started = s.scalars(select(SyncEvent.type)).all()
+    assert started.count(SyncEventType.GAME_STARTED) == len(GAMES)
 
-    run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 70, 58, "Q3 1:02"))
-    with Session(engine) as s:
-        assert s.get(Game, GAMES[0].id).home_score == 70
-
-    run_schedule(engine, source, _with_scores(schedule(GAMES, status=3), 101, 99, "Final"))
+    assert _poll(engine, source, 2, "Q3 5:12", 61, 58) == 0, (
+        "an unchanged scoreboard writes nothing"
+    )
+    assert _poll(engine, source, 3, "Final", 101, 99) == len(GAMES)
     with Session(engine) as s:
         game = s.get(Game, GAMES[0].id)
         assert (game.status, game.home_score, game.away_score) == (GameStatus.final, 101, 99)
@@ -222,13 +235,33 @@ def test_live_scores_follow_the_feed_and_the_box_score_has_the_last_word(engine,
         assert s.scalar(select(func.count()).select_from(SourceCorrection)) == 0
 
 
-def test_a_late_feed_score_never_overwrites_a_finished_game(engine, source):
+def test_live_scoring_does_not_advance_the_data_version(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    with Session(engine) as s:
+        before = current_data_version(s)
+    _poll(engine, source, 2, "Q1 11:00", 2, 0)
+    with Session(engine) as s:
+        assert current_data_version(s) == before
+
+
+def test_a_slow_schedule_response_cannot_undo_a_newer_live_score(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    _poll(engine, source, 2, "Q4 1:00", 90, 88)
+    run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 40, 41, "Q2 6:00"))
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.home_score, game.away_score) == (90, 88)
+        assert game.provider_status["gameStatusText"] == "Q4 1:00"
+
+
+def test_a_late_score_never_overwrites_a_finished_game(engine, source):
     run_schedule(engine, source, schedule(GAMES, status=1))
     run_schedule(engine, source, schedule(GAMES, status=2))
     run_logs(engine, source)
     run_schedule(engine, source, _with_scores(schedule(GAMES, status=3), 1, 2, "Final"))
     stale = run_schedule(engine, source, _with_scores(schedule(GAMES, status=2), 3, 4))
     assert stale.rows_rejected == len(GAMES)
+    assert _poll(engine, source, 2, "Q2 1:00", 5, 6) == 0
     with Session(engine) as s:
         assert set(s.scalars(select(Game.home_score))) == {55}
 

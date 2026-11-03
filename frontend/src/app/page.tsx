@@ -3,6 +3,7 @@ import { cache, Suspense } from "react";
 
 import { CourtBackdrop } from "@/components/brand/court-backdrop";
 import { TeamBand } from "@/components/brand/team-band";
+import { TeamLink } from "@/components/brand/team-link";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
 import { PlayerCutout } from "@/components/brand/player-cutout";
 import { TeamMark } from "@/components/brand/team-mark";
@@ -214,7 +215,7 @@ function StandoutHero({ p, window }: { p: Performance; window: string }) {
         <div className="relative z-10 order-2 flex flex-col gap-7 py-8 md:max-w-[58%] md:py-12">
           <div>
             <p className="kicker flex items-center gap-2.5">
-              <TeamMark team={p.team} size="sm" disc />
+              <TeamLink team={p.team} size="md" />
               Performance of the week · {window}
             </p>
             <h2 id="hero-title" className="display mt-5 text-[clamp(4rem,11vw,9.5rem)]">

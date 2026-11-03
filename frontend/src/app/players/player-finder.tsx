@@ -10,13 +10,14 @@ export function PlayerFinder({ compact }: { compact?: boolean }) {
   return (
     <section aria-labelledby="find-player" className={cn(compact && "w-full sm:w-80")}>
       <h2 id="find-player" className="sr-only">
-        Find a player
+        Find a player or team
       </h2>
       <PlayerSearch
-        label="Search players"
+        label="Search players and teams"
         hideLabel={compact}
         className={compact ? undefined : "max-w-xl"}
         onSelect={(player) => router.push(`/players/${player.id}`)}
+        onSelectTeam={(team) => router.push(`/teams/${team.id}`)}
       />
     </section>
   );

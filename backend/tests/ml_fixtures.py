@@ -75,3 +75,26 @@ def league(seed: int = 7) -> tuple[pd.DataFrame, pd.DataFrame]:
                         }  # fmt: skip
                     )
     return pd.DataFrame(lines), pd.DataFrame(team_rows)
+
+
+def matchups(lines: pd.DataFrame, seed: int = 11) -> pd.DataFrame:
+    """Invented who-guarded-whom rows: each player meets every opponent's players in every game."""
+    rng = np.random.default_rng(seed)
+    games = lines[["game_id", "game_date", "team_id", "opponent_id"]].drop_duplicates()
+    rows = []
+    for g in games.to_dict("records"):
+        for slot in range(5):
+            for defender in range(5):
+                rows.append({
+                    "game_id": g["game_id"],
+                    "game_date": g["game_date"],
+                    "off_player_id": g["team_id"] * 10 + slot,
+                    "def_player_id": g["opponent_id"] * 10 + defender,
+                    "def_team_id": g["opponent_id"],
+                    "poss": float(rng.uniform(1, 20)),
+                    "pts": int(rng.poisson(2)),
+                    "ast": int(rng.poisson(1)),
+                    "fg3m": int(rng.poisson(0.3)),
+                    "off_position": "GFC"[slot % 3],
+                })  # fmt: skip
+    return pd.DataFrame(rows)

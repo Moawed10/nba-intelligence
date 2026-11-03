@@ -1988,6 +1988,40 @@
         "title": "LiveStat",
         "type": "object"
       },
+      "MatchupDefender": {
+        "description": "Someone now on the opponent who has guarded this player in past games. Not a prediction of\ntonight's matchup: the NBA's tracking data is only published after a game.",
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "games": {
+            "title": "Games",
+            "type": "integer"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "integer"
+          },
+          "possessions": {
+            "title": "Possessions",
+            "type": "number"
+          },
+          "pts_per_100": {
+            "title": "Pts Per 100",
+            "type": "number"
+          }
+        },
+        "required": [
+          "player_id",
+          "full_name",
+          "games",
+          "possessions",
+          "pts_per_100"
+        ],
+        "title": "MatchupDefender",
+        "type": "object"
+      },
       "MatchupHistory": {
         "description": "A player's games against one opponent, every season stored (2018-19 onward).",
         "properties": {
@@ -2004,6 +2038,14 @@
             },
             "title": "Averages",
             "type": "object"
+          },
+          "defenders": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MatchupDefender"
+            },
+            "title": "Defenders",
+            "type": "array"
           },
           "fg3_pct": {
             "anyOf": [
@@ -2073,6 +2115,17 @@
           "player_id": {
             "title": "Player Id",
             "type": "integer"
+          },
+          "usual_pts_per_100": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usual Pts Per 100"
           },
           "wins": {
             "title": "Wins",

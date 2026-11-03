@@ -39,7 +39,8 @@ Implemented jobs (`app/sync/worker.py` `JOBS`):
 
 | Job key | Idle interval | Active interval | Active when | Source |
 |---|---|---|---|---|
-| `schedule` | 30 min | 60 s, or 5 s from 15 min before tip-off until final (6 h cap), falling back to 60 s after a failed fetch. The `careers` job waits while games are live, because it would block the worker for minutes | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed), and the running score and clock text while a game is in progress |
+| `schedule` | 30 min | 60 s | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed), and the score at the moment a game starts or ends |
+| Live scores (own thread in the worker, not a scheduled job) | 30 s check | 5 s, doubling up to 60 s after failures | From 15 min before tip-off until final (6 h cap) | `ScoreboardV3`: score, status and clock for the day's games. Writes only games that changed, outside ingestion runs, so it does not advance `data_version` |
 | `game_logs` | 6 h | 10 min | A game is live, or a game from the last 36 h is final but its box score isn't confirmed stable | `LeagueGameLog` (team + player) for the current season's types |
 | `metadata` | 24 h | — | Always | `LeagueStandingsV3`, `CommonAllPlayers`, `PlayerIndex` |
 | `corrections` | 7 days | — | Always | Re-fetches the current season's game logs and logs any changed values |
@@ -167,3 +168,8 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 
 Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
 
+## Who guarded whom
+
+`player_matchups` holds the NBA's per-game tracking of which defender guarded which player (`boxscorematchupsv3`, one request per game, published some hours after the final). The `matchups` sync job fetches finished games of the current season every 3 hours.
+
+**Backfill:** `python -m app.cli ingest matchups [--seasons 2025,2024] [--interval 10]`, newest games first. It is safe to stop and re-run, since it only asks for games with no rows yet. On 2026-11-03 a backfill at about one request per 3 seconds made stats.nba.com stop answering this connection after a few hundred requests, which also failed the schedule sync for two hours. So it now defaults to one request every 10 seconds, waits while games are live, keeps its work in short runs, and stops after two failed games in a row. Do not lower the interval without watching the schedule job.

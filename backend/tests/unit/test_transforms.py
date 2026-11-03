@@ -9,6 +9,7 @@ from app.ingestion.transforms import (
     parse_matchup,
     season_from_game_id,
     season_label,
+    transform_matchups,
     transform_player_logs,
     transform_schedule,
     transform_team_logs,
@@ -140,3 +141,36 @@ def test_schedule_rejects_undetermined_teams():
 
 def test_empty_frames():
     assert transform_team_logs(pd.DataFrame(), SeasonType.regular).games.rows == []
+
+
+def _matchup_row(**overrides):
+    row = {
+        "teamId": 1, "personIdOff": 11, "personIdDef": 21, "matchupMinutesSort": 36.9,
+        "partialPossessions": 2.7, "playerPoints": 4, "matchupAssists": 1, "matchupTurnovers": 0,
+        "matchupFieldGoalsMade": 2, "matchupFieldGoalsAttempted": 3,
+        "matchupThreePointersMade": 0, "matchupThreePointersAttempted": 1,
+    }  # fmt: skip
+    return {**row, **overrides}
+
+
+def test_matchup_rows_name_both_teams_from_the_offensive_team():
+    frame = pd.DataFrame([_matchup_row(), _matchup_row(teamId=2, personIdOff=21, personIdDef=11)])
+    out = transform_matchups(frame, "0099000001", (1, 2), {11, 21})
+    assert out.rejections == []
+    assert [(r["off_team_id"], r["def_team_id"]) for r in out.rows] == [(1, 2), (2, 1)]
+    assert out.rows[0]["partial_possessions"] == 2.7 and out.rows[0]["fg3a"] == 1
+
+
+def test_matchup_rows_without_possessions_are_dropped_and_bad_rows_rejected():
+    frame = pd.DataFrame(
+        [
+            _matchup_row(partialPossessions=0),
+            _matchup_row(teamId=9),
+            _matchup_row(personIdDef=99),
+            _matchup_row(playerPoints=-1),
+            _matchup_row(partialPossessions=None, personIdOff="not a number"),
+        ]
+    )
+    out = transform_matchups(frame, "0099000001", (1, 2), {11, 21})
+    assert out.rows == []
+    assert len(out.rejections) == 4
