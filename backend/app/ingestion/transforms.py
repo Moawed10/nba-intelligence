@@ -278,6 +278,30 @@ def transform_schedule(df: pd.DataFrame, observed_at: datetime) -> Transformed:
     return result
 
 
+@dataclass(frozen=True)
+class LiveGame:
+    status: GameStatus
+    status_text: str
+    scores: dict[int, int]
+
+
+def transform_scoreboard(games: pd.DataFrame, teams: pd.DataFrame) -> dict[str, LiveGame]:
+    scores: dict[str, dict[int, int]] = defaultdict(dict)
+    for record in teams.to_dict("records"):
+        team, score = to_int(record.get("teamId")), to_int(record.get("score"))
+        if team and score is not None and score >= 0:
+            scores[str(record["gameId"])][team] = score
+    live = {}
+    for record in games.to_dict("records"):
+        status = SCHEDULE_STATUS.get(to_int(record.get("gameStatus")) or 0)
+        if status is None:
+            continue
+        game_id = str(record["gameId"])
+        text = str(record.get("gameStatusText", "")).strip()
+        live[game_id] = LiveGame(status, text, scores[game_id])
+    return live
+
+
 def transform_players(
     all_players: pd.DataFrame, index: pd.DataFrame | None
 ) -> list[dict[str, Any]]:

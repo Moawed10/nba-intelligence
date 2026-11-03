@@ -201,7 +201,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if ok else 1
 
     if args.command == "sync-worker":
-        worker.run_forever(get_engine(), client)
+        worker.run_forever(
+            get_engine(), client, NBAStatsClient(max_attempts=1, timeout=8.0, interval=0.0)
+        )
         return 0
     if args.command == "sync-once":
         print(json.dumps(worker.run_due(get_engine(), client), indent=2))

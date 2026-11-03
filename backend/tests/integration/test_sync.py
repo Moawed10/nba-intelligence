@@ -85,9 +85,6 @@ def test_polling_speeds_up_only_while_games_are_live(engine, source):
     with Session(engine) as s:
         # Tip-off is 06:30; the live window opens 15 minutes before.
         assert worker.next_interval("schedule", s, NOW + timedelta(minutes=20)) == timedelta(
-            seconds=5
-        )
-        assert worker.next_interval("schedule", s, NOW + timedelta(hours=8)) == timedelta(
             seconds=60
         )
         assert worker.next_interval("schedule", s, NOW + timedelta(days=2)) == timedelta(minutes=30)
@@ -195,12 +192,15 @@ def _live_game(engine, source) -> datetime:
     return NOW + timedelta(hours=1)
 
 
-def test_a_failed_fetch_during_a_game_waits_a_minute_instead_of_5_seconds(engine, source):
-    later = _live_game(engine, source)
-    source.error = RuntimeError("source refused the request")
-    outcomes = worker.run_due(engine, source, later)
-    assert outcomes["schedule"] == "failed"
-    assert schedules(engine)["schedule"] == later + timedelta(seconds=60)
+def test_a_live_poll_needs_no_source_call_when_no_game_is_on(engine, source):
+    assert worker.poll_live_once(engine, source, NOW) is None
+    assert not [c for c in source.calls if c["endpoint"] == "ScoreboardV3"]
+
+
+def test_live_polling_slows_down_when_the_source_fails_or_nothing_is_on():
+    assert worker.next_live_wait(0, True) == 5
+    assert worker.next_live_wait(0, False) == 30
+    assert [worker.next_live_wait(n, True) for n in (1, 2, 5)] == [10, 20, 60]
 
 
 def test_the_long_careers_job_waits_while_games_are_live(engine, source):

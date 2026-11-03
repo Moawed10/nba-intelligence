@@ -2,7 +2,7 @@ import json
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 from nba_api.stats.endpoints import (
@@ -13,6 +13,7 @@ from nba_api.stats.endpoints import (
     PlayerCareerStats,
     PlayerIndex,
     ScheduleLeagueV2,
+    ScoreboardV3,
     TeamYearByYearStats,
 )
 from nba_api.stats.static import teams as static_teams
@@ -27,6 +28,7 @@ from app.ingestion.transforms import (
     ADVANCED_FIRST_SEASON,
     ATYPICAL_SEASONS,
     LOG_SEASON_TYPE,
+    LiveGame,
     Rejection,
     current_season_start_year,
     season_label,
@@ -34,6 +36,7 @@ from app.ingestion.transforms import (
     transform_player_logs,
     transform_players,
     transform_schedule,
+    transform_scoreboard,
     transform_team_advanced,
     transform_team_history,
     transform_team_logs,
@@ -59,6 +62,9 @@ from app.models import (
 )
 
 log = logging.getLogger(__name__)
+
+
+LIVE_OR_FINAL = (GameStatus.in_progress, GameStatus.final)
 
 
 class PartialResponseError(Exception):
@@ -177,6 +183,44 @@ def ensure_season(session: Session, start_year: int) -> None:
 
 def _is_completed_season(start_year: int) -> bool:
     return start_year < current_season_start_year()
+
+
+def _apply_live_game(session: Session, game: Game, seen: LiveGame, now: datetime) -> bool:
+    status, ok = resolve_status(game.status, seen.status)
+    if not ok:
+        return False
+    values: dict[str, Any] = {}
+    if status != game.status:
+        values["status"] = status
+        kind = {
+            GameStatus.in_progress: SyncEventType.GAME_STARTED,
+            GameStatus.final: SyncEventType.GAME_COMPLETED,
+        }.get(status)
+        if kind:
+            emit_event(session, kind, f"{kind.value}:{game.id}", {"game_id": game.id}, None)
+    if status == GameStatus.in_progress or (status == GameStatus.final != game.status):
+        home, away = seen.scores.get(game.home_team_id), seen.scores.get(game.away_team_id)
+        if home is not None and away is not None:
+            values.update(home_score=home, away_score=away)
+    provider = game.provider_status or {}
+    if provider.get("gameStatusText") != seen.status_text:
+        values["provider_status"] = {**provider, "gameStatusText": seen.status_text}
+    if not any(getattr(game, k) != v for k, v in values.items()):
+        return False
+    for key, value in values.items():
+        setattr(game, key, value)
+    game.status_observed_at = now
+    return True
+
+
+def poll_live_scores(engine: Engine, client: StatsSource, dates: list[date], now: datetime) -> int:
+    seen: dict[str, LiveGame] = {}
+    for day in dates:
+        frames = client.fetch(ScoreboardV3, game_date=day.isoformat(), league_id="00").frames
+        seen.update(transform_scoreboard(frames[1], frames[2]))
+    with Session(engine) as session, session.begin():
+        games = session.scalars(select(Game).where(Game.id.in_(seen))).all()
+        return sum(_apply_live_game(session, g, seen[g.id], now) for g in games)
 
 
 def ingest_teams(client: StatsSource, season: int) -> Callable[[RunContext], None]:
@@ -440,9 +484,9 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
         ensure_season(session, season)
 
         existing = {
-            gid: (status, tipoff)
-            for gid, status, tipoff in session.execute(
-                select(Game.id, Game.status, Game.tipoff_at).where(
+            gid: (status, tipoff, provider_status)
+            for gid, status, tipoff, provider_status in session.execute(
+                select(Game.id, Game.status, Game.tipoff_at, Game.provider_status).where(
                     Game.id.in_([r["id"] for r in result.rows])
                 )
             )
@@ -450,7 +494,7 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
         rows = []
         feed_scores = {}
         for row in result.rows:
-            current, current_tipoff = existing.get(row["id"], (None, None))
+            current, current_tipoff, current_provider = existing.get(row["id"], (None, None, None))
             status, ok = resolve_status(current, row["status"])
             if not ok:
                 ctx.reject(
@@ -463,8 +507,10 @@ def ingest_schedule(client: StatsSource, season: int) -> Callable[[RunContext], 
                 )
                 continue
             rows.append(row)
-            just_finished = current is not None and current != status == GameStatus.final
-            if row["id"] in result.scores and (status == GameStatus.in_progress or just_finished):
+            if current == status == GameStatus.in_progress and current_provider:
+                row["provider_status"] = current_provider
+            just_changed = current is not None and current != status
+            if row["id"] in result.scores and just_changed and status in LIVE_OR_FINAL:
                 feed_scores[row["id"]] = result.scores[row["id"]]
             if current is None:
                 continue
