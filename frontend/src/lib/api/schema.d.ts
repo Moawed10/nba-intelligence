@@ -2072,16 +2072,22 @@ export interface components {
             ast: number | null;
             /** Blk */
             blk: number | null;
+            /** Fg3 Pct */
+            fg3_pct: number | null;
             /** Fg3M */
             fg3m: number | null;
             /** Fg Pct */
             fg_pct: number | null;
             /** Fg Pct Status */
             fg_pct_status: string | null;
+            /** Ft Pct */
+            ft_pct: number | null;
             /** Games Played */
             games_played: number;
             /** Min */
             min: number | null;
+            /** Plus Minus */
+            plus_minus: number | null;
             /** Pts */
             pts: number | null;
             /** Reb */
@@ -2090,6 +2096,10 @@ export interface components {
             season: string;
             /** Stl */
             stl: number | null;
+            /** Tov */
+            tov: number | null;
+            /** Ts Pct */
+            ts_pct: number | null;
         };
         /** SeasonCoverage */
         SeasonCoverage: {
@@ -3404,7 +3414,7 @@ export interface operations {
                 position?: string | null;
                 active?: boolean | null;
                 season?: string | null;
-                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min";
+                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min" | "tov" | "-tov" | "plus_minus" | "-plus_minus";
                 limit?: number;
                 offset?: number;
             };

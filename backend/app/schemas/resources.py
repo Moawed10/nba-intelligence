@@ -253,8 +253,13 @@ class SeasonAverages(BaseModel):
     fg3m: float | None
     stl: float | None
     blk: float | None
+    tov: float | None
+    plus_minus: float | None
     fg_pct: float | None
     fg_pct_status: str | None
+    fg3_pct: float | None
+    ft_pct: float | None
+    ts_pct: float | None
 
 
 class DirectoryPlayer(PlayerSummary):

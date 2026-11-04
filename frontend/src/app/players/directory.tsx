@@ -12,7 +12,7 @@ import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
 import type { DataStatus, DirectoryPlayer, PlayerPage, Team } from "@/lib/api/types";
-import { formatPercent, formatStat } from "@/lib/format";
+import { formatShooting, formatStat } from "@/lib/format";
 import { hrefWith, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,16 @@ import { type DirectoryState, parseDirectory, POSITIONS, SORT_COLUMNS } from "./
 
 export const PAGE_SIZE = 25;
 const MOBILE_STATS = ["pts", "reb", "ast", "min"] as const;
+const SHOOTING = [
+  { key: "fg_pct", label: "FG%", description: "Share of all shots made" },
+  { key: "fg3_pct", label: "3P%", description: "Share of 3-pointers made" },
+  { key: "ft_pct", label: "FT%", description: "Share of free throws made" },
+  {
+    key: "ts_pct",
+    label: "TS%",
+    description: "True shooting: scoring efficiency counting 3-pointers and free throws",
+  },
+] as const;
 
 function filtersOf(state: DirectoryState) {
   const { season, team, position, status, sort } = state;
@@ -96,7 +106,12 @@ function DirectoryTable({
 }) {
   return (
     <>
-      <div className="hidden md:block">
+      <div
+        role="region"
+        aria-label={caption}
+        tabIndex={0}
+        className="scroll-quiet hidden overflow-x-auto md:block"
+      >
         <table className="w-full border-collapse text-subhead">
           <caption className="sr-only">{caption}</caption>
           <thead className="text-footnote">
@@ -107,11 +122,17 @@ function DirectoryTable({
               {SORT_COLUMNS.map((column) => (
                 <SortHeader key={column.key} state={state} column={column} />
               ))}
-              <th scope="col" className="px-5 py-2.5 text-right font-medium text-muted-foreground">
-                <abbr title="Field-goal percentage" className="no-underline">
-                  FG%
-                </abbr>
-              </th>
+              {SHOOTING.map((column) => (
+                <th
+                  key={column.key}
+                  scope="col"
+                  className="px-3 py-2.5 text-right font-medium text-muted-foreground last:pr-5"
+                >
+                  <abbr title={column.description} className="no-underline">
+                    {column.label}
+                  </abbr>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -140,9 +161,14 @@ function DirectoryTable({
                         : formatStat(a?.[column.key] ?? null)}
                     </td>
                   ))}
-                  <td className="px-5 py-2 text-right text-muted-foreground tabular-nums">
-                    {formatPercent(a?.fg_pct ?? null)}
-                  </td>
+                  {SHOOTING.map((column) => (
+                    <td
+                      key={column.key}
+                      className="px-3 py-2 text-right text-muted-foreground tabular-nums last:pr-5"
+                    >
+                      {formatShooting(a?.[column.key] ?? null)}
+                    </td>
+                  ))}
                 </tr>
               );
             })}
@@ -160,6 +186,12 @@ function DirectoryTable({
                   <dd className={cn("tabular-nums", state.sortKey === key && "font-semibold text-primary")}>
                     {formatStat(player.season_averages?.[key] ?? null)}
                   </dd>
+                </div>
+              ))}
+              {SHOOTING.map(({ key, label }) => (
+                <div key={key}>
+                  <dt className="kicker">{label}</dt>
+                  <dd className="tabular-nums">{formatShooting(player.season_averages?.[key] ?? null)}</dd>
                 </div>
               ))}
             </dl>
@@ -186,7 +218,14 @@ function Podium({ players, column }: { players: DirectoryPlayer[]; column: (type
               className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border transition-colors duration-150 hover:bg-muted"
             >
               <div style={teamBandStyle(p.team)} className="team-band pt-3">
-                <PlayerCutout id={p.id} name={p.full_name} team={p.team} eager={i === 0} plain className="h-36 sm:h-44" />
+                <PlayerCutout
+                  id={p.id}
+                  name={p.full_name}
+                  team={p.team}
+                  eager={i === 0}
+                  plain
+                  className="h-36 sm:h-44"
+                />
               </div>
               <span className="flex items-end justify-between gap-3 p-4 pt-3">
                 <span className="min-w-0">

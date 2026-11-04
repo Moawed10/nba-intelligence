@@ -63,6 +63,15 @@ test.describe("team page", () => {
     await expect(page.getByText(/counts players listed as out/)).toBeVisible();
   });
 
+  test("the roster shows shooting percentages, turnovers and plus-minus", async ({ page }) => {
+    await page.goto("/teams/1");
+    const roster = page.getByRole("region", { name: "Roster" });
+    for (const name of ["FG%", "3P%", "FT%", "TS%", "TOV", "+/-"]) {
+      await expect(roster.getByRole("columnheader", { name })).toBeVisible();
+    }
+    await expect(roster.getByText("+2.5").first()).toBeVisible();
+  });
+
   test("fan posts are attributed, link to the original and say what they are", async ({ page }) => {
     await page.goto("/teams/1");
     const fans = page.getByRole("region", { name: "What people are saying" });

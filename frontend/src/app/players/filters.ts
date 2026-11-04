@@ -13,6 +13,9 @@ export const SORT_COLUMNS = [
   { key: "reb", label: "REB", description: "Rebounds per game" },
   { key: "ast", label: "AST", description: "Assists per game" },
   { key: "fg3m", label: "3PM", description: "3-pointers made per game" },
+  { key: "stl", label: "STL", description: "Steals per game" },
+  { key: "blk", label: "BLK", description: "Blocks per game" },
+  { key: "tov", label: "TOV", description: "Turnovers per game" },
 ] as const;
 
 export type SortKey = (typeof SORT_COLUMNS)[number]["key"] | "full_name";

@@ -386,7 +386,6 @@
 @utility material-nav {
   background: var(--nav-material);
   backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 /* Entrance motion in CSS: identical server and client markup, and the reduced-motion rule below

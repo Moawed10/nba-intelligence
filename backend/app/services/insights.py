@@ -36,7 +36,7 @@ from app.services.common import (
     stat_line,
     team_ref,
 )
-from app.stats import game_score, is_double_double, leader_minimum_games, per_game, ratio
+from app.stats import game_score, is_double_double, leader_minimum_games, per_game, ratio, ts_pct
 from app.sync.freshness import dataset_freshness
 
 DATASET = "season_stats"
@@ -58,7 +58,9 @@ def season_totals(season_id: int) -> Select:
         select(
             PlayerGameStats.player_id.label("player_id"),
             func.count().filter(played).label("games"),
-            *(total(s) for s in (*AVERAGED, "fgm", "fga")),
+            *(total(s) for s in (*AVERAGED, "tov", "fgm", "fga", "fg3a", "ftm", "fta")),
+            # No "else 0" here: a season the source gave no plus-minus for stays blank, not zero.
+            func.sum(case((played, PlayerGameStats.plus_minus))).label("plus_minus"),
         )
         .join(Game, Game.id == PlayerGameStats.game_id)
         .where(
@@ -72,10 +74,23 @@ def season_totals(season_id: int) -> Select:
 
 def averages_from_row(row, season: str) -> SeasonAverages:
     games = int(row.games or 0)
-    fg = ratio(float(row.fgm or 0), float(row.fga or 0))
-    values = {s: per_game(float(getattr(row, s) or 0), games) for s in AVERAGED}
+
+    def count(stat: str) -> float:
+        return float(getattr(row, stat) or 0)
+
+    fg = ratio(count("fgm"), count("fga"))
+    values = {s: per_game(count(s), games) for s in (*AVERAGED, "tov")}
+    plus_minus = None if row.plus_minus is None else per_game(float(row.plus_minus), games)
     return SeasonAverages(
-        season=season, games_played=games, fg_pct=fg.value, fg_pct_status=fg.status, **values
+        season=season,
+        games_played=games,
+        fg_pct=fg.value,
+        fg_pct_status=fg.status,
+        fg3_pct=ratio(count("fg3m"), count("fg3a")).value,
+        ft_pct=ratio(count("ftm"), count("fta")).value,
+        ts_pct=ts_pct(count("pts"), count("fga"), count("fta")).value,
+        plus_minus=plus_minus,
+        **values,
     )
 
 

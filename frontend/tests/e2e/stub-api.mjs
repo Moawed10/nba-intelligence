@@ -556,7 +556,8 @@ createServer((req, res) => {
             ...p,
             season_averages: {
               season, games_played: s.games_played, ...s.per_game,
-              fg_pct: s.shooting.fg_pct, fg_pct_status: null,
+              fg_pct: s.shooting.fg_pct, fg_pct_status: null, fg3_pct: s.shooting.fg3_pct,
+              ft_pct: s.shooting.ft_pct, ts_pct: 0.58, plus_minus: 2.5,
             },
           };
         });

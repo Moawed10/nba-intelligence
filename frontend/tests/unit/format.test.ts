@@ -6,6 +6,7 @@ import {
   formatCount,
   formatGameTime,
   formatPercent,
+  formatShooting,
   formatRelativeTime,
   formatSigned,
   formatStat,
@@ -21,6 +22,8 @@ describe("number formatting", () => {
     expect(formatCount(1234)).toBe("1,234");
     expect(formatCount(undefined)).toBe("—");
     expect(formatPercent(0.4567)).toBe("45.7%");
+    expect(formatShooting(0.5)).toBe("50.0%");
+    expect(formatShooting(null)).toBe("—");
     expect(formatPercent(null)).toBe("—");
   });
 

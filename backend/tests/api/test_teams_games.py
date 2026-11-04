@@ -184,3 +184,12 @@ def test_fan_posts_come_from_storage_with_only_recent_ones_best_first(client, en
 
 def test_fan_posts_for_an_unknown_team_are_a_404(client):
     assert client.get("/api/v1/teams/999999/fan-posts").status_code == 404
+
+
+def test_season_averages_include_shooting_rates_turnovers_and_plus_minus(client):
+    body = client.get("/api/v1/players", params={"season": SEASON_LABEL, "sort": "-tov"}).json()
+    averages = body["items"][0]["season_averages"]
+    assert 0 < averages["fg_pct"] <= 1 and averages["ts_pct"] > 0
+    assert averages["tov"] is not None and "plus_minus" in averages and "ft_pct" in averages
+    tov = [p["season_averages"]["tov"] for p in body["items"]]
+    assert tov == sorted(tov, reverse=True)

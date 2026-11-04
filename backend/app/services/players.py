@@ -61,11 +61,11 @@ IDENTITY_TTL = 86400
 SEARCH_THRESHOLD = 0.6
 PROFILE_RECENT_GAMES = 5
 
-STAT_SORTS = ("games", "pts", "reb", "ast", "fg3m", "stl", "blk", "min")
+STAT_SORTS = ("games", "pts", "reb", "ast", "fg3m", "stl", "blk", "min", "tov", "plus_minus")
 PlayerSort = Literal[
     "full_name", "-full_name", "last_name", "-last_name", "to_year", "-to_year",
     "games", "-games", "pts", "-pts", "reb", "-reb", "ast", "-ast", "fg3m", "-fg3m",
-    "stl", "-stl", "blk", "-blk", "min", "-min",
+    "stl", "-stl", "blk", "-blk", "min", "-min", "tov", "-tov", "plus_minus", "-plus_minus",
 ]  # fmt: skip
 GameLogSort = Literal[
     "game_date", "-game_date", "pts", "-pts", "reb", "-reb", "ast", "-ast",

@@ -4444,6 +4444,17 @@
             ],
             "title": "Blk"
           },
+          "fg3_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3 Pct"
+          },
           "fg3m": {
             "anyOf": [
               {
@@ -4477,6 +4488,17 @@
             ],
             "title": "Fg Pct Status"
           },
+          "ft_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ft Pct"
+          },
           "games_played": {
             "title": "Games Played",
             "type": "integer"
@@ -4491,6 +4513,17 @@
               }
             ],
             "title": "Min"
+          },
+          "plus_minus": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plus Minus"
           },
           "pts": {
             "anyOf": [
@@ -4528,6 +4561,28 @@
               }
             ],
             "title": "Stl"
+          },
+          "tov": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tov"
+          },
+          "ts_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ts Pct"
           }
         },
         "required": [
@@ -4540,8 +4595,13 @@
           "fg3m",
           "stl",
           "blk",
+          "tov",
+          "plus_minus",
           "fg_pct",
-          "fg_pct_status"
+          "fg_pct_status",
+          "fg3_pct",
+          "ft_pct",
+          "ts_pct"
         ],
         "title": "SeasonAverages",
         "type": "object"
@@ -7116,7 +7176,11 @@
                 "blk",
                 "-blk",
                 "min",
-                "-min"
+                "-min",
+                "tov",
+                "-tov",
+                "plus_minus",
+                "-plus_minus"
               ],
               "title": "Sort",
               "type": "string"

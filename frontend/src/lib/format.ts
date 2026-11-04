@@ -1,6 +1,11 @@
 const NUMBER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 const INTEGER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const PERCENT = new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 });
+const SHOOTING = new Intl.NumberFormat("en-US", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 /** Averages and predictions: one decimal. Missing values render as an em dash, never 0. */
 export function formatStat(value: number | null | undefined): string {
@@ -13,6 +18,11 @@ export function formatCount(value: number | null | undefined): string {
 
 export function formatPercent(value: number | null | undefined): string {
   return value == null || Number.isNaN(value) ? "—" : PERCENT.format(value);
+}
+
+/** Shooting percentages in a column: always one decimal, so the points line up. */
+export function formatShooting(value: number | null | undefined): string {
+  return value == null || Number.isNaN(value) ? "—" : SHOOTING.format(value);
 }
 
 export function formatSigned(value: number): string {
@@ -93,6 +103,7 @@ export function roughReturn(returnDate: string | null | undefined, now: Date = n
   if (!returnDate) return null;
   const days = Math.ceil((Date.parse(`${returnDate}T00:00:00Z`) - now.getTime()) / DAY_MS);
   if (days <= 0) return "Return date not updated";
-  const span = days === 1 ? "about 1 day" : days < 14 ? `about ${days} days` : `about ${Math.round(days / 7)} weeks`;
+  const span =
+    days === 1 ? "about 1 day" : days < 14 ? `about ${days} days` : `about ${Math.round(days / 7)} weeks`;
   return `Estimated back ${formatGameDate(returnDate)} (${span})`;
 }
