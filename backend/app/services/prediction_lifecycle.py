@@ -214,7 +214,7 @@ def freshness(
         return FreshnessState(Freshness.stale, "A different model release is now serving.")
     snapshot = predict(release, _features(session, player, game)).snapshot
     if hash_snapshot(snapshot) != row.feature_snapshot_sha256:
-        return FreshnessState(Freshness.stale, "New games have been played since this forecast.")
+        return FreshnessState(Freshness.stale, "New games or injury news since this forecast.")
     return FreshnessState(Freshness.current)
 
 

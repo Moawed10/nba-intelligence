@@ -23,8 +23,8 @@ from app.ml import metrics
 from app.ml.artifacts import library_versions, save_artifact
 from app.ml.classifier import CalibratedClassifier, fit_classifier
 from app.ml.conformal import MondrianConformal
-from app.ml.dataset import load_dataset
-from app.ml.features import FEATURES, TARGETS, feature_schema_version
+from app.ml.dataset import load_dataset, load_history
+from app.ml.features import TARGETS, TRAINING_FEATURES, feature_schema_version
 from app.ml.models import ALGORITHMS, Fitted, TrainConfig, fit_select, refit
 from app.ml.splits import DEFAULT_PLAN, SplitPlan, Splits, split
 from app.ml.team_model import TEAM_FEATURES, TeamOutcome, load_team_games, team_frame, train_team
@@ -94,7 +94,7 @@ def train_release(
     parts = split(frame, plan)
     result = TrainingResult(plan=plan, splits=parts, config=config)
     X_train, X_val, X_test = (
-        p[list(FEATURES)] for p in (parts.train, parts.validation, parts.test)
+        p[list(TRAINING_FEATURES)] for p in (parts.train, parts.validation, parts.test)
     )
     X_prod = pd.concat([X_train, X_val])
     minutes: dict[str, np.ndarray] = {}
@@ -202,7 +202,7 @@ def report(result: TrainingResult, data_version: int, leakage: int, rows: int) -
     return {
         "data_version": data_version,
         "feature_schema_version": feature_schema_version(),
-        "features": len(FEATURES),
+        "features": len(TRAINING_FEATURES),
         "plan": result.plan.describe(),
         "dates": dates,
         "rows": {
@@ -286,7 +286,7 @@ def write_release(
             persist: bool,
             conformal: dict | None,
             selected: bool,
-            features: tuple[str, ...] = FEATURES,
+            features: tuple[str, ...] = TRAINING_FEATURES,
         ) -> ModelVersion:
             path, digest = NOT_PERSISTED, ""
             if persist:
@@ -300,6 +300,7 @@ def write_release(
                     params=params,
                     conformal=conformal,
                     release=version,
+                    features=list(features),
                 )
                 path = relative
             row = ModelVersion(
@@ -443,7 +444,9 @@ def run(
     result = train_release(dataset.frame, config, targets=targets, classify=register)
     summary = report(result, dataset.data_version, dataset.leakage_violations, len(dataset.frame))
     if register:
-        result.team = train_team(team_frame(load_team_games(engine)), config, result.plan)
+        lines, _, _, _ = load_history(engine)
+        frame = team_frame(load_team_games(engine), lines)
+        result.team = train_team(frame, config, result.plan)
         summary["team"] = {
             "selected": result.team.selected,
             "scores": result.team.scores,

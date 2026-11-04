@@ -35,6 +35,7 @@ from app.models import (
     ModelVersion,
     Player,
     PlayerGameStats,
+    PlayerInjury,
     PlayerMatchup,
     Prediction,
     ReleaseStatus,
@@ -288,6 +289,60 @@ def test_served_defender_features_match_training_with_tracking_data(league):
     assert expected["matchup_possessions"] > 0
     for name in MATCHUP_FEATURES:
         assert served[name] == pytest.approx(expected[name], nan_ok=True), name
+
+
+def _served(league: Engine) -> pd.Series:
+    with Session(league) as s:
+        return inference.pregame_features(
+            s, player_id=STAR, team_id=1, opponent_id=2, is_home=True, game_id=NEXT_GAME.id,
+            game_date=date.fromisoformat(NEXT_GAME.date), season_id=SEASON,
+        )  # fmt: skip
+
+
+def _list_injury(
+    league: Engine, player: int, status: str = "Out", back: date | None = None
+) -> None:
+    with Session(league) as s, s.begin():
+        s.add(
+            PlayerInjury(
+                player_id=player,
+                status=status,
+                return_date=back,
+                source_endpoint="test",
+                reported_at=NOW,
+            )  # fmt: skip
+        )
+
+
+def test_a_teammate_listed_out_counts_as_missing(league):
+    assert _served(league)["absent_min"] == 0
+    _list_injury(league, player_id(1, 1))
+    served = _served(league)
+    assert served["absent_min"] > 0 and served["absent_pts"] > 0
+    assert served["opp_absent_min"] == 0
+
+
+def test_an_opponent_listed_out_counts_for_the_other_side(league):
+    _list_injury(league, TEAM_TWO)
+    served = _served(league)
+    assert served["opp_absent_min"] > 0 and served["absent_min"] == 0
+
+
+def test_a_day_to_day_player_or_one_back_by_tipoff_is_expected_to_play(league):
+    _list_injury(league, player_id(1, 1), status="Day-To-Day")
+    _list_injury(league, player_id(1, 2), back=date.fromisoformat(NEXT_GAME.date))
+    assert _served(league)["absent_min"] == 0
+
+
+def test_a_player_forecast_while_listed_out_is_not_his_own_absence(league):
+    _list_injury(league, STAR)
+    assert _served(league)["absent_min"] == 0
+
+
+def test_a_player_who_left_the_team_counts_as_missing(league):
+    with Session(league) as s, s.begin():
+        s.get(Player, player_id(1, 1)).current_team_id = 3
+    assert _served(league)["absent_min"] > 0
 
 
 def test_a_release_keeps_serving_on_the_features_it_was_trained_with():

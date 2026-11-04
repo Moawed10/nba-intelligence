@@ -28,7 +28,7 @@ const SECTIONS = [
   {
     title: "What it can't tell you",
     body: [
-      "Forecasts assume the player plays. The source has no injury or lineup feed, so a late scratch or a minutes limit is not anticipated.",
+      "Forecasts assume the player plays, and they count other players listed as out on ESPN's injury report. A late scratch, a day-to-day player who sits or a minutes limit is not anticipated.",
       "Ranges hold the actual result about 4 times in 5 on average, not in every game. Trades, role changes and injuries can make recent history less useful.",
       "Statistics the league did not record yet stay blank rather than zero: steals and blocks before 1973-74, turnovers before 1977-78 and 3-pointers before 1979-80.",
     ],

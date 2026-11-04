@@ -16,15 +16,16 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select, text
+from sqlalchemy import or_, select, text
 from sqlalchemy.orm import Session
 
 from app.ml.artifacts import load_artifact
+from app.ml.availability import ABSENCE_FEATURES, expected_lines
 from app.ml.conformal import MondrianConformal
 from app.ml.dataset import LINES_SQL, MATCHUPS_SQL, TEAM_SQL
 from app.ml.features import FEATURES, TARGETS, build_features
 from app.ml.matchups import MATCHUP_FEATURES, POSITION_GAMES, ROSTER_DAYS
-from app.models import ModelRelease, ModelVersion, ReleaseStatus
+from app.models import ModelRelease, ModelVersion, Player, PlayerInjury, ReleaseStatus
 
 PLAYER_LINES_SQL = LINES_SQL + " AND s.player_id = :player_id AND g.game_date < :before"
 # Both teams' recent games for rest, pace and defense, plus every team game the player appeared in
@@ -54,6 +55,13 @@ PLAYER_MATCHUPS_SQL = (
                       WHERE x.game_id = o.id AND x.def_team_id = :opponent_id)
         ORDER BY o.game_date DESC, o.id LIMIT :position_games)))"""
 )
+
+TEAM_LINES_SQL = (
+    LINES_SQL
+    + " AND s.team_id IN (:team_id, :opponent_id) AND g.season_id = :season_id"
+    + " AND g.game_date < :before"
+)
+OUT_STATUS = "Out"
 
 # Inputs shown next to a forecast: the statistic's own recent form plus the shared context.
 TEAM_TARGETS = ("team_pts", "home_win")
@@ -133,13 +141,13 @@ def active_release(session: Session, artifacts_dir: Path) -> ActiveRelease | Non
             if v.target.value == "double_double":
                 double_double = payload["model"]
             elif v.target.value in TEAM_TARGETS:
-                team[v.target.value] = payload
+                team[v.target.value] = {**payload, "features": v.features}
             else:
                 conformal = MondrianConformal.from_dict(
                     v.interval_calibration or payload["conformal"]
                 )
                 regressors[v.target.value] = RegressionModel(payload["model"], conformal)
-                features = tuple(payload["features"])
+                features = tuple(v.features)
         missing = set(TARGETS) - set(regressors)
         if missing:
             raise LookupError(
@@ -166,6 +174,66 @@ def _value(x: Any) -> float | None:
 
 def snapshot_hash(snapshot: dict[str, float | None]) -> str:
     return hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
+
+
+def _unavailable(
+    session: Session, lines: pd.DataFrame, game_date: date, playing: int | None
+) -> set[tuple[int, int]]:
+    """(player, team) pairs who won't play: listed out past this date, or no longer on that team.
+    `playing` is the player being forecast, who is assumed to play, as in training."""
+    listed = set(
+        session.scalars(
+            select(PlayerInjury.player_id).where(
+                PlayerInjury.status == OUT_STATUS,
+                or_(PlayerInjury.return_date.is_(None), PlayerInjury.return_date > game_date),
+            )
+        )
+    )
+    pairs = lines[["player_id", "team_id"]].drop_duplicates()
+    current = dict(
+        session.execute(
+            select(Player.id, Player.current_team_id).where(
+                Player.id.in_([int(p) for p in pairs["player_id"].unique()])
+            )
+        ).all()
+    )
+    return {
+        (int(r.player_id), int(r.team_id))
+        for r in pairs.itertuples()
+        if r.player_id != playing
+        and (r.player_id in listed or current.get(r.player_id) != r.team_id)
+    }
+
+
+def team_lines_tonight(
+    session: Session,
+    *,
+    team_id: int,
+    opponent_id: int,
+    game_id: str,
+    game_date: date,
+    season_id: int,
+    playing: int | None = None,
+) -> pd.DataFrame:
+    """Both teams' lines this season before the game, plus who is expected to play in it."""
+    lines = pd.read_sql(
+        text(TEAM_LINES_SQL),
+        session.connection(),
+        params={
+            "team_id": team_id,
+            "opponent_id": opponent_id,
+            "season_id": season_id,
+            "before": game_date,
+        },
+        parse_dates=["game_date"],
+    )
+    return expected_lines(
+        lines,
+        game_id=game_id,
+        game_date=pd.Timestamp(game_date),
+        season_id=season_id,
+        unavailable=_unavailable(session, lines, game_date, playing),
+    )
 
 
 def pregame_features(
@@ -218,7 +286,16 @@ def pregame_features(
         },
         parse_dates=["game_date"],
     )
-    return build_features(target, lines, teams, matchups).iloc[0]
+    tonight = team_lines_tonight(
+        session,
+        team_id=team_id,
+        opponent_id=opponent_id,
+        game_id=game_id,
+        game_date=game_date,
+        season_id=season_id,
+        playing=player_id,
+    )
+    return build_features(target, lines, teams, matchups, tonight).iloc[0]
 
 
 def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
@@ -263,7 +340,7 @@ def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
         },
         "context": {
             name: snapshot[name]
-            for name in (*CONTEXT_INPUTS, *MATCHUP_FEATURES)
+            for name in (*CONTEXT_INPUTS, *MATCHUP_FEATURES, *ABSENCE_FEATURES)
             if name in snapshot
         },
     }

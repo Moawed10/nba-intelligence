@@ -59,6 +59,8 @@ test.describe("team page", () => {
     await expect(page.getByText(/· #3/)).toBeVisible();
     await page.goto("/predict?player=1002");
     await expect(page.getByText(/This forecast assumes Test plays/)).toBeVisible();
+    await expect(page.getByText(/Missing about 18 points a game/)).toBeVisible();
+    await expect(page.getByText(/counts players listed as out/)).toBeVisible();
   });
 
   test("home court shows real splits and the home crowd", async ({ page }) => {

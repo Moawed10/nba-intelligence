@@ -22,7 +22,7 @@ const stale = {
   double_double_probability: null,
   supersedes_prediction_id: null,
   freshness: "stale",
-  freshness_reason: "New games have been played since this forecast.",
+  freshness_reason: "New games or injury news since this forecast.",
   values: [{ stat: "pts", point: 21.7, lower: 18.7, upper: 24.7, interval_level: 0.8 }],
   actuals: null,
   explanation: null,

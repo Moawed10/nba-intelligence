@@ -27,18 +27,31 @@ def _games(seed: int = 3, n: int = 40) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+NO_LINES = pd.DataFrame(
+    columns=["game_id", "game_date", "season_id", "team_id", "player_id", "minutes"]
+)
+
+
 def test_a_games_own_result_never_reaches_its_features():
     games = _games()
     target = games["game_id"].iloc[-5]
     changed = games.copy()
     changed.loc[changed["game_id"] == target, ["pts", "opp_pts"]] += 40
-    before = team_frame(games).set_index(["game_id", "team_id"]).loc[target, list(TEAM_FEATURES)]
-    after = team_frame(changed).set_index(["game_id", "team_id"]).loc[target, list(TEAM_FEATURES)]
+    before = (
+        team_frame(games, NO_LINES)
+        .set_index(["game_id", "team_id"])
+        .loc[target, list(TEAM_FEATURES)]
+    )
+    after = (
+        team_frame(changed, NO_LINES)
+        .set_index(["game_id", "team_id"])
+        .loc[target, list(TEAM_FEATURES)]
+    )
     pd.testing.assert_frame_equal(before, after)
 
 
 def test_rows_pair_each_team_with_its_opponents_form():
-    frame = team_frame(_games()).set_index(["game_id", "team_id"])
+    frame = team_frame(_games(), NO_LINES).set_index(["game_id", "team_id"])
     game = frame.index.get_level_values(0)[-1]
     rows = frame.loc[game]
     home, away = rows[rows["is_home"] == 1].iloc[0], rows[rows["is_home"] == 0].iloc[0]

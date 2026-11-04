@@ -5,7 +5,7 @@ from app.ml import artifacts
 from app.ml.artifacts import ArtifactMismatch, load_artifact, save_artifact
 from app.ml.conformal import MondrianConformal
 from app.ml.dataset import training_frame
-from app.ml.features import FEATURES, TARGETS
+from app.ml.features import FEATURES, TARGETS, TRAINING_FEATURES
 from app.ml.models import ALGORITHMS, FAST_CONFIG
 from app.ml.train import train_release
 from app.stats import Line, double_double_flags, is_double_double
@@ -36,11 +36,11 @@ def test_every_target_is_trained_with_every_family(result):
 def test_baseline_is_the_previous_ten_game_mean(result):
     test = result.splits.test
     baseline = result.targets["pts"].evaluated["rolling_baseline"]
-    np.testing.assert_allclose(baseline.predict(test[list(FEATURES)]), test["pts_avg_10"])
+    np.testing.assert_allclose(baseline.predict(test[list(TRAINING_FEATURES)]), test["pts_avg_10"])
 
 
 def test_predictions_are_never_negative(result):
-    X = result.splits.test[list(FEATURES)]
+    X = result.splits.test[list(TRAINING_FEATURES)]
     for outcome in result.targets.values():
         assert (outcome.production.predict(X) >= 0).all()
 
@@ -48,7 +48,7 @@ def test_predictions_are_never_negative(result):
 def test_double_double_classifier_reports_calibration(result):
     dd = result.double_double
     assert dd.held_out.algorithm in ("logistic", "xgboost_classifier")
-    probabilities = dd.held_out.predict_proba(result.splits.test[list(FEATURES)])
+    probabilities = dd.held_out.predict_proba(result.splits.test[list(TRAINING_FEATURES)])
     assert ((probabilities >= 0) & (probabilities <= 1)).all()
     assert {"brier", "log_loss", "base_rate_brier", "reliability"} <= set(dd.test)
 

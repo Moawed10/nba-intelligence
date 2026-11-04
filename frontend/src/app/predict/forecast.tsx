@@ -143,7 +143,7 @@ function ForecastView({
       )}
       {stale && (
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/60 px-4 py-3 text-subhead">
-          <span>New games have been played since this forecast was made.</span>
+          <span>New games or injury news since this forecast was made.</span>
           <button type="button" onClick={onRefresh} disabled={pending} className="btn btn-primary">
             {pending ? "Updating…" : "Update forecast"}
           </button>

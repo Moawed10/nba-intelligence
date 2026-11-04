@@ -11,7 +11,7 @@ For player *p* and scheduled game *g*, predict *p*'s box score in *g* using only
 | `pts`, `reb`, `ast`, `fg3m`, `stl`, `blk`, `min` | Regression | Point estimate + 80% interval |
 | `double_double` | Binary (≥ 10 in two of pts, reb, ast, stl, blk) | Calibrated probability |
 
-Predictions are **conditional on the player playing**. nba_api has no injury or lineup feed, so a scratched player is a missing outcome, not a zero.
+Predictions are **conditional on the player playing**: a scratched player is a missing outcome, not a zero. Other players' absences are an input ([Missing players](#missing-players)).
 
 ## Training data
 
@@ -21,7 +21,7 @@ Predictions are **conditional on the player playing**. nba_api has no injury or 
 
 ## Features
 
-All features for game *g* are computed from games with `game_date < g.game_date`. Implementation: `backend/app/ml/features.py`, used unchanged by training and inference.
+All features for game *g* are computed from games with `game_date < g.game_date`. The one exception is who plays in *g*, described under [Missing players](#missing-players). Implementation: `backend/app/ml/features.py`, used unchanged by training and inference.
 
 **How leakage is prevented in code:** each history (player form, own team, opponent, player-vs-opponent) is computed per game *including* that game, then joined to the target row with `merge_asof(..., allow_exact_matches=False)`, i.e. the latest row strictly before the target date. Every feature row carries the source date of each joined history; the training run counts rows whose source date is on or after the target date and refuses to train if any exist. Rolling windows use up to *n* previous games (fewer when fewer exist) across season boundaries; `season_games` and the 5-prior-game eligibility rule guard thin histories. 60 features in total.
 
@@ -131,6 +131,28 @@ A scheduled job finds pregame predictions whose games are final, writes `predict
 - The training run records `data_version`, git SHA, library versions, split dates and hyperparameters in the release.
 - Retraining with the same `data_version` and seed must reproduce test MAE within 1e-6 for deterministic models and 1e-3 for XGBoost with `tree_method="hist"` (a Phase 6 test).
 
-## Injuries
+## Missing players
 
-The models do not see injury reports. Predictions shows the player's own listing and both teams' lists beside the forecast and says so plainly. Report history is not stored from past seasons, so a feature trained on it isn't possible yet; a "missing teammates" feature could be derived from box scores.
+Forecasts account for who is missing from both teams, from release 2026.11.04-1. Implementation: `backend/app/ml/availability.py`.
+
+For each team-game, take the rotation players (15+ minutes per game played over the team's last 10 games this season) who don't play. The features are their summed recent minutes, points, rebounds, assists and shot attempts, per team game over that window, for the player's own team (`absent_*`) and the opponent (`opp_absent_*`). Someone out for several games counts less, because the team's recent form already reflects it. Reserves below the line are ignored: whether they play depends on how the game goes, which a forecast must not see.
+
+**Where tonight's lineup comes from, and the leak this leaves.** Production comes only from earlier games, but "who plays" is knowledge of the target game:
+
+- Training and backtests read it from the box score, so they know every absence, including late scratches.
+- A live forecast reads ESPN's report: a player counts as missing when listed `Out` with no return date on or before the game, or when he is no longer on that team. Day-to-day players are assumed to play. The forecast's own player is assumed to play, as in training. A changed report changes the snapshot, so the forecast goes stale and refreshes under the usual rules.
+
+**Reported accuracy is therefore a best case.** Live forecasts know less than the backtest did, and report history isn't available to replay. As a check on the 2024-25 validation season, with one fixed XGBoost configuration, the model trained on full knowledge was scored while knowing only the players who had also missed the previous game:
+
+| Stat | No absence features | Knows every absence | Knows only earlier absences |
+|---|---|---|---|
+| Minutes | 4.886 | 4.612 | 4.803 |
+| Points | 4.603 | 4.524 | 4.541 |
+| Rebounds | 1.908 | 1.880 | 1.885 |
+| Assists | 1.333 | 1.319 | 1.317 |
+
+Live accuracy should fall between the last two columns, and the Models page measures it from real results.
+
+Held-out 2025-26 test season, release 2026.10.29-3 (no absences) to 2026.11.04-1, mean absolute error: minutes 4.846 to 4.610, points 4.550 to 4.471, rebounds 1.885 to 1.862, assists 1.336 to 1.325, 3-pointers 0.890 to 0.886, steals 0.719 to 0.716, blocks unchanged at 0.511 (the rolling average is still selected), team points 9.70 to 9.48, win probability Brier 0.208 to 0.202. Intervals stayed within the coverage gate.
+
+**Other limits:** the report isn't kept over time, so a past forecast's inputs are in its stored snapshot but the report behind them isn't. Stars returning from long absences aren't counted as additions. Defender features are excluded from `TRAINING_FEATURES` until the matchup backfill covers the training seasons.

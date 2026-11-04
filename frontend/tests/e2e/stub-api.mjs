@@ -441,7 +441,7 @@ createServer((req, res) => {
       freshness: "current", freshness_reason: null, actuals: null,
       values: [value("pts", pts, 8), value("reb", 7, 3), value("ast", 5, 2.5), value("fg3m", 2, 1.5),
         value("stl", 1, 1), value("blk", 0.5, 0.5), value("min", 33, 6)],
-      explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: {} },
+      explanation: { method: "inputs", inputs: { pts: { pts_avg_5: 23, pts_avg_10: 22, pts_season_avg: 21, pts_vs_opponent: 20 } }, context: { absent_pts: 18.4, opp_absent_pts: 0 } },
     };
   };
   const tooFew = { code: "insufficient_data", message: "Forecasts need at least 5 games this season or last; this player has 2." };

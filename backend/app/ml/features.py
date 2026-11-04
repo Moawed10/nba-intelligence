@@ -11,11 +11,12 @@ import json
 import numpy as np
 import pandas as pd
 
+from app.ml.availability import ABSENCE_FEATURES, ABSENCE_LABELS, add_absences
 from app.ml.matchups import MATCHUP_FEATURES, MATCHUP_LABELS, defender_features
 from app.ml.matchups import SOURCE_DATES as MATCHUP_SOURCE_DATES
 from app.stats import possessions, rest_days_from_gap
 
-FEATURE_MODULE_VERSION = "2"
+FEATURE_MODULE_VERSION = "3"
 TARGETS = ("pts", "reb", "ast", "fg3m", "stl", "blk", "min")
 VOLUME = ("fga", "fg3a", "fta")
 WINDOWS = (3, 5, 10)
@@ -52,7 +53,12 @@ FEATURES: tuple[str, ...] = (
     *(f"{s}_vs_opponent" for s in TARGETS),
     "games_vs_opponent",
     *MATCHUP_FEATURES,
+    *ABSENCE_FEATURES,
 )
+
+# What a new release trains on. Defender features wait until the matchup backfill covers the
+# training seasons; on a few recent games they would only teach the model when a game was tracked.
+TRAINING_FEATURES: tuple[str, ...] = tuple(f for f in FEATURES if f not in MATCHUP_FEATURES)
 
 STAT_NAMES = {
     "pts": "Points",
@@ -90,6 +96,7 @@ FEATURE_LABELS: dict[str, str] = {
     **{f"{s}_vs_opponent": f"{STAT_NAMES[s]} against this opponent" for s in TARGETS},
     "games_vs_opponent": "Previous games against this opponent",
     **MATCHUP_LABELS,
+    **ABSENCE_LABELS,
 }
 
 SOURCE_DATES = (
@@ -188,8 +195,10 @@ def build_features(
     lines: pd.DataFrame,
     team_games: pd.DataFrame,
     matchups: pd.DataFrame | None = None,
+    team_lines: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Features for each target row (a player in a game) from history strictly before its date.
+    """Features for each target row (a player in a game) from history strictly before its date,
+    plus who plays in that game (`team_lines`, by default `lines`; see app/ml/availability.py).
 
     Returns one row per target, in the targets' order, with FEATURES, `prior_games` (games in the
     current and previous season), `eligible`, and the source date of every joined history.
@@ -244,6 +253,7 @@ def build_features(
         vs_avg = (df[f"{s}_vs_sum"] / n.where(n > 0)).fillna(0)
         df[f"{s}_vs_opponent"] = weight * vs_avg + (1 - weight) * df[f"{s}_season_avg"]
 
+    df = add_absences(df, lines if team_lines is None else team_lines)
     df = df.sort_values("_row").reset_index(drop=True)
     guarded = defender_features(base, matchups)
     df = pd.concat([df, guarded.reset_index(drop=True)], axis=1)

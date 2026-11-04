@@ -279,10 +279,33 @@ function HomeCourtNote({
   );
 }
 
-/** Both teams' injury lists for this game. Stated plainly: the forecast doesn't adjust for them yet. */
-function WhoIsOut({ rosters, playerId }: { rosters: (TeamDetail | null | undefined)[]; playerId: number }) {
-  const teams = rosters.flatMap((r) =>
-    r ? [{ team: r.team, listed: r.roster.filter((p) => p.injury && p.id !== playerId) }] : [],
+function countedMissing(prediction: { explanation?: unknown } | null): (number | null)[] | null {
+  const context = (prediction?.explanation as { context?: Record<string, number | null> } | undefined)
+    ?.context;
+  return context && "absent_pts" in context ? [context.absent_pts, context.opp_absent_pts] : null;
+}
+
+/** Both teams' injury lists for this game, and what the stored forecast counted from them. An older model release didn't count them, and says so. */
+function WhoIsOut({
+  rosters,
+  playerId,
+  counted,
+}: {
+  rosters: (TeamDetail | null | undefined)[];
+  playerId: number;
+  /** Points a game each team is missing, as the forecast saw them; null if it didn't see them. */
+  counted: (number | null)[] | null;
+}) {
+  const teams = rosters.flatMap((r, i) =>
+    r
+      ? [
+          {
+            team: r.team,
+            listed: r.roster.filter((p) => p.injury && p.id !== playerId),
+            missing: counted?.[i] ?? null,
+          },
+        ]
+      : [],
   );
   if (teams.length === 0) return null;
   return (
@@ -291,11 +314,16 @@ function WhoIsOut({ rosters, playerId }: { rosters: (TeamDetail | null | undefin
         Who&apos;s hurt in this game
       </h3>
       <div className="grid gap-6 sm:grid-cols-2">
-        {teams.map(({ team, listed }) => (
+        {teams.map(({ team, listed, missing }) => (
           <div key={team.id}>
             <p className="font-medium">
               {team.city} {team.name}
             </p>
+            {missing != null && missing >= 1 && (
+              <p className="text-footnote text-muted-foreground">
+                Missing about {Math.round(missing)} points a game
+              </p>
+            )}
             {listed.length === 0 ? (
               <p className="text-footnote text-muted-foreground">Nobody listed</p>
             ) : (
@@ -315,8 +343,9 @@ function WhoIsOut({ rosters, playerId }: { rosters: (TeamDetail | null | undefin
         ))}
       </div>
       <p className="text-footnote text-muted-foreground">
-        From ESPN&apos;s injury report. The forecast above doesn&apos;t adjust for missing teammates or
-        opponents yet.
+        {counted
+          ? "From ESPN's injury report. The forecast above counts players listed as out, and recent trades, on both teams. Day-to-day players are assumed to play."
+          : "From ESPN's injury report. This forecast came from an older model that doesn't adjust for missing teammates or opponents."}
       </p>
     </section>
   );
@@ -459,8 +488,8 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
                   {injuryLabel(profile.data.injury)} · <ReturnEstimate injury={profile.data.injury} />
                 </p>
                 <p className="mt-1 text-muted-foreground">
-                  This forecast assumes {firstName} plays. The model doesn&apos;t see the injury report, so if{" "}
-                  {firstName} sits, these numbers won&apos;t apply.
+                  This forecast assumes {firstName} plays, so if {firstName} sits, these numbers won&apos;t
+                  apply.
                 </p>
               </div>
             )}
@@ -506,7 +535,11 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               isHome={Boolean(isHome)}
             />
 
-            <WhoIsOut rosters={[ownRoster?.data, opponentRoster?.data]} playerId={player.id} />
+            <WhoIsOut
+              rosters={[ownRoster?.data, opponentRoster?.data]}
+              playerId={player.id}
+              counted={countedMissing(selected?.prediction ?? null)}
+            />
 
             <section aria-labelledby="good-to-know" className="space-y-3">
               <h3 id="good-to-know" className="kicker">

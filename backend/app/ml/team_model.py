@@ -15,6 +15,7 @@ from sqlalchemy import Engine, text
 
 from app.db import session_scope
 from app.ml import metrics
+from app.ml.availability import ABSENCE_FEATURES, add_absences
 from app.ml.conformal import MondrianConformal
 from app.ml.models import ALGORITHMS, Fitted, TrainConfig, fit_select, refit
 from app.ml.splits import SplitPlan
@@ -36,6 +37,7 @@ TEAM_FEATURES: tuple[str, ...] = (
     *OWN,
     "is_home",
     *(f"opp_{name}" for name in OWN if name != "season_games"),
+    *ABSENCE_FEATURES,
 )
 MIN_PRIOR_GAMES = 10
 REST_CAP = 7
@@ -71,8 +73,9 @@ def team_form(games: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def team_frame(games: pd.DataFrame) -> pd.DataFrame:
-    """Training rows: each team-game with its own form, the opponent's form and the outcome."""
+def team_frame(games: pd.DataFrame, lines: pd.DataFrame) -> pd.DataFrame:
+    """Training rows: each team-game with its own form, the opponent's form, who each side is
+    missing (from player `lines`) and the outcome."""
     form = team_form(games)
     own = form[["game_id", "team_id", "opponent_id", "game_date", "season_id", "is_home", "pts",
                 "prior_games", *OWN]].copy()  # fmt: skip
@@ -84,6 +87,7 @@ def team_frame(games: pd.DataFrame) -> pd.DataFrame:
     frame["eligible"] = (frame["prior_games"] >= MIN_PRIOR_GAMES) & (
         frame["opp_prior_games"] >= MIN_PRIOR_GAMES
     )
+    frame = add_absences(frame, lines)
     return frame.sort_values(["game_date", "game_id", "is_home"]).reset_index(drop=True)
 
 

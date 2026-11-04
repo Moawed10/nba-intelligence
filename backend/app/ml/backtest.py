@@ -77,9 +77,9 @@ def run_backtest(
                 artifacts_dir / v.artifact_path, v.artifact_sha256, release.feature_schema_version
             )
             entry["model"] = payload["model"]
-            features = list(payload["features"])
             calibration = v.interval_calibration or payload.get("conformal")
             entry["conformal"] = MondrianConformal.from_dict(calibration) if calibration else None
+        features = list(models["pts"]["version"].features)
         release_id, schema = release.id, release.feature_schema_version
         test_start, test_end = release.test_start, release.test_end
 

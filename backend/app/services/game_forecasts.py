@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session, aliased
 from app.api.deps import Context
 from app.api.errors import ApiError, not_found
 from app.ml.conformal import MondrianConformal
-from app.ml.inference import ActiveRelease, snapshot_hash
+from app.ml.inference import ActiveRelease, snapshot_hash, team_lines_tonight
 from app.ml.team_model import MIN_PRIOR_GAMES, TEAM_FEATURES, TEAM_GAMES_SQL, team_frame
 from app.models import (
     Game,
@@ -50,7 +50,14 @@ HISTORY_SQL = TEAM_GAMES_SQL + " AND t.team_id IN (:home, :away) AND g.game_date
 INTERVAL_LEVEL = 0.8
 
 
-def _snapshot(session: Session, game: Game) -> tuple[dict[str, float | None], int]:
+def _features(release: ActiveRelease) -> tuple[str, ...]:
+    """The inputs this release's score model was trained on; older releases have fewer."""
+    return tuple(release.team["team_pts"].get("features") or TEAM_FEATURES)
+
+
+def _snapshot(
+    session: Session, game: Game, features: tuple[str, ...]
+) -> tuple[dict[str, float | None], int]:
     """Home and away feature values keyed `home_<feature>` / `away_<feature>`, and the smaller
     number of earlier games either team has."""
     history = pd.read_sql(
@@ -76,22 +83,31 @@ def _snapshot(session: Session, game: Game) -> tuple[dict[str, float | None], in
             )
         ]
     )
-    frame = team_frame(pd.concat([history, target], ignore_index=True))
+    tonight = team_lines_tonight(
+        session,
+        team_id=game.home_team_id,
+        opponent_id=game.away_team_id,
+        game_id=game.id,
+        game_date=game.game_date,
+        season_id=game.season_id,
+    )
+    frame = team_frame(pd.concat([history, target], ignore_index=True), tonight)
     rows = frame[frame["game_id"] == game.id].set_index("team_id")
     home, away = rows.loc[game.home_team_id], rows.loc[game.away_team_id]
     snapshot = {
         f"{side}_{name}": None if pd.isna(row[name]) else float(row[name])
         for side, row in (("home", home), ("away", away))
-        for name in TEAM_FEATURES
+        for name in features
     }
     return snapshot, int(min(home["prior_games"], away["prior_games"]))
 
 
 def _predict(release: ActiveRelease, snapshot: dict[str, float | None]) -> dict[str, float]:
+    features = _features(release)
     X = pd.DataFrame(
-        [[math.nan if (v := snapshot[f"{side}_{n}"]) is None else v for n in TEAM_FEATURES]
+        [[math.nan if (v := snapshot[f"{side}_{n}"]) is None else v for n in features]
          for side in ("home", "away")],
-        columns=list(TEAM_FEATURES),
+        columns=list(features),
     )  # fmt: skip
     points = release.team["team_pts"]
     predicted = np.maximum(0, points["model"].predict(X))
@@ -123,7 +139,7 @@ def forecast_game(
     if started(game, now):
         raise ApiError(409, "game_already_started", "Pregame forecasts close at tip-off.")
 
-    snapshot, prior = _snapshot(session, game)
+    snapshot, prior = _snapshot(session, game, _features(release))
     if prior < MIN_PRIOR_GAMES:
         raise ApiError(
             422,
@@ -181,9 +197,9 @@ def freshness(
         return FreshnessState(Freshness.final_pregame, "Last forecast made before tip-off.")
     if release is None or release.id != row.release_id:
         return FreshnessState(Freshness.stale, "A different model release is now serving.")
-    snapshot, _ = _snapshot(session, game)
+    snapshot, _ = _snapshot(session, game, _features(release))
     if snapshot_hash(snapshot) != row.feature_snapshot_sha256:
-        return FreshnessState(Freshness.stale, "New games have been played since this forecast.")
+        return FreshnessState(Freshness.stale, "New games or injury news since this forecast.")
     return FreshnessState(Freshness.current)
 
 
