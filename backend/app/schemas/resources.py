@@ -425,6 +425,24 @@ class HomeCourt(BaseModel):
     meta: Meta
 
 
+class FanPostOut(BaseModel):
+    url: str
+    author_handle: str
+    author_name: str | None
+    text: str
+    posted_at: datetime
+    likes: int
+    reposts: int
+    replies: int
+
+
+class FanPosts(BaseModel):
+    team_id: int
+    source: str
+    posts: list[FanPostOut]
+    meta: Meta
+
+
 class TeamHistory(BaseModel):
     team: TeamRef
     seasons: list[HistoricSeason]

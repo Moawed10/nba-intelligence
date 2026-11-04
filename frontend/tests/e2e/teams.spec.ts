@@ -63,6 +63,16 @@ test.describe("team page", () => {
     await expect(page.getByText(/counts players listed as out/)).toBeVisible();
   });
 
+  test("fan posts are attributed, link to the original and say what they are", async ({ page }) => {
+    await page.goto("/teams/1");
+    const fans = page.getByRole("region", { name: "What people are saying" });
+    await expect(fans.getByText(/Synthetic test post/)).toBeVisible();
+    const link = fans.getByRole("link", { name: /@fixture\.example\.com/ });
+    await expect(link).toHaveAttribute("href", "https://bsky.app/profile/fixture.example.com/post/abc");
+    await expect(link).toHaveAttribute("rel", /noopener/);
+    await expect(fans.getByText(/isn't a survey of all fans/)).toBeVisible();
+  });
+
   test("home court shows real splits and the home crowd", async ({ page }) => {
     await page.goto("/teams/1");
     const section = page.getByRole("region", { name: "Home court", exact: true });

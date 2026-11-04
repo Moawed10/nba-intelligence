@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -6,6 +7,7 @@ from sqlalchemy.orm import Session, aliased
 from app.api.deps import Context
 from app.api.errors import not_found
 from app.models import (
+    FanPost,
     Game,
     GameStatus,
     Player,
@@ -19,6 +21,8 @@ from app.models import (
 )
 from app.schemas.common import Shooting
 from app.schemas.resources import (
+    FanPostOut,
+    FanPosts,
     HistoricSeason,
     HomeCourt,
     InjuryReport,
@@ -235,6 +239,32 @@ def home_court(ctx: Context, team_id: int, season: str | None) -> HomeCourt:
         )
 
     return ctx.cached_model("home_court", TEAM_TTL, (team_id, season), DATASET, compute)
+
+
+FAN_POST_DATASET = "fan_posts"
+FAN_POST_LIMIT = 5
+FAN_POST_WINDOW = timedelta(days=7)
+
+
+def fan_posts(ctx: Context, team_id: int) -> FanPosts:
+    """The team's most relevant recent Bluesky posts, as last stored by the worker."""
+
+    def compute() -> FanPosts:
+        _team_or_404(ctx.session, team_id)
+        rows = ctx.session.scalars(
+            select(FanPost)
+            .where(FanPost.team_id == team_id, FanPost.posted_at >= ctx.now - FAN_POST_WINDOW)
+            .order_by(FanPost.score.desc(), FanPost.uri)
+            .limit(FAN_POST_LIMIT)
+        )
+        return FanPosts(
+            team_id=team_id,
+            source="Bluesky",
+            posts=[FanPostOut.model_validate(r, from_attributes=True) for r in rows],
+            meta=ctx.meta(FAN_POST_DATASET),
+        )
+
+    return ctx.cached_model("fan_posts", TEAM_TTL, (team_id,), FAN_POST_DATASET, compute)
 
 
 HISTORY_PER_GAME = ("pts", "reb", "oreb", "ast", "stl", "blk", "tov", "fg3m", "pf")

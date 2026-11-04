@@ -4,7 +4,14 @@ from fastapi import APIRouter, Path, Query
 
 from app.api.deps import Ctx
 from app.models import SeasonType
-from app.schemas.resources import HomeCourt, Team, TeamDetail, TeamHistory, TeamSeasonStats
+from app.schemas.resources import (
+    FanPosts,
+    HomeCourt,
+    Team,
+    TeamDetail,
+    TeamHistory,
+    TeamSeasonStats,
+)
 from app.services import teams
 
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -40,6 +47,12 @@ def get_team_stats(
 def get_home_court(ctx: Ctx, team_id: TeamId, season: SeasonLabel = None) -> HomeCourt:
     ctx.always_revalidate()
     return teams.home_court(ctx, team_id, season)
+
+
+@router.get("/{team_id}/fan-posts", response_model=FanPosts)
+def get_fan_posts(ctx: Ctx, team_id: TeamId) -> FanPosts:
+    ctx.always_revalidate()
+    return teams.fan_posts(ctx, team_id)
 
 
 @router.get("/{team_id}/history", response_model=TeamHistory)

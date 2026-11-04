@@ -15,6 +15,7 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
+    Text,
     func,
     literal_column,
 )
@@ -325,3 +326,24 @@ class PlayerInjury(Provenance, Base):
     side: Mapped[str | None] = mapped_column(String(24))
     return_date: Mapped[date | None] = mapped_column(Date)
     reported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class FanPost(Provenance, Base):
+    """A team's most relevant recent public Bluesky posts, replaced on every sync, so a post its
+    author deleted leaves with the next one."""
+
+    __tablename__ = "fan_posts"
+
+    team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
+    )
+    uri: Mapped[str] = mapped_column(String(512), primary_key=True)
+    url: Mapped[str] = mapped_column(Text)
+    author_handle: Mapped[str] = mapped_column(String(253))
+    author_name: Mapped[str | None] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+    posted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    likes: Mapped[int] = mapped_column(Integer)
+    reposts: Mapped[int] = mapped_column(Integer)
+    replies: Mapped[int] = mapped_column(Integer)
+    score: Mapped[float] = mapped_column(Float)

@@ -9,6 +9,7 @@ from app.ingestion import jobs
 from app.ingestion.client import FetchResult, RetryableSourceError, UnexpectedResponseError
 from app.ingestion.writer import upsert
 from app.models import (
+    FanPost,
     Game,
     GameStatus,
     IngestionRun,
@@ -46,7 +47,7 @@ def source(engine) -> FakeSource:
             update(SyncSchedule)
             .where(
                 SyncSchedule.job.in_(
-                    ["metadata", "corrections", "careers", "injuries", "attendance"]
+                    ["metadata", "corrections", "careers", "injuries", "attendance", "fan_posts"]
                 )
             )
             .values(next_run_at=NOW + timedelta(days=365))
@@ -294,6 +295,35 @@ def test_injury_sync_replaces_the_report_and_drops_recovered_players(engine):
         assert list(s.scalars(select(PlayerInjury.player_id))) == [2]
     with pytest.raises(jobs.PartialResponseError):
         jobs.run_job(engine, "injuries", {}, jobs.ingest_injuries(report()))
+
+
+def test_fan_post_sync_replaces_posts_so_deleted_ones_leave(engine):
+    with Session(engine) as s, s.begin():
+        upsert(s, Team, [
+            {"id": 1, "abbreviation": "AAA", "city": "Testville", "name": "Lakers"},
+        ], ["id"])  # fmt: skip
+    now = datetime.now(UTC).isoformat()
+
+    def found(*keys):
+        posts = [{
+            "uri": f"at://did:plc:x/app.bsky.feed.post/{k}",
+            "author": {"handle": f"{k}.example.com"},
+            "record": {"text": "The Lakers look great on defense this week", "createdAt": now},
+            "likeCount": 9,
+        } for k in keys]  # fmt: skip
+        return lambda query, since: posts
+
+    jobs.run_job(engine, "fan_posts", {}, jobs.ingest_fan_posts(found("a", "b")))
+    jobs.run_job(engine, "fan_posts", {}, jobs.ingest_fan_posts(found("b")))
+    with Session(engine) as s:
+        assert [p.author_handle for p in s.scalars(select(FanPost))] == ["b.example.com"]
+    with pytest.raises(jobs.PartialResponseError):
+        jobs.run_job(engine, "fan_posts", {}, jobs.ingest_fan_posts(found()))
+
+
+def test_the_fan_post_job_does_nothing_without_credentials(engine, source, monkeypatch):
+    monkeypatch.setattr("app.sync.worker.fan_posts.configured", lambda: False)
+    assert worker.job_executions("fan_posts", source, engine, SEASON) == []
 
 
 def test_matchup_games_with_unusable_replies_are_skipped_without_ending_the_batch(engine, source):

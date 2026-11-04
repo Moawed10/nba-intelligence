@@ -40,6 +40,7 @@ export type TeamRef = Schemas["TeamRef"];
 export type DatasetStatus = Schemas["DatasetStatus"];
 export type Prediction = Schemas["Prediction"];
 export type InjuryReport = Schemas["InjuryReport"];
+export type FanPosts = Schemas["FanPosts"];
 export type HomeCourt = Schemas["HomeCourt"];
 export type VenueSplit = Schemas["VenueSplit"];
 export type RosterPlayer = Schemas["RosterPlayer"];

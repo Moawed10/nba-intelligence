@@ -62,7 +62,7 @@ def test_overview_without_a_model_release(client):
     assert body["standouts"]["performances"][0]["player_id"] == STAR
     assert body["leaders"]["leaders"][0]["player_id"] == STAR
     assert body["model"] is None
-    assert len(body["datasets"]) == 8
+    assert len(body["datasets"]) == 9
     assert client.get("/api/v1/models").json() == []
     assert client.get("/api/v1/models/2099.01.01-1").status_code == 404
     assert client.get("/api/v1/models/latest").status_code == 422

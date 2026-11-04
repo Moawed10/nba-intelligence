@@ -58,6 +58,7 @@ Module = file under `backend/app/api/v1/`. Response models live in `backend/app/
 | GET | `/teams` | teams.py | `list[Team]` | All 30 teams | 24 h |
 | GET | `/teams/{team_id}` | teams.py | `TeamDetail` | Identity, record, roster with jersey numbers and current injuries | 15–60 min |
 | GET | `/teams/{team_id}/home-court` | teams.py | `HomeCourt` | Regular-season results at home and away for the team and each rostered player, plus average reported attendance | 15–60 min |
+| GET | `/teams/{team_id}/fan-posts` | teams.py | `FanPosts` | The team's most relevant recent public Bluesky posts, as last stored by the worker ([Fan posts](data-synchronization.md#fan-posts)) | 15–60 min |
 | GET | `/teams/{team_id}/stats` | teams.py | `TeamSeasonStats` | Pace, offensive/defensive rating computed from team logs | 15–60 min |
 | GET | `/games` | games.py | `Page[GameSummary]` | `date_from`/`date_to` (≤ 31 days), `team_id`, `status` | by status |
 | GET | `/games/upcoming` | games.py | `list[GameSummary]` | Scheduled games, `days` ≤ 14, optional `player_id` (their team's games) | 5–15 min |

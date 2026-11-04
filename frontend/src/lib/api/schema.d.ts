@@ -604,6 +604,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/teams/{team_id}/fan-posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Fan Posts */
+        get: operations["get_fan_posts_api_v1_teams__team_id__fan_posts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/teams/{team_id}/history": {
         parameters: {
             query?: never;
@@ -923,6 +940,38 @@ export interface components {
         /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
+        };
+        /** FanPostOut */
+        FanPostOut: {
+            /** Author Handle */
+            author_handle: string;
+            /** Author Name */
+            author_name: string | null;
+            /** Likes */
+            likes: number;
+            /**
+             * Posted At
+             * Format: date-time
+             */
+            posted_at: string;
+            /** Replies */
+            replies: number;
+            /** Reposts */
+            reposts: number;
+            /** Text */
+            text: string;
+            /** Url */
+            url: string;
+        };
+        /** FanPosts */
+        FanPosts: {
+            meta: components["schemas"]["Meta"];
+            /** Posts */
+            posts: components["schemas"]["FanPostOut"][];
+            /** Source */
+            source: string;
+            /** Team Id */
+            team_id: number;
         };
         /**
          * Freshness
@@ -4918,6 +4967,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamDetail"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_fan_posts_api_v1_teams__team_id__fan_posts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FanPosts"];
                 };
             };
             /** @description Bad Request */

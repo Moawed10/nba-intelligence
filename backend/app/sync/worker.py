@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion import jobs
+from app.ingestion import fan_posts, jobs
 from app.ingestion.client import StatsSource
 from app.ingestion.transforms import current_season_start_year
 from app.models import (
@@ -69,6 +69,7 @@ JOBS: dict[str, JobSpec] = {
     # Who guarded whom in finished games of this season; published some hours after the final.
     "matchups": JobSpec(interval=timedelta(hours=3)),
     "injuries": JobSpec(interval=timedelta(minutes=30)),
+    "fan_posts": JobSpec(interval=timedelta(hours=1)),
     "attendance": JobSpec(interval=timedelta(hours=6)),
     # Scores finished games and refreshes stale forecasts for games in the next 48 hours. It writes
     # no NBA data, so it runs outside ingestion runs and does not advance data_version.
@@ -172,6 +173,8 @@ def job_executions(job: str, client: StatsSource, engine: Engine, season: int) -
         return [("attendance", {"season": season}, jobs.ingest_attendance(client, missing))]
     if job == "injuries":
         return [("injuries", {}, jobs.ingest_injuries())]
+    if job == "fan_posts":
+        return [("fan_posts", {}, jobs.ingest_fan_posts())] if fan_posts.configured() else []
     if job == "careers":
         with Session(engine) as s:
             active = list(s.scalars(select(Player.id).where(Player.is_active).order_by(Player.id)))

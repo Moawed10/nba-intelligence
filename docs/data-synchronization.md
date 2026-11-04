@@ -177,3 +177,17 @@ Score forecasts follow the same rules as player forecasts. Freshness is derived,
 `player_matchups` holds the NBA's per-game tracking of which defender guarded which player (`boxscorematchupsv3`, one request per game, published some hours after the final). The `matchups` sync job fetches finished games of the current season every 3 hours.
 
 **Backfill:** `python -m app.cli ingest matchups [--seasons 2025,2024] [--interval 10]`, newest games first. It is safe to stop and re-run, since it only asks for games with no rows yet. On 2026-11-03 a backfill at about one request per 3 seconds made stats.nba.com stop answering this connection after a few hundred requests, which also failed the schedule sync for two hours. So it now defaults to one request every 10 seconds, waits while games are live, keeps its work in short runs, and stops after two failed games in a row. Do not lower the interval without watching the schedule job.
+
+## Fan posts
+
+`fan_posts` holds each team's most relevant recent public Bluesky posts. The `fan_posts` job searches once an hour with the owner's app password (`NBA_BLUESKY_HANDLE`, `NBA_BLUESKY_APP_PASSWORD`; never committed, and the job does nothing without them). Only the worker contacts Bluesky; the API and the browser read stored rows. Implementation: `backend/app/ingestion/fan_posts.py`.
+
+**Search:** the team's nickname and full name as phrases, past 7 days, English, Bluesky's "top" order. Nicknames that are everyday words or shared with other leagues (Heat, Magic, Kings and others) search the full name only.
+
+**A post is kept only if it:** names the team as whole words; has at least 3 likes and 25 characters; isn't a reply or a quote, which make no sense without their context; isn't mostly numbers or an automated score line; and contains no profanity, betting or political terms from a short word list.
+
+**Respecting authors:** a post is dropped if its author has any label, including `!no-unauthenticated` (the author's request not to be shown to logged-out viewers), or if the post has a moderation label. Each sync replaces the stored set, so a deleted post leaves within about an hour. Every post on the page shows its author and links to the original.
+
+**Ranking:** `(likes + 2 x reposts + replies)`, halving every 3 days; one post per author; 8 stored per team, 5 shown.
+
+**Limits, stated on the page:** this is what got engagement among posts mentioning a team, not a measure of fan opinion. Word lists are blunt, so an off-topic or unkind post can still appear. Sentiment is not analysed.

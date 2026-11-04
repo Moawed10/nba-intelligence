@@ -1117,3 +1117,9 @@ The "recent games" block from the original design was folded into the game log, 
 **Completed:** player and team forecasts account for players missing from both teams (`app/ml/availability.py`). Release 2026.11.04-1 trained, backtested and activated after beating 2026.10.29-3 on the held-out season for every stat except blocks, which stays on the rolling average. Defender features are held out of training (`TRAINING_FEATURES`) until the backfill is complete. Results and limits: [Missing players](model-methodology.md#missing-players).
 
 **Not done:** live accuracy of the new release isn't measured yet, because no scored games have used it. The backtest knows every absence, so it is a best case.
+
+### Session — 2026-11-04 (fan posts)
+
+**Completed:** team pages show the most relevant recent public Bluesky posts, filtered, attributed and linked to the original. Hourly worker job; no request from the API or browser reaches Bluesky. [Fan posts](data-synchronization.md#fan-posts).
+
+**Not done:** Reddit and other networks; sentiment; posts tied to a specific game.

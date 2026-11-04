@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -24,7 +25,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion import injuries
+from app.ingestion import fan_posts, injuries
 from app.ingestion.client import (
     FetchResult,
     StatsSource,
@@ -55,6 +56,7 @@ from app.ingestion.transforms import (
 from app.ingestion.writer import UpsertCounts, detect_corrections, provenance, upsert
 from app.models import (
     BOX_COLUMNS,
+    FanPost,
     Game,
     GameStatus,
     IngestionRun,
@@ -491,6 +493,40 @@ def ingest_injuries(
         session.execute(delete(PlayerInjury).where(PlayerInjury.player_id.not_in(listed)))
         ctx.counted(upsert(session, PlayerInjury, rows, ["player_id"],
                            provenance=provenance(ctx.run_id, injuries.SOURCE)))  # fmt: skip
+
+    return body
+
+
+FAN_POST_PAUSE_SECONDS = 1.0
+
+
+def ingest_fan_posts(search: fan_posts.Search | None = None) -> Callable[[RunContext], None]:
+    """Replaces each team's posts with the current best; any failed search keeps the old set."""
+
+    def body(ctx: RunContext) -> None:
+        session = ctx.session
+        find = search or fan_posts.client()
+        now = datetime.now(UTC)
+        rows: list[dict[str, Any]] = []
+        for team_id, city, name in session.execute(select(Team.id, Team.city, Team.name)).all():
+            terms = fan_posts.team_terms(city, name)
+            found = {
+                post["uri"]: post
+                for term in terms
+                for post in find(f'"{term}"', now - fan_posts.WINDOW)
+                if post.get("uri")
+            }
+            ctx.fetched += len(found)
+            rows += fan_posts.transform_posts(team_id, terms, found.values(), now)
+            if search is None:
+                time.sleep(FAN_POST_PAUSE_SECONDS)
+        ctx.valid += len(rows)
+        stored = session.scalar(select(func.count()).select_from(FanPost)) or 0
+        if not rows and stored:
+            raise PartialResponseError(f"search found no usable posts, {stored} stored")
+        session.execute(delete(FanPost))
+        ctx.counted(upsert(session, FanPost, rows, ["team_id", "uri"],
+                           provenance=provenance(ctx.run_id, fan_posts.SOURCE)))  # fmt: skip
 
     return body
 

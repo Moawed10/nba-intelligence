@@ -20,6 +20,7 @@ from app.models.predictions import (
 )
 from app.models.reference import (
     BOX_COLUMNS,
+    FanPost,
     Game,
     GameStatus,
     Player,
@@ -59,6 +60,7 @@ __all__ = [
     "ModelTarget",
     "ModelVersion",
     "Player",
+    "FanPost",
     "PlayerInjury",
     "PlayerGameStats",
     "PlayerMatchup",

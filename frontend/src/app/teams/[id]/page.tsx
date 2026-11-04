@@ -14,9 +14,10 @@ import { StatTile } from "@/components/data/stat-tile";
 import { LoadingBlock } from "@/components/data/state-view";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
-import type { HomeCourt, PlayerPage, TeamDetail, TeamSeasonStats } from "@/lib/api/types";
+import type { FanPosts, HomeCourt, PlayerPage, TeamDetail, TeamSeasonStats } from "@/lib/api/types";
 import { formatStat } from "@/lib/format";
 
+import { FanPostsSection } from "./fan-posts";
 import { HomeCourtSection } from "./home-court";
 import { RosterTable } from "./roster-table";
 
@@ -65,10 +66,11 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
   if (detail.error) return <ApiErrorView error={detail.error} />;
 
   const { team, season, record, roster, meta } = detail.data;
-  const [stats, averages, homeCourt] = await Promise.all([
+  const [stats, averages, homeCourt, fans] = await Promise.all([
     serverTry<TeamSeasonStats>(`/teams/${id}/stats`, { season }),
     serverTry<PlayerPage>("/players", { team_id: id, season, sort: "-pts", limit: ROSTER_LIMIT }),
     serverTry<HomeCourt>(`/teams/${id}/home-court`, { season }),
+    serverTry<FanPosts>(`/teams/${id}/fan-posts`),
   ]);
   const bySeason = new Map((averages.data?.items ?? []).map((p) => [p.id, p.season_averages]));
   const players = roster.map((p) => ({ ...p, season_averages: bySeason.get(p.id) ?? null }));
@@ -164,6 +166,13 @@ async function TeamView({ params }: { params: Promise<{ id: string }> }) {
             <ApiErrorView error={homeCourt.error} />
           ) : (
             <HomeCourtSection data={homeCourt.data} teamName={name} />
+          )}
+        </Panel>
+        <Panel id="fan-posts" kicker="From Bluesky" title="What people are saying">
+          {fans.error ? (
+            <ApiErrorView error={fans.error} />
+          ) : (
+            <FanPostsSection data={fans.data} teamName={team.name} />
           )}
         </Panel>
         <Panel id="team-stats" kicker={`${season} regular season`} title="Team stats">

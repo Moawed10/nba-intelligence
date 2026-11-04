@@ -1,6 +1,10 @@
-import pytest
+from datetime import timedelta
 
-from tests.api.conftest import FINAL, RETIRED, SCHEDULED, SEASON_LABEL, STAR, player_id
+import pytest
+from sqlalchemy.orm import Session
+
+from app.models import FanPost
+from tests.api.conftest import FINAL, NOW, RETIRED, SCHEDULED, SEASON_LABEL, STAR, player_id
 
 pytestmark = pytest.mark.integration
 
@@ -146,3 +150,37 @@ def test_home_court_splits_add_up_to_the_season(client):
         assert player["home_games"] + player["away_games"] > 0
         if player["home_games"] == 0:
             assert player["home"]["pts"] is None
+
+
+def test_fan_posts_come_from_storage_with_only_recent_ones_best_first(client, engine):
+    rows = [
+        {"key": "older", "score": 5.0, "age": 1},
+        {"key": "best", "score": 9.0, "age": 1},
+        {"key": "stale", "score": 99.0, "age": 30},
+    ]
+    with Session(engine) as s, s.begin():
+        s.add_all(
+            FanPost(
+                team_id=1,
+                uri=f"at://x/{r['key']}",
+                url=f"https://bsky.app/profile/x/post/{r['key']}",
+                author_handle="x.example.com",
+                author_name=None,
+                text="The team looks great",
+                posted_at=NOW - timedelta(days=r["age"]),
+                likes=4,
+                reposts=0,
+                replies=0,
+                score=r["score"],
+                source_endpoint="test",
+            )  # fmt: skip
+            for r in rows
+        )
+    body = client.get("/api/v1/teams/1/fan-posts").json()
+    assert body["source"] == "Bluesky"
+    assert [p["url"].rsplit("/", 1)[-1] for p in body["posts"]] == ["best", "older"]
+    assert "score" not in body["posts"][0]
+
+
+def test_fan_posts_for_an_unknown_team_are_a_404(client):
+    assert client.get("/api/v1/teams/999999/fan-posts").status_code == 404

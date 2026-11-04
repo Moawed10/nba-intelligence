@@ -347,6 +347,17 @@ createServer((req, res) => {
     if (!team) return error(res, 404, "team_not_found", "No team with that id.");
     return send(res, 200, { team: ref(team), seasons: HISTORY[team.id], meta: META });
   }
+  const fansMatch = path.match(/^\/teams\/(\d+)\/fan-posts$/);
+  if (fansMatch) {
+    return send(res, 200, {
+      team_id: Number(fansMatch[1]), source: "Bluesky", meta: META,
+      posts: [{
+        url: "https://bsky.app/profile/fixture.example.com/post/abc", author_handle: "fixture.example.com",
+        author_name: "Fixture Fan", text: "Synthetic test post: this team looks great on defense.",
+        posted_at: "2099-11-01T12:00:00Z", likes: 12, reposts: 3, replies: 1,
+      }],
+    });
+  }
   const courtMatch = path.match(/^\/teams\/(\d+)\/home-court$/);
   if (courtMatch) {
     const id = Number(courtMatch[1]);

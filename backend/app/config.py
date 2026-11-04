@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +37,9 @@ class Settings(BaseSettings):
     artifacts_dir: Path = Path("artifacts")
     photos_dir: Path = Path(".cache/photos")
     team_minutes_tolerance: int = 5
+
+    bluesky_handle: str | None = None
+    bluesky_app_password: SecretStr | None = None
 
 
 @lru_cache
