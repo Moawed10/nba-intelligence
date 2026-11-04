@@ -11,3 +11,6 @@ Bounded `cachetools.TTLCache` in the API process. Keys include `data_version` (t
 ## Consequences
 - No extra service to deploy or secure.
 - Each replica keeps its own cache. Revisit if the API scales out and measured cache misses dominate latency.
+
+## Update (2026-11-04)
+HTTP responses and the frontend no longer mirror the cache TTLs. Data responses send `Cache-Control: no-cache` and the frontend does not use `revalidate`, so every load asks the API; see [API contracts](../api-contracts.md). The `data_version`-keyed in-process cache is unchanged.

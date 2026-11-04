@@ -44,12 +44,18 @@ Implemented jobs (`app/sync/worker.py` `JOBS`):
 | `game_logs` | 6 h | 10 min | A game is live, or a game from the last 36 h is final but its box score isn't confirmed stable | `LeagueGameLog` (team + player) for the current season's types |
 | `metadata` | 24 h | — | Always | `LeagueStandingsV3`, `CommonAllPlayers`, `PlayerIndex` |
 | `corrections` | 7 days | — | Always | Re-fetches the current season's game logs and logs any changed values |
+| `careers` | 24 h | — | Waits while games are live | `PlayerCareerStats`, one request per active player |
+| `matchups` | 3 h | — | Waits while games are live | `BoxScoreMatchupsV3`, one request per finished game with no rows yet ([who guarded whom](#who-guarded-whom)) |
+| `attendance` | 6 h | — | Always | `BoxScoreSummaryV3`, one request per finished game with no attendance yet |
+| `injuries` | 30 min | — | Always | ESPN injury report |
+| `fan_posts` | 1 h | — | Only when Bluesky credentials are set | Bluesky post search |
+| `predictions` | 15 min | — | Always | No outside source: scores finished games and refreshes stale forecasts for games in the next 48 h. It writes no NBA data and does not advance `data_version` |
 
-Planned for Phase 7: `prediction_freshness` (15 min, games tipping off in the next 48 h) and `retrain_eligibility` (7 days; records eligibility only, since training stays a manual CLI step per [ADR 0002](decisions/0002-no-http-admin-operations.md)).
+Training stays a manual CLI step per [ADR 0002](decisions/0002-no-http-admin-operations.md); no job checks whether a retrain is due.
 
-Live in-game scores are **not** ingested. The live `cdn.nba.com` scoreboard is a separate service and isn't used; scores enter the database from the final box score. A box score counts as stable once a `game_logs` run leaves all of a game's player lines unchanged, which sets `stats_finalized_at` and emits `GAME_STATS_FINALIZED`. Games older than 36 hours are marked stable silently, so a historical backfill emits no events.
+Scores during a game come from the live scores thread above; player stats enter the database from the final box score. The live `cdn.nba.com` scoreboard is a separate service and isn't used. A box score counts as stable once a `game_logs` run leaves all of a game's player lines unchanged, which sets `stats_finalized_at` and emits `GAME_STATS_FINALIZED`. Games older than 36 hours are marked stable silently, so a historical backfill emits no events.
 
-The worker sleeps when nothing is due. Outside the season, only `metadata` and `corrections` run. These cadences are polling intervals, not provider freshness guarantees. The UI never says "real time."
+The worker sleeps when nothing is due. There is no off-season switch: every enabled job keeps its interval all year. These cadences are polling intervals, not provider freshness guarantees. The UI never says "real time."
 
 **Injuries** sync every 30 minutes from ESPN's public, unofficial injury feed, because the NBA's official report has no expected return date. Each sync replaces the stored report, so a player no longer listed counts as recovered. A name is matched only when exactly one active player has it; anything else is rejected and counted. An empty report never wipes stored rows. Return dates are the source's rough estimates. The feed has no published contract and could change without notice, in which case the dataset goes stale and the site shows its last sync time.
 

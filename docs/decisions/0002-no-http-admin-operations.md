@@ -12,3 +12,6 @@ Ingestion and training are expensive and change shared state. Exposing them over
 - The public attack surface is read endpoints plus rate-limited prediction creation.
 - Scheduling is external (cron, GitHub Actions or the host's scheduler).
 - Ingestion can run on a machine stats.nba.com does not block and write to the production database.
+
+## Update (2026-11-04)
+Ingestion is also scheduled by the sync worker (`app/sync/worker.py`), so scheduling is no longer external. The decision itself holds: the public API has no endpoint that starts ingestion or training, and training stays a manual CLI step.
