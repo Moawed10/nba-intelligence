@@ -1282,6 +1282,8 @@ export interface components {
             /** Rank */
             rank: number;
             team: components["schemas"]["TeamRef"] | null;
+            /** Total */
+            total: number;
             /** Value */
             value: number;
         };

@@ -273,6 +273,7 @@ class Leader(BaseModel):
     team: TeamRef | None
     games_played: int
     value: float
+    total: float
 
 
 class Leaders(BaseModel):

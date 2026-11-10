@@ -47,7 +47,9 @@ test.describe("overview", () => {
     await expect(
       leaders.getByRole("list", { name: "Points per game leaders" }).getByRole("listitem"),
     ).toHaveCount(5);
+    await expect(leaders.getByRole("listitem").first()).toContainText(/\d+ PTS in \d+ GP/);
     await leaders.getByRole("radio", { name: "AST" }).click();
+    await expect(leaders.getByRole("listitem").first()).toContainText(/\d+ AST in \d+ GP/);
     await expect(leaders.getByRole("list", { name: "Assists per game leaders" })).toBeVisible();
     await expect(leaders.getByText(/Assists per game, 2099-00 regular season/)).toBeVisible();
     await expect(page).toHaveURL("/");

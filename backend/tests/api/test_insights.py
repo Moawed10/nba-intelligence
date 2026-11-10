@@ -30,6 +30,8 @@ def test_leaders_apply_the_qualifying_minimum(client):
     assert body["qualified_players"] == 15
     assert body["leaders"][0]["player_id"] == STAR
     assert body["leaders"][0]["value"] == 14.75
+    star = body["leaders"][0]
+    assert star["total"] == star["value"] * star["games_played"]
     assert [leader["rank"] for leader in body["leaders"]] == [1, 2, 3]
     assert client.get("/api/v1/leaders", params={"stat": "tov"}).status_code == 422
 

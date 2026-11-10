@@ -812,7 +812,7 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
     staleTime: 5 * 60_000,
   });
   const data = leaders.data;
-  const unit = LEADER_STATS.find((s) => s.value === stat)!.unit;
+  const { unit, label } = LEADER_STATS.find((s) => s.value === stat)!;
   const top = data?.leaders[0]?.value || 1;
 
   return (
@@ -860,8 +860,11 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
                   <span className="numeral block text-title1">
                     {formatStat(leader.value)}
                   </span>
-                  <span className="text-footnote text-muted-foreground">
-                    {leader.team?.abbreviation ?? "—"} · {leader.games_played} GP
+                  <span className="block text-footnote text-muted-foreground tabular-nums">
+                    {Math.round(leader.total).toLocaleString("en-US")} {label} in {leader.games_played} GP
+                  </span>
+                  <span className="block text-footnote text-muted-foreground">
+                    {leader.team?.abbreviation ?? "—"}
                   </span>
                 </span>
               </Link>
@@ -871,7 +874,7 @@ export function LeadersBoard({ initial }: { initial: Leaders }) {
       )}
       {data && (
         <p className="text-footnote text-muted-foreground">
-          {unit} per game, {data.season} regular season. Qualified players have at least {data.minimum_games}{" "}
+          {unit} per game, {data.season} regular season, with season totals underneath. Qualified players have at least {data.minimum_games}{" "}
           games ({data.qualified_players} players).
         </p>
       )}

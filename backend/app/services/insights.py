@@ -157,6 +157,7 @@ def leaders(
                     team=team_ref(r.Team) if r.Team else None,
                     games_played=int(r.games),
                     value=per_game(float(getattr(r, stat)), int(r.games)) or 0.0,
+                    total=float(getattr(r, stat)),
                 )
                 for i, r in enumerate(rows)
             ],
