@@ -18,7 +18,7 @@ from app.ingestion.client import NBAStatsClient
 from app.ingestion.integrity import integrity_report, recent_runs
 from app.ingestion.transforms import current_season_start_year
 from app.logging import configure_logging
-from app.models import IngestionRun, Player, PlayerSeason, SeasonType
+from app.models import Player, PlayerSeason, SeasonType
 from app.sync import worker
 from app.sync.freshness import dataset_freshness
 
@@ -45,17 +45,6 @@ def ingest_season(client: NBAStatsClient, season: int, types: list[SeasonType]) 
     return ok
 
 
-def _last_run_stopped_early() -> bool:
-    with session_scope(get_engine()) as s:
-        rejected = s.scalar(
-            select(IngestionRun.rows_rejected)
-            .where(IngestionRun.job == "player_careers")
-            .order_by(IngestionRun.id.desc())
-            .limit(1)
-        )
-    return (rejected or 0) >= jobs.CAREER_FAILURE_LIMIT
-
-
 def ingest_careers(client: NBAStatsClient, player_ids: list[int] | None) -> bool:
     """Career seasons in batches of worker.CAREER_BATCH players, each its own run, so an interrupted
     backfill keeps finished batches. Without ids: players with nothing stored, plus every active
@@ -69,11 +58,12 @@ def ingest_careers(client: NBAStatsClient, player_ids: list[int] | None) -> bool
             ).all()
     print(f"career history for {len(player_ids)} players")
     ok = True
+    refused: list[bool] = []
     for start in range(0, len(player_ids), worker.CAREER_BATCH):
         batch = list(player_ids[start : start + worker.CAREER_BATCH])
-        ok &= _run("player_careers", {"first": batch[0], "count": len(batch)},
-                   jobs.ingest_player_careers(client, batch))  # fmt: skip
-        if ok and _last_run_stopped_early():
+        body = jobs.ingest_player_careers(client, batch, lambda: refused.append(True))
+        ok &= _run("player_careers", {"first": batch[0], "count": len(batch)}, body)
+        if refused:
             print("the source is refusing requests; stopped. Re-run later to continue.")
             return False
     return ok

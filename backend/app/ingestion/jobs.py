@@ -292,12 +292,14 @@ CAREER_FAILURE_LIMIT = 5
 
 
 def ingest_player_careers(
-    client: StatsSource, player_ids: list[int]
+    client: StatsSource, player_ids: list[int], on_refused: Callable[[], None] | None = None
 ) -> Callable[[RunContext], None]:
     """Every season of each player's career, regular season and playoffs (one request each).
     Finished careers are cached on disk, so re-running a batch only refetches active players.
     A player the source fails on is rejected and the rest of the batch is kept; after
-    CAREER_FAILURE_LIMIT failures in a row the batch stops, and a re-run picks up the rest."""
+    CAREER_FAILURE_LIMIT failed requests in a row the batch stops and on_refused is called, and a
+    re-run picks up the rest. The source answers {} for some long-retired players: that rejects
+    only that player, because the source is still answering."""
 
     def body(ctx: RunContext) -> None:
         active = set(ctx.session.scalars(select(Player.id).where(Player.is_active)).all())
@@ -306,6 +308,12 @@ def ingest_player_careers(
             try:
                 result = client.fetch(PlayerCareerStats, player_id=player_id, per_mode36="Totals",
                                       cacheable=player_id not in active)  # fmt: skip
+            except UnexpectedResponseError as error:
+                ctx.reject(
+                    [Rejection({"player_id": player_id}, f"{type(error).__name__}: {error}")]
+                )
+                failures = 0
+                continue
             except StatsSourceError as error:
                 ctx.reject(
                     [Rejection({"player_id": player_id}, f"{type(error).__name__}: {error}")]
@@ -314,6 +322,8 @@ def ingest_player_careers(
                 if failures >= CAREER_FAILURE_LIMIT:
                     log.warning("career source refusing requests; batch stopped early",
                                 extra={"player_id": player_id})  # fmt: skip
+                    if on_refused:
+                        on_refused()
                     return
                 continue
             failures = 0

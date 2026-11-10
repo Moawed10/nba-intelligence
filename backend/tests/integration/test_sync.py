@@ -337,3 +337,24 @@ def test_matchup_games_with_unusable_replies_are_skipped_without_ending_the_batc
     run = jobs.run_job(engine, "player_matchups", {"t": 3}, body)
     assert (run.status, run.rows_rejected) == (RunStatus.succeeded, len(repeated))
     assert refused == []
+
+
+def test_careers_skip_players_with_empty_replies_and_stop_only_when_refused(engine, source):
+    worker.run_due(engine, source, NOW)
+    with Session(engine) as s:
+        ids = list(s.scalars(select(Player.id)))
+    repeated = [*ids, *ids, *ids, *ids, *ids, *ids]
+    source.error = UnexpectedResponseError(
+        "playercareerstats: response did not match ('resultSet')"
+    )
+    refused = []
+    body = jobs.ingest_player_careers(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_careers", {"t": 1}, body)
+    assert (run.status, run.rows_rejected) == (RunStatus.succeeded, len(repeated))
+    assert refused == []
+
+    source.error = RetryableSourceError("ConnectionError")
+    body = jobs.ingest_player_careers(source, repeated, lambda: refused.append(1))
+    run = jobs.run_job(engine, "player_careers", {"t": 2}, body)
+    assert run.rows_rejected == jobs.CAREER_FAILURE_LIMIT
+    assert refused == [1]
