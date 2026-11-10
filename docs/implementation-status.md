@@ -1123,3 +1123,9 @@ The "recent games" block from the original design was folded into the game log, 
 **Completed:** team pages show the most relevant recent public Bluesky posts, filtered, attributed and linked to the original. Hourly worker job; no request from the API or browser reaches Bluesky. [Fan posts](data-synchronization.md#fan-posts).
 
 **Not done:** Reddit and other networks; sentiment; posts tied to a specific game.
+
+### Session — 2026-11-10 (defender matchups result)
+
+**Completed:** checked whether defender features improve forecasts, holding everything else equal. They do not: no stat improved by 0.5% or more on 2024-25 validation, and rebounds got slightly worse. They stay out of training, and the backfill was stopped with 2021-22 onward stored. Release 2026.11.04-1 stays active. Results: [Defender matchups](model-methodology.md#result-not-used).
+
+**Not done:** 2018-19 to 2020-21 matchups are not stored; the league rate prior was not re-measured.

@@ -73,6 +73,22 @@ Who actually guards a player is only published after a game, so a forecast can n
 
 Rates are "points by one offensive player per 100 possessions he is on the floor", about 23 league-wide. A release serves on the feature list stored with its artifacts, so these features change nothing until a release trained on them is activated.
 
+### Result: not used
+
+Checked 2026-11-10, and no release trains on them. XGBoost per stat, trained on 2022-23 and 2023-24 (2021-22 only as defender history), tuned on the first half of 2024-25 and scored on the second half (13,876 player-games, 96% with a likely defender). Each pair differs only in the defender features. The 2025-26 test season was not used. Ranges are 95% bootstrap intervals over games.
+
+| Stat | Change in mean absolute error, all players | Players averaging 20+ points |
+|---|---|---|
+| Minutes | 0.00% [-0.22, +0.23] | -0.46% [-1.37, +0.45] |
+| Points | -0.10% [-0.23, +0.04] | +0.16% [-0.23, +0.58] |
+| Rebounds | -0.39% [-0.58, -0.19] | +0.05% [-0.53, +0.65] |
+| Assists | -0.06% [-0.31, +0.19] | -0.01% [-0.84, +0.78] |
+| 3-pointers | +0.03% [-0.08, +0.14] | +0.08% [-0.24, +0.41] |
+| Steals | +0.02% [-0.09, +0.13] | -0.46% [-0.86, -0.06] |
+| Blocks | +0.15% [+0.03, +0.29] | -0.19% [-0.64, +0.23] |
+
+Positive means lower error with the features. Nothing reached the 0.5% bar set before the check, and rebounds got worse, so the features stay out of `TRAINING_FEATURES`. Past defenders are still shown on Predictions as context. Not tested: six training seasons (2018-19 to 2020-21 were not backfilled) and a league rate re-measured from data; the stored seasons give 23.6 to 24.6, against the 23 used here.
+
 ## Models compared
 
 Every target is trained with each family on identical rows:
@@ -155,4 +171,4 @@ Live accuracy should fall between the last two columns, and the Models page meas
 
 Held-out 2025-26 test season, release 2026.10.29-3 (no absences) to 2026.11.04-1, mean absolute error: minutes 4.846 to 4.610, points 4.550 to 4.471, rebounds 1.885 to 1.862, assists 1.336 to 1.325, 3-pointers 0.890 to 0.886, steals 0.719 to 0.716, blocks unchanged at 0.511 (the rolling average is still selected), team points 9.70 to 9.48, win probability Brier 0.208 to 0.202. Intervals stayed within the coverage gate.
 
-**Other limits:** the report isn't kept over time, so a past forecast's inputs are in its stored snapshot but the report behind them isn't. Stars returning from long absences aren't counted as additions. Defender features are excluded from `TRAINING_FEATURES` until the matchup backfill covers the training seasons.
+**Other limits:** the report isn't kept over time, so a past forecast's inputs are in its stored snapshot but the report behind them isn't. Stars returning from long absences aren't counted as additions. Defender features are excluded from `TRAINING_FEATURES`; they did not improve validation error ([result](#result-not-used)).

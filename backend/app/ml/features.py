@@ -56,8 +56,8 @@ FEATURES: tuple[str, ...] = (
     *ABSENCE_FEATURES,
 )
 
-# What a new release trains on. Defender features wait until the matchup backfill covers the
-# training seasons; on a few recent games they would only teach the model when a game was tracked.
+# What a new release trains on. Defender features are left out: they did not improve validation
+# error (docs/model-methodology.md#result-not-used).
 TRAINING_FEATURES: tuple[str, ...] = tuple(f for f in FEATURES if f not in MATCHUP_FEATURES)
 
 STAT_NAMES = {

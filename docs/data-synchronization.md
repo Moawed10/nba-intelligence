@@ -184,6 +184,8 @@ Score forecasts follow the same rules as player forecasts. Freshness is derived,
 
 **Backfill:** `python -m app.cli ingest matchups [--seasons 2025,2024] [--interval 10]`, newest games first. It is safe to stop and re-run, since it only asks for games with no rows yet. On 2026-11-03 a backfill at about one request per 3 seconds made stats.nba.com stop answering this connection after a few hundred requests, which also failed the schedule sync for two hours. So it now defaults to one request every 10 seconds, waits while games are live, keeps its work in short runs, and stops after two failed games in a row. Do not lower the interval without watching the schedule job.
 
+The backfill was stopped on 2026-11-10 with 2021-22 onward stored (7,070 games, a handful the source has no table for) and 2018-19 to 2020-21 missing, because the features did not improve the model ([result](model-methodology.md#result-not-used)). The sync job still keeps the current season, which is what "Most often guarded by" uses.
+
 ## Fan posts
 
 `fan_posts` holds each team's most relevant recent public Bluesky posts. The `fan_posts` job searches once an hour with the owner's app password (`NBA_BLUESKY_HANDLE`, `NBA_BLUESKY_APP_PASSWORD`; never committed, and the job does nothing without them). Only the worker contacts Bluesky; the API and the browser read stored rows. Implementation: `backend/app/ingestion/fan_posts.py`.
