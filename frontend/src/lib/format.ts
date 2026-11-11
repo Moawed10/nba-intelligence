@@ -110,3 +110,18 @@ export function roughReturn(returnDate: string | null | undefined, now: Date = n
     days === 1 ? "about 1 day" : days < 14 ? `about ${days} days` : `about ${Math.round(days / 7)} weeks`;
   return `Estimated back ${formatGameDate(returnDate)} (${span})`;
 }
+
+/** Where a player is now: their team, or for a former player when they last played and for whom.
+ * `to_year` is the year their last season started, so 2015 means the 2015-16 season. */
+export function playerTeamLabel(player: {
+  is_active?: boolean;
+  team?: { abbreviation: string } | null;
+  to_year?: number | null;
+  final_team?: string | null;
+}): string {
+  if (player.team) return player.team.abbreviation;
+  if (player.is_active !== false) return "No current team";
+  if (player.to_year == null) return "Former player";
+  const finished = player.to_year + 1;
+  return player.final_team ? `Retired ${finished} · ${player.final_team}` : `Retired ${finished}`;
+}

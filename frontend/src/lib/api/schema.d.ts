@@ -296,7 +296,8 @@ export interface paths {
         };
         /**
          * Get Player Career
-         * @description Every season the player played, regular season and playoffs, back to 1946-47.
+         * @description Every season the player played, regular season and playoffs, back to 1946-47. With `team`,
+         *     only the seasons played for that team (abbreviation as listed that season).
          */
         get: operations["get_player_career_api_v1_players__player_id__career_get"];
         put?: never;
@@ -924,6 +925,8 @@ export interface components {
         };
         /** DirectoryPlayer */
         DirectoryPlayer: {
+            /** Final Team */
+            final_team?: string | null;
             /** From Year */
             from_year: number | null;
             /** Full Name */
@@ -1797,6 +1800,8 @@ export interface components {
         PlayerIdentity: {
             /** Birthdate */
             birthdate: string | null;
+            /** Final Team */
+            final_team?: string | null;
             /** First Name */
             first_name: string | null;
             /** From Year */
@@ -1862,6 +1867,8 @@ export interface components {
         };
         /** PlayerSummary */
         PlayerSummary: {
+            /** Final Team */
+            final_team?: string | null;
             /** From Year */
             from_year: number | null;
             /** Full Name */
@@ -2077,6 +2084,8 @@ export interface components {
         };
         /** RosterPlayer */
         RosterPlayer: {
+            /** Final Team */
+            final_team?: string | null;
             /** From Year */
             from_year: number | null;
             /** Full Name */
@@ -3672,7 +3681,9 @@ export interface operations {
     };
     get_player_career_api_v1_players__player_id__career_get: {
         parameters: {
-            query?: never;
+            query?: {
+                team?: string | null;
+            };
             header?: never;
             path: {
                 player_id: number;

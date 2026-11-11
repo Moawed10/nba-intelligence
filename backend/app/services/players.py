@@ -84,7 +84,43 @@ def _order(column, descending: bool):
     return column.desc().nulls_last() if descending else column.asc().nulls_last()
 
 
-def _summary(player: Player, team: Team | None) -> PlayerSummary:
+def final_teams(session: Session, players: list[Player]) -> dict[int, str]:
+    """The team each former player finished with: the only team of their last season, or for a
+    player traded that season, the team of their last box score. Unknown when neither is stored."""
+    ids = [p.id for p in players if not p.is_active]
+    if not ids:
+        return {}
+    last = (
+        select(PlayerSeason.player_id, func.max(PlayerSeason.season_id).label("season_id"))
+        .where(PlayerSeason.player_id.in_(ids), PlayerSeason.season_type == SeasonType.regular)
+        .group_by(PlayerSeason.player_id)
+        .subquery()
+    )
+    stints: dict[int, list[str]] = defaultdict(list)
+    for player_id, abbreviation in session.execute(
+        select(PlayerSeason.player_id, PlayerSeason.team_abbreviation)
+        .join(last, and_(last.c.player_id == PlayerSeason.player_id,
+                         last.c.season_id == PlayerSeason.season_id))
+        .where(PlayerSeason.season_type == SeasonType.regular,
+               PlayerSeason.team_abbreviation != "TOT")
+    ):  # fmt: skip
+        stints[player_id].append(abbreviation)
+    final = {pid: teams[0] for pid, teams in stints.items() if len(teams) == 1}
+    traded = [pid for pid, teams in stints.items() if len(teams) > 1]
+    if traded:
+        latest = (
+            select(PlayerGameStats.player_id, Team.abbreviation)
+            .join(Game, Game.id == PlayerGameStats.game_id)
+            .join(Team, Team.id == PlayerGameStats.team_id)
+            .where(PlayerGameStats.player_id.in_(traded), PlayerGameStats.minutes > 0)
+            .order_by(Game.game_date)
+        )
+        # Oldest first, so each player's last game is the one that stays.
+        final.update({pid: abbreviation for pid, abbreviation in session.execute(latest)})
+    return final
+
+
+def _summary(player: Player, team: Team | None, final_team: str | None = None) -> PlayerSummary:
     return PlayerSummary(
         id=player.id,
         full_name=player.full_name,
@@ -94,6 +130,7 @@ def _summary(player: Player, team: Team | None) -> PlayerSummary:
         team=team_ref(team) if team else None,
         from_year=player.from_year,
         to_year=player.to_year,
+        final_team=final_team,
     )
 
 
@@ -186,9 +223,10 @@ def list_players(
     rows = ctx.session.execute(
         stmt.order_by(_order(column, descending), Player.id).limit(limit).offset(offset)
     ).all()
+    final = final_teams(ctx.session, [row[0] for row in rows])
     items = [
         DirectoryPlayer(
-            **_summary(row[0], row[1]).model_dump(),
+            **_summary(row[0], row[1], final.get(row[0].id)).model_dump(),
             season_averages=averages_from_row(row, season) if season else None,
         )
         for row in rows
@@ -219,9 +257,10 @@ def _all_time(
     rows = ctx.session.execute(
         stmt.order_by(_order(column, sort.startswith("-")), Player.id).limit(limit).offset(offset)
     ).all()
+    final = final_teams(ctx.session, [row[0] for row in rows])
     items = [
         DirectoryPlayer(
-            **_summary(row[0], row[1]).model_dump(),
+            **_summary(row[0], row[1], final.get(row[0].id)).model_dump(),
             season_averages=averages_from_row(row, ALL_TIME),
             totals=_career(row),
         )
@@ -371,8 +410,9 @@ def profile(ctx: Context, player_id: int) -> PlayerProfile:
             stmt = _game_rows_query(player_id).where(Game.season_id == season_id)
             rows = _rows(ctx.session, _chronological(stmt))
         current = _season_lines(rows, SeasonType.regular) or _season_lines(rows, None)
+        final_team = final_teams(ctx.session, [player]).get(player.id)
         identity = PlayerIdentity(
-            **_summary(player, team).model_dump(),
+            **_summary(player, team, final_team).model_dump(),
             first_name=player.first_name,
             last_name=player.last_name,
             height_inches=player.height_inches,
@@ -698,15 +738,23 @@ def _career_table(rows: list[tuple[PlayerSeason, str]], teams: dict[int, Team]) 
     )
 
 
-def career(ctx: Context, player_id: int) -> PlayerCareer:
+def career(ctx: Context, player_id: int, team: str | None = None) -> PlayerCareer:
+    """With `team` (an abbreviation as listed, e.g. "LAL"), only the seasons and games played for
+    that team count; a traded season then shows just that team's part of it."""
+    if team == "TOT":
+        raise invalid_parameter("team", "TOT is a season total, not a team.")
+
     def compute() -> PlayerCareer:
         _player_or_404(ctx.session, player_id)
-        rows = ctx.session.execute(
+        stmt = (
             select(PlayerSeason, Season.label)
             .join(Season, Season.id == PlayerSeason.season_id)
             .where(PlayerSeason.player_id == player_id)
             .order_by(PlayerSeason.season_id, PlayerSeason.team_abbreviation)
-        ).all()
+        )
+        if team is not None:
+            stmt = stmt.where(PlayerSeason.team_abbreviation == team)
+        rows = ctx.session.execute(stmt).all()
         team_ids = {r.team_id for r, _ in rows if r.team_id is not None}
         teams = {t.id: t for t in ctx.session.scalars(select(Team).where(Team.id.in_(team_ids)))}
         tables = {
@@ -720,4 +768,5 @@ def career(ctx: Context, player_id: int) -> PlayerCareer:
             meta=ctx.meta(CAREER_DATASET),
         )
 
-    return ctx.cached_model("player_career", PROFILE_TTL, player_id, CAREER_DATASET, compute)
+    key = (player_id, team)
+    return ctx.cached_model("player_career", PROFILE_TTL, key, CAREER_DATASET, compute)

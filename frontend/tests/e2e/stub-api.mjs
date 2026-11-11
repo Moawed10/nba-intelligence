@@ -652,6 +652,19 @@ createServer((req, res) => {
           { ...line(70, 12.5, 3.0, 2.1, { stl: null }), season: "2080-81", age: 22, teams: [stint(TEAMS[0])] },
           { ...line(75, 18.2, 4.4, 3.9), season: "2081-82", age: 23, teams: [stint(TEAMS[1]), { abbreviation: "OLD", team: null }] },
         ];
+    const team = q.get("team");
+    if (team) {
+      // One team's part of the career: only its seasons, each listing just that team.
+      const mine = seasons
+        .filter((s) => s.teams.some((t) => t.abbreviation === team))
+        .map((s) => ({ ...s, teams: s.teams.filter((t) => t.abbreviation === team) }));
+      return send(res, 200, {
+        player_id: player.id,
+        regular: { seasons: mine, totals: mine[0] ? line(mine[0].games, mine[0].per_game.pts, 3.0, 2.1) : null, partial: {} },
+        playoffs: { seasons: [], totals: null, partial: {} },
+        meta: META,
+      });
+    }
     const totals = player.is_active ? line(60, 21.4, 5.1, 6.3) : line(145, 15.5, 3.7, 3.0);
     return send(res, 200, {
       player_id: player.id,

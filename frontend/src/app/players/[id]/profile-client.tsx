@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useId, useOptimistic, useState, useTransition } from "react";
 import {
@@ -17,6 +18,7 @@ import { ChartFrame } from "@/components/data/chart-frame";
 import { type Column, DataTable } from "@/components/data/data-table";
 import { SegmentedControl } from "@/components/data/segmented-control";
 import { TeamMark } from "@/components/brand/team-mark";
+import { clientGet } from "@/lib/api/client";
 import type {
   CareerLine,
   CareerSeason,
@@ -575,11 +577,37 @@ const PARTIAL_NAMES: Record<string, string> = {
   ast: "Assists",
 };
 
-/** Every season of a career, regular season or playoffs, with career averages underneath. */
+/** Teams in the order the player joined them. A team's full name is used only when the season row
+ * names that franchise as it is today, so "SEA" stays the SuperSonics rather than the Thunder. */
+function careerTeams(career: PlayerCareer): { abbreviation: string; name: string }[] {
+  const seen = new Map<string, string>();
+  for (const season of [...career.regular.seasons, ...career.playoffs.seasons]) {
+    for (const stint of season.teams) {
+      if (seen.has(stint.abbreviation)) continue;
+      const current = stint.team?.abbreviation === stint.abbreviation ? stint.team : null;
+      seen.set(stint.abbreviation, current ? `${current.city} ${current.name}` : stint.abbreviation);
+    }
+  }
+  return [...seen].map(([abbreviation, name]) => ({ abbreviation, name }));
+}
+
+/** Every season of a career, regular season or playoffs, with career averages underneath; with a
+ * team chosen, only the seasons and games played for that team. */
 export function CareerHistory({ career, name }: { career: PlayerCareer; name: string }) {
   const [kind, setKind] = useState<"regular" | "playoffs">("regular");
-  const table = career[kind];
+  const [team, setTeam] = useState("");
+  const teams = careerTeams(career);
+  const teamName = teams.find((t) => t.abbreviation === team)?.name;
+  const forTeam = useQuery({
+    queryKey: ["career", career.player_id, team],
+    queryFn: ({ signal }) => clientGet<PlayerCareer>(`/players/${career.player_id}/career`, { team }, signal),
+    enabled: team !== "",
+    staleTime: 5 * 60_000,
+  });
+  const shown = team && forTeam.data ? forTeam.data : career;
+  const table = shown[kind];
   const label = kind === "regular" ? "regular season" : "playoffs";
+  const id = useId();
   const notes = Object.entries(table.partial)
     .filter(([key]) => PER_GAME_COLUMNS.some((c) => c.key === key))
     .map(
@@ -595,7 +623,7 @@ export function CareerHistory({ career, name }: { career: PlayerCareer; name: st
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="career-heading" className="headline text-[1.875rem]">
-            Career
+            {teamName ? `Career with ${teamName}` : "Career"}
           </h2>
           <p className="text-footnote text-muted-foreground">
             {table.seasons.length > 0
@@ -605,22 +633,50 @@ export function CareerHistory({ career, name }: { career: PlayerCareer; name: st
               ` · best scoring season ${best.season} (${formatStat(best.per_game.pts)} points)`}
           </p>
         </div>
-        {career.playoffs.seasons.length > 0 && (
-          <SegmentedControl
-            label="Season type"
-            segments={[
-              { value: "regular", label: "Regular season" },
-              { value: "playoffs", label: "Playoffs" },
-            ]}
-            value={kind}
-            onChange={setKind}
-          />
-        )}
+        <div className="flex flex-wrap items-end gap-3">
+          {teams.length > 1 && (
+            <div>
+              <label htmlFor={`${id}-team`} className="kicker mb-1.5 block">
+                Team
+              </label>
+              <select
+                id={`${id}-team`}
+                value={team}
+                onChange={(event) => setTeam(event.target.value)}
+                aria-busy={forTeam.isFetching}
+                className="field"
+              >
+                <option value="">All teams</option>
+                {teams.map((t) => (
+                  <option key={t.abbreviation} value={t.abbreviation}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {career.playoffs.seasons.length > 0 && (
+            <SegmentedControl
+              label="Season type"
+              segments={[
+                { value: "regular", label: "Regular season" },
+                { value: "playoffs", label: "Playoffs" },
+              ]}
+              value={kind}
+              onChange={setKind}
+            />
+          )}
+        </div>
       </div>
+      {team && forTeam.isError && (
+        <p role="alert" className="text-footnote text-muted-foreground">
+          The seasons with {teamName} couldn&rsquo;t load, so the whole career is shown.
+        </p>
+      )}
       {table.seasons.length > 0 && (
         <DataTable<CareerRow>
-          key={kind}
-          caption={`${name}, career ${label} averages by season`}
+          key={`${kind}-${team}`}
+          caption={`${name}, career ${label} averages by season${teamName ? ` with ${teamName}` : ""}`}
           columns={CAREER_COLUMNS}
           rows={table.seasons}
           rowKey={(r) => r.season ?? "career"}

@@ -184,6 +184,17 @@ test.describe("player profile", () => {
     await expectAccessible(page);
   });
 
+  test("a career can be narrowed to one team", async ({ page }) => {
+    await page.goto("/players/1990");
+    await page.getByLabel("Team", { exact: true }).selectOption({ label: "Alpha Ants" });
+    await expect(page.getByRole("heading", { name: "Career with Alpha Ants" })).toBeVisible();
+    const career = page.getByRole("table", { name: /averages by season with Alpha Ants/ });
+    await expect(career.locator("tbody tr")).toHaveCount(1);
+    await expect(career.locator("tbody tr").first()).toContainText("2080-81");
+    await page.getByLabel("Team", { exact: true }).selectOption({ label: "All teams" });
+    await expect(page.getByRole("heading", { name: "Career", exact: true })).toBeVisible();
+  });
+
   test("unknown players get a not-found page", async ({ page }) => {
     // The page streams, so the status line is sent before the lookup; the content is what matters.
     await page.goto("/players/424242");

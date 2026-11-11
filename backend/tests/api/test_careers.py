@@ -5,11 +5,13 @@ from typing import Any
 
 import pandas as pd
 import pytest
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 from app.ingestion import jobs
 from app.ingestion.client import FetchResult, RetryableSourceError
 from app.ingestion.transforms import transform_player_career
-from app.models import RunStatus, SeasonType
+from app.models import PlayerSeason, RunStatus, Season, SeasonType
 from tests.api.conftest import RETIRED, STAR
 from tests.fixtures import player_id
 
@@ -120,6 +122,35 @@ def test_all_time_has_no_plus_minus(client, career):
     response = client.get("/api/v1/players", params={"season": "all", "sort": "-plus_minus"})
     assert response.status_code == 400
     assert response.json()["error"]["details"][0]["issue"] == "unavailable_sort"
+
+
+def test_career_for_one_team_keeps_only_that_teams_part_of_a_traded_season(client, career):
+    body = client.get(f"/api/v1/players/{RETIRED}/career", params={"team": "BBB"}).json()
+    regular = body["regular"]
+    assert [s["season"] for s in regular["seasons"]] == ["1985-86"]
+    assert regular["totals"]["games"] == 40
+    assert regular["totals"]["per_game"]["pts"] == 25.0
+    assert [s["season"] for s in body["playoffs"]["seasons"]] == ["1985-86"]
+    combined = client.get(f"/api/v1/players/{RETIRED}/career", params={"team": "TOT"})
+    assert combined.status_code == 400
+
+
+def _final_team(client) -> str | None:
+    params = {"season": "all", "active": "false"}
+    return client.get("/api/v1/players", params=params).json()["items"][0]["final_team"]
+
+
+def test_a_final_season_split_by_a_trade_without_box_scores_leaves_the_team_unknown(client, career):
+    assert _final_team(client) is None  # 1985-86 was split between AAA and BBB
+
+
+def test_former_players_show_the_team_they_finished_with(client, career):
+    with Session(career) as s, s.begin():
+        later = s.scalar(select(func.max(Season.id)))  # any season after the 1985-86 trade
+        s.add(PlayerSeason(player_id=RETIRED, season_type=SeasonType.regular, season_id=later,
+                           team_abbreviation="BBB", team_id=2, games=10, pts=100,
+                           source_endpoint="PlayerCareerStats"))  # fmt: skip
+    assert _final_team(client) == "BBB"
 
 
 def test_playoffs_are_listed_separately(client, career):

@@ -88,10 +88,15 @@ def get_player_photo(
 
 
 @router.get("/{player_id}/career", response_model=PlayerCareer)
-def get_player_career(ctx: Ctx, player_id: PlayerId) -> PlayerCareer:
-    """Every season the player played, regular season and playoffs, back to 1946-47."""
+def get_player_career(
+    ctx: Ctx,
+    player_id: PlayerId,
+    team: Annotated[str | None, Query(pattern=r"^[A-Z0-9]{2,4}$")] = None,
+) -> PlayerCareer:
+    """Every season the player played, regular season and playoffs, back to 1946-47. With `team`,
+    only the seasons played for that team (abbreviation as listed that season)."""
     ctx.always_revalidate()
-    return players.career(ctx, player_id)
+    return players.career(ctx, player_id, team)
 
 
 @router.get("/{player_id}/stats", response_model=PlayerSeasonStats)

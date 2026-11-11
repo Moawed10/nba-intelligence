@@ -28,7 +28,7 @@ import { Unavailable } from "@/components/data/unavailable";
 import { clientGet } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
 import type { PercentileAxis, PlayerTrends, TeamRef } from "@/lib/api/types";
-import { formatGameValue, formatPercent, formatStat } from "@/lib/format";
+import { formatGameValue, formatPercent, formatStat, playerTeamLabel } from "@/lib/format";
 import { hrefWith } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
@@ -106,9 +106,7 @@ export function ComparePicker({
                   <p className="kicker">{label}</p>
                   <p className="display text-[1.625rem]">{player.full_name}</p>
                   <p className="truncate text-footnote text-muted-foreground">
-                    {[player.team?.abbreviation ?? "No current team", player.position]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {[playerTeamLabel(player), player.position].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <button
@@ -147,13 +145,7 @@ export function ComparePicker({
               </div>
             );
           return (
-            <div
-              key={slot}
-              className={cn(
-                "panel relative min-w-0 p-3 sm:p-4",
-                slot === 1 && "md:order-3",
-              )}
-            >
+            <div key={slot} className={cn("panel relative min-w-0 p-3 sm:p-4", slot === 1 && "md:order-3")}>
               <span
                 aria-hidden
                 className="absolute inset-x-3 top-0 h-0.5 rounded-full"

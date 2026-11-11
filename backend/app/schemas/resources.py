@@ -36,6 +36,8 @@ class PlayerSummary(BaseModel):
     team: TeamRef | None
     from_year: int | None
     to_year: int | None
+    # Former players only: the team they last played for, as listed that season (e.g. "SEA").
+    final_team: str | None = None
 
 
 class PlayerSearchResult(BaseModel):

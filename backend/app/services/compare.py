@@ -8,7 +8,14 @@ from app.api.errors import ApiError, invalid_parameter
 from app.models import Game, GameStatus, PlayerGameStats, Season, SeasonType
 from app.schemas.resources import PercentileAxis, PlayerComparison, SeasonLine
 from app.services.insights import max_team_games
-from app.services.players import DATASET, PROFILE_TTL, _player_or_404, _summary, season_stats
+from app.services.players import (
+    DATASET,
+    PROFILE_TTL,
+    _player_or_404,
+    _summary,
+    final_teams,
+    season_stats,
+)
 
 # Without a season, open on the latest regular season where both played this many games.
 MIN_DEFAULT_GAMES = 10
@@ -83,7 +90,8 @@ def compare(ctx: Context, p1: int, p2: int, season: str | None) -> PlayerCompari
             c for c in common if all(lines[i][c].games_played >= MIN_DEFAULT_GAMES for i in (0, 1))
         )
         chosen = season or next(qualifying, common[0] if common else None)
-        summaries = [_summary(player, team) for player, team in players]
+        final = final_teams(ctx.session, [player for player, _ in players])
+        summaries = [_summary(player, team, final.get(player.id)) for player, team in players]
         if chosen is None:
             return PlayerComparison(
                 players=summaries, season=None, common_seasons=[], lines=[], axes=[],

@@ -12,7 +12,7 @@ import { Panel } from "@/components/data/panel";
 import { Unavailable } from "@/components/data/unavailable";
 import { serverTry } from "@/lib/api/server";
 import type { DataStatus, DirectoryPlayer, PlayerPage, Team } from "@/lib/api/types";
-import { formatShooting, formatStat } from "@/lib/format";
+import { formatShooting, formatStat, playerTeamLabel } from "@/lib/format";
 import { hrefWith, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +115,7 @@ function PlayerCell({ player }: { player: DirectoryPlayer }) {
               {player.team.abbreviation}
             </>
           ) : (
-            "No current team"
+            playerTeamLabel(player)
           )}
           {player.position && <span>· {player.position}</span>}
         </p>
@@ -268,7 +268,7 @@ function Podium({
                     {p.full_name}
                   </span>
                   <span className="block text-footnote text-muted-foreground">
-                    {p.team?.abbreviation ?? "No current team"}
+                    {playerTeamLabel(p)}
                     {p.position ? ` · ${p.position}` : ""}
                   </span>
                 </span>

@@ -5,6 +5,7 @@ import { isActive } from "@/components/shell/nav-config";
 import {
   formatCount,
   formatGameTime,
+  playerTeamLabel,
   formatPercent,
   formatShooting,
   formatRelativeTime,
@@ -46,6 +47,16 @@ describe("time formatting", () => {
   it("shows game times in Eastern time", () => {
     expect(formatGameTime("2026-10-30T23:30:00Z")).toBe("Oct 30, 7:30 PM EDT");
     expect(formatGameTime("2026-11-02T00:30:00Z")).toBe("Nov 1, 7:30 PM EST");
+  });
+
+  it("says where a player is now, or when and where they finished", () => {
+    expect(playerTeamLabel({ is_active: true, team: { abbreviation: "LAL" } })).toBe("LAL");
+    expect(playerTeamLabel({ is_active: true, team: null })).toBe("No current team");
+    expect(playerTeamLabel({ is_active: false, to_year: 1997, final_team: "HOU" })).toBe(
+      "Retired 1998 · HOU",
+    );
+    expect(playerTeamLabel({ is_active: false, to_year: 1997, final_team: null })).toBe("Retired 1998");
+    expect(playerTeamLabel({ is_active: false, to_year: null })).toBe("Former player");
   });
 
   it("labels freshness without infrastructure jargon", () => {

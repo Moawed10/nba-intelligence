@@ -865,6 +865,17 @@
       },
       "DirectoryPlayer": {
         "properties": {
+          "final_team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Team"
+          },
           "from_year": {
             "anyOf": [
               {
@@ -3568,6 +3579,17 @@
             ],
             "title": "Birthdate"
           },
+          "final_team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Team"
+          },
           "first_name": {
             "anyOf": [
               {
@@ -3861,6 +3883,17 @@
       },
       "PlayerSummary": {
         "properties": {
+          "final_team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Team"
+          },
           "from_year": {
             "anyOf": [
               {
@@ -4449,6 +4482,17 @@
       },
       "RosterPlayer": {
         "properties": {
+          "final_team": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Team"
+          },
           "from_year": {
             "anyOf": [
               {
@@ -7613,7 +7657,7 @@
     },
     "/api/v1/players/{player_id}/career": {
       "get": {
-        "description": "Every season the player played, regular season and playoffs, back to 1946-47.",
+        "description": "Every season the player played, regular season and playoffs, back to 1946-47. With `team`,\nonly the seasons played for that team (abbreviation as listed that season).",
         "operationId": "get_player_career_api_v1_players__player_id__career_get",
         "parameters": [
           {
@@ -7625,6 +7669,23 @@
               "minimum": 1,
               "title": "Player Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "team",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Z0-9]{2,4}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Team"
             }
           }
         ],
