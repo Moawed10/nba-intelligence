@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from sqlalchemy import Select, and_, case, desc, func, literal, select, text
+from sqlalchemy import Float, Select, and_, case, cast, desc, func, literal, select, text
 from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
@@ -45,7 +45,7 @@ from app.schemas.resources import (
     TrendStat,
 )
 from app.services.common import box, resolve_season, shooting, stat_line, team_ref
-from app.services.insights import averages_from_row, season_totals
+from app.services.insights import averages_from_row, max_team_games, season_totals
 from app.stats import (
     Line,
     aggregate,
@@ -63,11 +63,34 @@ SEARCH_THRESHOLD = 0.6
 PROFILE_RECENT_GAMES = 5
 
 STAT_SORTS = ("games", "pts", "reb", "ast", "fg3m", "stl", "blk", "min", "tov", "plus_minus")
+PCT_SORTS = ("fg_pct", "fg3_pct", "ft_pct", "ts_pct")
 PlayerSort = Literal[
     "full_name", "-full_name", "last_name", "-last_name", "to_year", "-to_year",
     "games", "-games", "pts", "-pts", "reb", "-reb", "ast", "-ast", "fg3m", "-fg3m",
     "stl", "-stl", "blk", "-blk", "min", "-min", "tov", "-tov", "plus_minus", "-plus_minus",
+    "fg_pct", "-fg_pct", "fg3_pct", "-fg3_pct", "ft_pct", "-ft_pct", "ts_pct", "-ts_pct",
 ]  # fmt: skip
+# The NBA's qualifying minimums for percentage leaders: made shots over an 82-game season, which
+# are scaled to the games played so far, and over a career. True shooting has no official rule,
+# so it uses the field-goal one.
+SEASON_MINIMUMS = {"fg_pct": ("fgm", 300), "fg3_pct": ("fg3m", 82), "ft_pct": ("ftm", 125),
+                   "ts_pct": ("fgm", 300)}  # fmt: skip
+CAREER_MINIMUMS = {"fg_pct": 2000, "fg3_pct": 250, "ft_pct": 1200, "ts_pct": 2000}
+
+
+def _shooting(totals, key: str, minimum: float):
+    """The percentage for players with enough made shots; null (sorted last) for everyone else."""
+    made, attempts = {
+        "fg_pct": (totals.c.fgm, totals.c.fga),
+        "fg3_pct": (totals.c.fg3m, totals.c.fg3a),
+        "ft_pct": (totals.c.ftm, totals.c.fta),
+        "ts_pct": (totals.c.pts, 2 * (totals.c.fga + 0.44 * totals.c.fta)),
+    }[key]
+    counted = getattr(totals.c, SEASON_MINIMUMS[key][0])
+    value = cast(made, Float) / func.nullif(attempts, 0)
+    return case((counted >= minimum, value), else_=None)
+
+
 GameLogSort = Literal[
     "game_date", "-game_date", "pts", "-pts", "reb", "-reb", "ast", "-ast",
     "fg3m", "-fg3m", "stl", "-stl", "blk", "-blk", "minutes", "-minutes",
@@ -194,7 +217,7 @@ def list_players(
     """With a season, lists players with regular-season games in it, with their averages. With
     season "all", lists everyone with a career on record and ranks by totals, not averages; a team
     then means that franchise's history rather than its current roster."""
-    stat_sort = sort.lstrip("-") in STAT_SORTS
+    stat_sort = sort.lstrip("-") in (*STAT_SORTS, *PCT_SORTS)
     if stat_sort and not season:
         raise invalid_parameter("sort", "Sorting by a statistic requires a season.", "needs_season")
     if season == ALL_TIME:
@@ -213,7 +236,11 @@ def list_players(
         stmt = stmt.where(Player.is_active.is_(active))
     total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     descending = sort.startswith("-")
-    if totals is not None and stat_sort:
+    if totals is not None and sort.lstrip("-") in PCT_SORTS:
+        key = sort.lstrip("-")
+        full_season = SEASON_MINIMUMS[key][1]
+        column = _shooting(totals, key, full_season * max_team_games(ctx.session, current.id) / 82)
+    elif totals is not None and stat_sort:
         key = sort.lstrip("-")
         # Players whose only lines are did-not-play have no games; NULLIF sorts them last.
         per_game = getattr(totals.c, key) / func.nullif(totals.c.games, 0)
@@ -253,7 +280,10 @@ def _all_time(
         stmt = stmt.where(Player.is_active.is_(active))
     total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     key = sort.lstrip("-")
-    column = getattr(totals.c, key) if key in STAT_SORTS else PLAYER_SORTS[key]
+    if key in PCT_SORTS:
+        column = _shooting(totals, key, CAREER_MINIMUMS[key])
+    else:
+        column = getattr(totals.c, key) if key in STAT_SORTS else PLAYER_SORTS[key]
     rows = ctx.session.execute(
         stmt.order_by(_order(column, sort.startswith("-")), Player.id).limit(limit).offset(offset)
     ).all()

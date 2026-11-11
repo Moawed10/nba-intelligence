@@ -22,28 +22,20 @@ import {
   type DirectoryState,
   includesFormer,
   parseDirectory,
+  isShooting,
   POSITIONS,
+  SHOOTING_COLUMNS as SHOOTING,
   SORT_COLUMNS,
 } from "./filters";
 
 export const PAGE_SIZE = 25;
 const MOBILE_STATS = ["pts", "reb", "ast", "min"] as const;
-const SHOOTING = [
-  { key: "fg_pct", label: "FG%", description: "Share of all shots made" },
-  { key: "fg3_pct", label: "3P%", description: "Share of 3-pointers made" },
-  { key: "ft_pct", label: "FT%", description: "Share of free throws made" },
-  {
-    key: "ts_pct",
-    label: "TS%",
-    description: "True shooting: scoring efficiency counting 3-pointers and free throws",
-  },
-] as const;
-
-type Column = (typeof SORT_COLUMNS)[number];
+type Column = (typeof SORT_COLUMNS)[number] | (typeof SHOOTING)[number];
 
 /** A season shows per-game averages; all time shows career totals, which is how all-time
- * leaders are counted. */
+ * leaders are counted. Shooting percentages are the same either way. */
 function statValue(player: DirectoryPlayer, key: Column["key"], allTime: boolean): string {
+  if (isShooting(key)) return formatShooting(player.season_averages?.[key] ?? null);
   if (allTime) {
     const t = player.totals;
     const value = key === "games" ? t?.games_played : t?.[key];
@@ -54,7 +46,7 @@ function statValue(player: DirectoryPlayer, key: Column["key"], allTime: boolean
 }
 
 function describe(column: Column, allTime: boolean): string {
-  if (!allTime) return column.description;
+  if (!allTime || isShooting(column.key)) return column.description;
   return column.key === "games"
     ? "Games played"
     : `Total ${column.description.replace(/ per game$/, "").toLowerCase()}`;
@@ -74,7 +66,7 @@ function SortHeader({ state, column }: { state: DirectoryState; column: Column }
     <th
       scope="col"
       aria-sort={active ? (state.descending ? "descending" : "ascending") : undefined}
-      className="px-2 py-2.5 text-right"
+      className="px-2 py-2.5 text-right last:pr-4"
     >
       <Link
         href={hrefWith("/players", filtersOf(state), {
@@ -152,21 +144,12 @@ function DirectoryTable({
                 <SortHeader key={column.key} state={state} column={column} />
               ))}
               {SHOOTING.map((column) => (
-                <th
-                  key={column.key}
-                  scope="col"
-                  className="px-3 py-2.5 text-right font-medium text-muted-foreground last:pr-5"
-                >
-                  <abbr title={column.description} className="no-underline">
-                    {column.label}
-                  </abbr>
-                </th>
+                <SortHeader key={column.key} state={state} column={column} />
               ))}
             </tr>
           </thead>
           <tbody>
             {players.map((player) => {
-              const a = player.season_averages;
               const allTime = state.season === ALL_TIME;
               return (
                 <tr
@@ -176,25 +159,17 @@ function DirectoryTable({
                   <th scope="row" className="py-2 pl-5 text-left font-normal">
                     <PlayerCell player={player} />
                   </th>
-                  {SORT_COLUMNS.map((column) => (
+                  {[...SORT_COLUMNS, ...SHOOTING].map((column) => (
                     <td
                       key={column.key}
                       className={cn(
-                        "px-3 py-2 text-right tabular-nums",
+                        "px-3 py-2 text-right tabular-nums last:pr-5",
                         state.sortKey === column.key
                           ? "numeral text-headline text-foreground"
                           : "text-muted-foreground",
                       )}
                     >
                       {statValue(player, column.key, allTime)}
-                    </td>
-                  ))}
-                  {SHOOTING.map((column) => (
-                    <td
-                      key={column.key}
-                      className="px-3 py-2 text-right text-muted-foreground tabular-nums last:pr-5"
-                    >
-                      {formatShooting(a?.[column.key] ?? null)}
                     </td>
                   ))}
                 </tr>
@@ -219,7 +194,9 @@ function DirectoryTable({
               {SHOOTING.map(({ key, label }) => (
                 <div key={key}>
                   <dt className="kicker">{label}</dt>
-                  <dd className="tabular-nums">{formatShooting(player.season_averages?.[key] ?? null)}</dd>
+                  <dd className={cn("tabular-nums", state.sortKey === key && "font-semibold text-primary")}>
+                    {formatShooting(player.season_averages?.[key] ?? null)}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -308,7 +285,7 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
 
   const team = teams.data?.find((t) => String(t.id) === state.team);
   const positionLabel = POSITIONS.find((p) => p.value === state.position)?.label;
-  const sortColumn = SORT_COLUMNS.find((c) => c.key === state.sortKey);
+  const sortColumn = [...SORT_COLUMNS, ...SHOOTING].find((c) => c.key === state.sortKey);
   const sortLabel = sortColumn?.description ?? "Name";
   const scope = allTime ? "All-time regular season" : `${season} regular season`;
   const caption = [
@@ -379,6 +356,14 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
           <>
             {state.page === 1 && state.descending && sortColumn && players.data.items.length >= 3 && (
               <Podium players={players.data.items.slice(0, 3)} column={sortColumn} allTime={allTime} />
+            )}
+            {isShooting(state.sortKey) && (
+              <p className="pt-4 text-footnote text-muted-foreground">
+                {allTime
+                  ? "Percentages rank only players who reached the NBA's career minimums: 2,000 made field goals (also used for TS%), 250 made 3-pointers or 1,200 made free throws."
+                  : "Percentages rank only players on pace for the NBA's full-season minimums: 300 made field goals (also used for TS%), 82 made 3-pointers or 125 made free throws."}{" "}
+                Everyone else is listed after them.
+              </p>
             )}
             <div>
               <DirectoryTable players={players.data.items} state={{ ...state, season }} caption={caption} />

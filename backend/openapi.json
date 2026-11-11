@@ -7342,7 +7342,15 @@
                 "tov",
                 "-tov",
                 "plus_minus",
-                "-plus_minus"
+                "-plus_minus",
+                "fg_pct",
+                "-fg_pct",
+                "fg3_pct",
+                "-fg3_pct",
+                "ft_pct",
+                "-ft_pct",
+                "ts_pct",
+                "-ts_pct"
               ],
               "title": "Sort",
               "type": "string"

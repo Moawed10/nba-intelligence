@@ -3,6 +3,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.models import Game, GameStatus, PlayerMatchup
+from app.services.insights import max_team_games, season_totals
 from tests.api.conftest import NO_SHOTS, RETIRED, SEASON_LABEL, STAR
 from tests.fixtures import player_id
 
@@ -254,3 +255,25 @@ def test_matchup_without_tracking_data_lists_no_defenders(client):
     body = client.get(f"/api/v1/players/{STAR}/matchups/2").json()
     assert body["defenders"] == []
     assert body["usual_pts_per_100"] is None
+
+
+def test_percentage_sorts_rank_only_players_with_enough_made_shots(client, loaded):
+    with Session(loaded) as s:
+        season_id = s.scalar(text("SELECT id FROM seasons WHERE label = :l"), {"l": SEASON_LABEL})
+        team_games = max_team_games(s, season_id)
+        totals = season_totals(season_id).subquery()
+        rows = s.execute(select(totals.c.player_id, totals.c.fgm, totals.c.fga)).all()
+    minimum = 300 * team_games / 82
+    qualified = sorted(
+        (r for r in rows if r.fgm >= minimum and r.fga),
+        key=lambda r: (-r.fgm / r.fga, r.player_id),
+    )
+    params = {"season": SEASON_LABEL, "sort": "-fg_pct", "limit": 100}
+    ids = [p["id"] for p in client.get("/api/v1/players", params=params).json()["items"]]
+    assert qualified and ids[: len(qualified)] == [r.player_id for r in qualified]
+    assert set(ids[len(qualified) :]) == {r.player_id for r in rows} - set(ids[: len(qualified)])
+
+
+def test_all_time_percentages_use_career_minimums(client):
+    params = {"season": "all", "sort": "-ft_pct"}
+    assert client.get("/api/v1/players", params=params).status_code == 200

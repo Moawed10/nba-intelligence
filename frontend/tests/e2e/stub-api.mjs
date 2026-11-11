@@ -581,7 +581,7 @@ createServer((req, res) => {
     if (q.get("active") === "true") items = items.filter((p) => p.is_active);
     const sort = q.get("sort") ?? "full_name";
     const key = sort.replace(/^-/, "");
-    const stats = (p) => p.totals ?? p.season_averages;
+    const stats = (p) => (key.endsWith("_pct") ? p.season_averages : (p.totals ?? p.season_averages));
     const value = (p) => (key === "full_name" ? p.full_name : key === "games" ? stats(p).games_played : stats(p)[key]);
     const sorted = [...items].sort((a, b) => {
       const order = key === "full_name" ? a.full_name.localeCompare(b.full_name) : value(a) - value(b);

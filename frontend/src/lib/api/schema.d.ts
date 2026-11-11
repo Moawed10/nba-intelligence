@@ -3451,7 +3451,7 @@ export interface operations {
                 position?: string | null;
                 active?: boolean | null;
                 season?: string | null;
-                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min" | "tov" | "-tov" | "plus_minus" | "-plus_minus";
+                sort?: "full_name" | "-full_name" | "last_name" | "-last_name" | "to_year" | "-to_year" | "games" | "-games" | "pts" | "-pts" | "reb" | "-reb" | "ast" | "-ast" | "fg3m" | "-fg3m" | "stl" | "-stl" | "blk" | "-blk" | "min" | "-min" | "tov" | "-tov" | "plus_minus" | "-plus_minus" | "fg_pct" | "-fg_pct" | "fg3_pct" | "-fg3_pct" | "ft_pct" | "-ft_pct" | "ts_pct" | "-ts_pct";
                 limit?: number;
                 offset?: number;
             };

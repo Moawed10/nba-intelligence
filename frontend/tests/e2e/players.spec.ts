@@ -38,6 +38,17 @@ test.describe("player directory", () => {
     await expect(page.getByRole("columnheader", { name: /REB/ })).toHaveAttribute("aria-sort", "ascending");
   });
 
+  test("shooting percentages sort and explain who qualifies", async ({ page, isMobile }) => {
+    test.skip(isMobile, "column headers are a desktop table feature");
+    await page.goto("/players");
+    await page.getByRole("link", { name: /^FT%/ }).click();
+    await expect(page).toHaveURL(/sort=-ft_pct/);
+    await expect(page.getByRole("columnheader", { name: /FT%/ })).toHaveAttribute("aria-sort", "descending");
+    await expect(
+      page.getByText(/rank only players on pace for the NBA's full-season minimums/),
+    ).toBeVisible();
+  });
+
   test("filters live in the URL and change the results", async ({ page, isMobile }) => {
     await page.goto("/players");
     await page.getByLabel("Team", { exact: true }).selectOption({ label: "Alpha Ants" });

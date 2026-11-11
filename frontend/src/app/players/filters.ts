@@ -18,8 +18,29 @@ export const SORT_COLUMNS = [
   { key: "tov", label: "TOV", description: "Turnovers per game" },
 ] as const;
 
-export type SortKey = (typeof SORT_COLUMNS)[number]["key"] | "full_name";
-const SORTS = ["full_name", ...SORT_COLUMNS.map((c) => c.key)] as const;
+/** Ranked only among players with enough made shots (the NBA's qualifying minimums). */
+export const SHOOTING_COLUMNS = [
+  { key: "fg_pct", label: "FG%", description: "Share of all shots made" },
+  { key: "fg3_pct", label: "3P%", description: "Share of 3-pointers made" },
+  { key: "ft_pct", label: "FT%", description: "Share of free throws made" },
+  {
+    key: "ts_pct",
+    label: "TS%",
+    description: "True shooting: scoring efficiency counting 3-pointers and free throws",
+  },
+] as const;
+
+export type ShootingKey = (typeof SHOOTING_COLUMNS)[number]["key"];
+export type SortKey = (typeof SORT_COLUMNS)[number]["key"] | ShootingKey | "full_name";
+const SORTS = [
+  "full_name",
+  ...SORT_COLUMNS.map((c) => c.key),
+  ...SHOOTING_COLUMNS.map((c) => c.key),
+] as const;
+
+export function isShooting(key: string): key is ShootingKey {
+  return SHOOTING_COLUMNS.some((c) => c.key === key);
+}
 
 export interface DirectoryFilters {
   season?: string;
