@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // No floating "N" badge in development; production builds never show developer overlays.
+  devIndicators: false,
   // Dev only: lets a phone on the same network load the dev server by LAN address or Bonjour name.
   allowedDevOrigins: ["*.local", "10.*.*.*", "192.168.*.*", "172.*.*.*"],
   turbopack: {

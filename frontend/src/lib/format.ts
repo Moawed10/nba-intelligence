@@ -56,8 +56,11 @@ const DATE_TIME = new Intl.DateTimeFormat("en-US", {
   timeZoneName: "short",
 });
 
+/** Built from parts because engines join date and time differently (Safari says "at"), and the
+ * server and browser text must match exactly. */
 export function formatGameTime(iso: string): string {
-  return DATE_TIME.format(new Date(iso));
+  const part = Object.fromEntries(DATE_TIME.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  return `${part.month} ${part.day}, ${part.hour}:${part.minute} ${part.dayPeriod} ${part.timeZoneName}`;
 }
 
 export function formatHeight(inches: number | null | undefined): string {
