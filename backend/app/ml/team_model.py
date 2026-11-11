@@ -152,7 +152,7 @@ def train_team(frame: pd.DataFrame, config: TrainConfig, plan: SplitPlan) -> Tea
     chosen = evaluated[selected]
 
     val_pred, test_pred = chosen.predict(X["validation"]), chosen.predict(X["test"])
-    conformal = MondrianConformal.fit(y["validation"] - val_pred, val_pred)
+    conformal = MondrianConformal.fit(y["validation"] - val_pred, val_pred, binned_by="prediction")
     coverage = conformal.coverage(y["test"], test_pred, test_pred)
 
     win_model = _calibrator(_margins(parts["validation"], val_pred))
@@ -179,7 +179,9 @@ def train_team(frame: pd.DataFrame, config: TrainConfig, plan: SplitPlan) -> Tea
         conformal=conformal,
         test_coverage=coverage,
         production=production,
-        production_conformal=MondrianConformal.fit(y["test"] - prod_test, prod_test),
+        production_conformal=MondrianConformal.fit(
+            y["test"] - prod_test, prod_test, binned_by="prediction"
+        ),
         win=win,
         production_win_model=_calibrator(_margins(parts["test"], prod_test)),
     )

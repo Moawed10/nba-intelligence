@@ -40,6 +40,7 @@ from app.models import (
 
 log = logging.getLogger(__name__)
 NOT_PERSISTED = "not persisted"
+BY_PREDICTION = {"binned_by": "prediction", "bins": 5}
 
 
 @dataclass
@@ -97,7 +98,6 @@ def train_release(
         p[list(TRAINING_FEATURES)] for p in (parts.train, parts.validation, parts.test)
     )
     X_prod = pd.concat([X_train, X_val])
-    minutes: dict[str, np.ndarray] = {}
 
     order = ["min", *[t for t in targets if t != "min"]]
     for target in order:
@@ -127,17 +127,13 @@ def train_release(
             s["test"]["mae_reduction_vs_baseline"] = 1 - s["test"]["mae"] / baseline_test_mae
         selected = min(evaluated, key=lambda a: evaluated[a].validation_mae)
         chosen = evaluated[selected]
-        if target == "min":
-            minutes = {"validation": chosen.predict(X_val), "test": chosen.predict(X_test)}
-        conformal = MondrianConformal.fit(y_val - chosen.predict(X_val), minutes["validation"])
-        coverage = conformal.coverage(y_test, chosen.predict(X_test), minutes["test"])
+        val_pred, test_pred = chosen.predict(X_val), chosen.predict(X_test)
+        conformal = MondrianConformal.fit(y_val - val_pred, val_pred, **BY_PREDICTION)
+        coverage = conformal.coverage(y_test, test_pred, test_pred)
 
         production = refit(chosen, target, X_prod, np.concatenate([y_train, y_val]), config)
-        if target == "min":
-            minutes["production_test"] = production.predict(X_test)
-        production_conformal = MondrianConformal.fit(
-            y_test - production.predict(X_test), minutes["production_test"]
-        )
+        prod_test = production.predict(X_test)
+        production_conformal = MondrianConformal.fit(y_test - prod_test, prod_test, **BY_PREDICTION)
         if target in targets:
             result.targets[target] = TargetOutcome(
                 target=target,

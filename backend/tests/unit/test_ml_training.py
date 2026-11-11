@@ -88,6 +88,29 @@ def test_conformal_coverage_is_near_nominal_on_exchangeable_data():
     assert MondrianConformal.from_dict(conformal.to_dict()) == conformal
 
 
+def test_old_calibrations_keep_sizing_intervals_by_minutes():
+    stored = {"method": "mondrian_split_conformal", "binned_by": "predicted_minutes", "alpha": 0.2,
+              "edges": [20.0, 30.0], "quantiles": [2.0, 4.0, 6.0], "counts": [9, 9, 9]}  # fmt: skip
+    conformal = MondrianConformal.from_dict(stored)
+    assert conformal.binned_by == "predicted_minutes"
+    lower, upper = conformal.interval(np.array([25.0]), np.array([10.0]))
+    assert (lower[0], upper[0]) == (23.0, 27.0)
+
+
+def test_prediction_binned_intervals_widen_with_the_forecast():
+    rng = np.random.default_rng(2)
+    prediction = rng.uniform(2, 30, 6000)
+    minutes = np.full(6000, 34.0)
+    outcome = prediction + rng.normal(0, prediction / 4)
+    conformal = MondrianConformal.fit(outcome[:3000] - prediction[:3000], prediction[:3000],
+                                      binned_by="prediction", bins=5)  # fmt: skip
+    assert len(conformal.quantiles) == 5
+    assert list(conformal.quantiles) == sorted(conformal.quantiles)
+    coverage = conformal.coverage(outcome[3000:], prediction[3000:], minutes[3000:])
+    assert all(0.74 <= b["coverage"] <= 0.86 for b in coverage["by_bin"])
+    assert MondrianConformal.from_dict(conformal.to_dict()) == conformal
+
+
 def test_vectorized_double_double_matches_the_scalar_definition(frame):
     sample = frame.head(500)
     for _, row in sample.iterrows():
