@@ -2,7 +2,7 @@
 
 The authoritative ledger of development progress. A status here is only as good as its evidence. When this document and executable evidence disagree, the evidence wins and this document is corrected (see [data-ownership.md](data-ownership.md#evidence-hierarchy-for-progress-claims)).
 
-**Last updated:** 2026-11-02
+**Last updated:** 2026-11-10
 
 ## Evidence audit (2026-11-02)
 
@@ -11,14 +11,14 @@ The release-readiness audit re-checked claims in this ledger against current evi
 | Claim | Evidence | Status |
 |---|---|---|
 | "Kept in sync automatically" | The worker has to be running. It was stopped on 2026-10-28 and 29 (finals waited for box scores until it was restarted) and is not running now | Only while `app.cli sync-worker` runs |
-| CI passes on main | `9938ecf` and `e1fccc5` passed. Phases 10 and 11 and the refresh and final-score commits were cancelled or failed individually; their code was first fully checked by the `9938ecf` run | Passing at `9938ecf` |
+| CI passes on main | `9938ecf` and `e1fccc5` passed. Phases 10 and 11 and the refresh and final-score commits were cancelled or failed individually; their code was first fully checked by the `9938ecf` run. Re-checked 2026-11-10: every job passed at `467bcd7` | Passing at `467bcd7` |
 | Career history for every player | Backfill stops when the source refuses requests: 1,080 of 5,197 players at the start of this audit | Partial; resumable |
 | Prediction workflow works end to end | Before this audit, only stub-API tests and manual checks. `npm run test:fullstack` now covers it against the real backend | Verified on synthetic data; not on a deployed host |
 | Fresh checkout installs reproducibly | Clean-room run in [test-report.md](test-report.md#release-readiness-baseline-2026-11-02) | Verified on macOS; CI verifies Ubuntu |
 | Rules in `AGENTS.md` | Only `frontend/AGENTS.md` exists (Next.js guidance); there is no root file | Noted |
 | VoiceOver check | Not performed; checklist in [accessibility-report.md](accessibility-report.md#manual-screen-reader-checklist) | Not Verified |
-| Performance & Security (Phase 13) | Rate limiting, failure paths, scanning and a local load test exist; no hosted measurement | Master table below predates this work; see [release-readiness.md](release-readiness.md) |
-| Testing & Integration (Phase 14) | Real-backend suite in CI | Master table below predates this work |
+| Performance & Security (Phase 13) | Rate limiting, failure paths, scanning and a local load test exist; no hosted measurement | Ledger updated 2026-11-10 against this evidence; see [Phase 13](#phase-13--performance-security--reliability) |
+| Testing & Integration (Phase 14) | Real-backend suite and coverage in CI | Ledger updated 2026-11-10; frontend coverage is below its threshold, see [Phase 14](#phase-14--automated-testing--integration) |
 | Deployment & Portfolio (Phase 15) | Packaging and runbook prepared; nothing deployed | Master table below predates this work |
 
 Release gates and blockers are tracked in [release-readiness.md](release-readiness.md).
@@ -40,11 +40,11 @@ Release gates and blockers are tracked in [release-readiness.md](release-readine
 | 10 | Player Comparison | Complete | 100% (9/9) | None |
 | 11 | Overview & Games | Complete | 100% (9/9) | None |
 | 12 | Accessibility Audit | Verification Pending | 90% (9/10) | VoiceOver pass needs a person |
-| 13 | Performance & Security | Not Started | 0% (0/12) | Core functionality |
-| 14 | Testing & Integration | Not Started | 0% (0/10) | Integrated features |
+| 13 | Performance & Security | In Progress | 58% (7/12) | Query profiling, forecast speed, cache tuning, rendering, CORS test, Web Vitals |
+| 14 | Testing & Integration | In Progress | 100% (10/10) | Frontend coverage 71%, threshold 80% |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 145 / 182 verified deliverables = **80%**.
+**Overall:** 162 / 182 verified deliverables = **89%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -59,7 +59,7 @@ Progress = verified completed deliverables ÷ required deliverables, rounded. Al
 | ML Models Validated | 6 | Pass |
 | Prediction Backend Functional | 7 | Pass |
 | Functional MVP | 1–8 + applicable security, accessibility, integration checks | Not Verified |
-| Analytics Features Complete | 9–11 | Not Verified (9, 10, 11 in progress) |
+| Analytics Features Complete | 9–11 | Pass |
 | Release Quality Gates | 12–14 | Not Verified |
 | Production Release | 15 | Not Verified |
 
@@ -701,22 +701,22 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 13 — Performance, Security & Reliability
 
-**Status:** Not Started · **Progress:** 0% (0/12) · **Dependencies:** Core functionality
+**Status:** In Progress · **Progress:** 58% (7/12) · **Dependencies:** Core functionality
 
 #### Deliverables
 
-- [ ] Query profiling (`EXPLAIN ANALYZE` on primary endpoints)
-- [ ] N+1 fixes
-- [ ] Response-time optimization
-- [ ] Cache tuning
+- [ ] Query profiling (`EXPLAIN ANALYZE` on primary endpoints): no query plans recorded; endpoint latencies were measured in Phase 4 ([test-report.md](test-report.md))
+- [x] N+1 fixes: `tests/api/test_queries.py` checks that query counts don't grow with page size and that a box score takes at most 4 queries
+- [ ] Response-time optimization: read endpoints meet their gates locally, but player forecasts take p95 4.6 s at 20 concurrent clients
+- [ ] Cache tuning: the in-process cache exists ([ADR 0004](decisions/0004-in-process-cache.md)); its sizes and lifetimes haven't been tuned against measurements
 - [ ] Image and chart rendering optimization
-- [ ] Rate limiting (`slowapi`)
-- [ ] CORS validation
-- [ ] Secrets in environment only; secret scan
-- [ ] Ingestion failure tests
-- [ ] Inference failure tests
-- [ ] Connection pool limits verified
-- [ ] Structured logging and monitoring
+- [x] Rate limiting: per-client and global token buckets (`app/services/rate_limit.py`) instead of `slowapi`; `tests/api/test_rate_limit.py`
+- [ ] CORS validation: allowed origins default to none and browsers reach the API through the Next.js proxy, but no test checks it
+- [x] Secrets in environment only; secret scan: gitleaks over the full history in the CI `security` job
+- [x] Ingestion failure tests: `tests/integration/test_ingestion.py` (partial responses, source failures, mid-transaction rollback) and `test_sync.py` (abandoned and failed runs)
+- [x] Inference failure tests: `tests/api/test_failure_paths.py` (missing or corrupt artifacts, unexpected errors)
+- [x] Connection pool limits verified: an exhausted pool returns a controlled 503 (`test_failure_paths.py`); statements time out after 15 s
+- [x] Structured logging and monitoring: JSON logs with request IDs; `app.cli ops-check` health checks ([deployment.md](deployment.md#monitoring)). No alert destination is configured
 
 #### Acceptance criteria
 
@@ -725,49 +725,49 @@ The "recent games" block from the original design was folded into the game log, 
 | LCP p75 | ≤ 2.5 s | Not measured | Not Verified |
 | INP p75 | ≤ 200 ms | Not measured | Not Verified |
 | CLS p75 | ≤ 0.1 | Not measured | Not Verified |
-| Successful responses under load test | ≥ 95% | Not measured | Not Verified |
-| Critical/high vulnerabilities in prod deps | 0 | Not measured | Not Verified |
-| Secrets committed | 0 | Not measured | Not Verified |
-| Admin operations publicly reachable | 0 | Not measured | Not Verified |
-| Prediction rate limiting | Verified | Not measured | Not Verified |
-| Pool within configured limits | Yes | Not measured | Not Verified |
-| Failed ingestion corrupts data | Never | Not measured | Not Verified |
+| Successful responses under load test | ≥ 95% | 100%: 0 unexpected responses in 5,000 requests (5 scenarios × 1,000, 20 clients) on a restored copy of the real data, on the development Mac; not hosted | Pass |
+| Critical/high vulnerabilities in prod deps | 0 | 0 (pip-audit; `npm audit --audit-level=high`) in CI | Pass |
+| Secrets committed | 0 | 0 (gitleaks over the full history in CI) | Pass |
+| Admin operations publicly reachable | 0 | 0: the only non-GET routes are the 3 forecast POSTs; ingestion, training and activation are CLI-only ([ADR 0002](decisions/0002-no-http-admin-operations.md)) | Pass |
+| Prediction rate limiting | Verified | 429 `rate_limited` with `Retry-After`, per client and globally (`test_rate_limit.py`) | Pass |
+| Pool within configured limits | Yes | Pool timeout returns 503 `database_busy` (`test_failure_paths.py`) | Pass |
+| Failed ingestion corrupts data | Never | Never in tests: partial responses write nothing and failures roll back (`test_ingestion.py`) | Pass |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** [test-report.md](test-report.md), [release-readiness.md](release-readiness.md), CI `backend` and `security` jobs. · **Decision:** In Progress (5 deliverables and Core Web Vitals open)
 
 ---
 
 ### Phase 14 — Automated Testing & Integration
 
-**Status:** Not Started · **Progress:** 0% (0/10) · **Dependencies:** Integrated features
+**Status:** In Progress · **Progress:** 100% (10/10) · **Dependencies:** Integrated features
 
 #### Deliverables
 
-- [ ] Frontend unit tests
-- [ ] Backend unit tests
-- [ ] Database integration tests
-- [ ] Ingestion tests
-- [ ] ML tests
-- [ ] Prediction API tests
-- [ ] Playwright E2E
-- [ ] Full workflow tests
-- [ ] `docs/test-report.md` with commands, environment and results
-- [ ] `.github/workflows/ci.yml` on pull requests (lint, types, tests, migrations, OpenAPI type diff)
+- [x] Frontend unit tests: Vitest, `frontend/tests/unit` (7 files)
+- [x] Backend unit tests: `backend/tests/unit` (15 files)
+- [x] Database integration tests: `backend/tests/integration` and `backend/tests/api` against PostgreSQL
+- [x] Ingestion tests: `test_ingestion.py`, `test_sync.py`, `test_transforms.py`
+- [x] ML tests: `test_ml_*.py`, `test_team_model.py`, `test_ml_registry.py`
+- [x] Prediction API tests: `test_predictions.py`, `test_game_forecasts.py`, `test_rate_limit.py`
+- [x] Playwright E2E: 12 specs against the stub API; 535 passed in CI at `467bcd7`
+- [x] Full workflow tests: `npm run test:fullstack` drives the prediction workflow through real Next.js, FastAPI and PostgreSQL
+- [x] `docs/test-report.md` with commands, environment and results
+- [x] `.github/workflows/ci.yml` on pull requests: lint, types, tests, migrations and the OpenAPI type diff, plus `security` and `containers` jobs
 
 #### Acceptance criteria
 
 | Criterion | Threshold | Actual | Status |
 |---|---|---|---|
-| Critical-path tests passing | 100% | Not measured | Not Verified |
-| Backend business-logic coverage | ≥ 85% | Not measured | Not Verified |
-| Frontend business-logic coverage | ≥ 80% | Not measured | Not Verified |
-| Migrations tested on clean DB | 100% | Not measured | Not Verified |
-| Primary workflows covered by E2E | 100% | Not measured | Not Verified |
-| CI on pull requests | Yes | Not measured | Not Verified |
-| Failing required checks | 0 | Not measured | Not Verified |
-| Known release-blocking defects | 0 | Not measured | Not Verified |
+| Critical-path tests passing | 100% | Every CI job passed at `467bcd7`, the latest completed run on main (2026-11-10) | Pass |
+| Backend business-logic coverage | ≥ 85% | 92% of `backend/app` (measured over all application code, not only business logic) | Pass |
+| Frontend business-logic coverage | ≥ 80% | 71% statements, 73% lines over `src/lib` and `src/components/data` | Fail |
+| Migrations tested on clean DB | 100% | `tests/integration/test_migrations.py`; the full-stack suite also migrates an empty database | Pass |
+| Primary workflows covered by E2E | 100% | Search, profile, predictions, compare, models, games, teams and overview each have a spec; the prediction workflow also runs against the real backend | Pass |
+| CI on pull requests | Yes | Yes | Pass |
+| Failing required checks | 0 | 0 at `467bcd7` | Pass |
+| Known release-blocking defects | 0 | 0 open defects; the release blockers in [release-readiness.md](release-readiness.md) are deployment and manual-check items | Pass |
 
-**Evidence:** none yet · **Decision:** Not Verified (not started)
+**Evidence:** CI run 42928987920 at `467bcd7`, [test-report.md](test-report.md). · **Decision:** In Progress (frontend coverage below threshold)
 
 ---
 
