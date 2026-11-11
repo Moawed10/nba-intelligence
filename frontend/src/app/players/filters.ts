@@ -36,6 +36,12 @@ export interface DirectoryState extends DirectoryFilters {
 }
 
 export const DEFAULT_SORT = "-pts";
+export const ALL_TIME = "all";
+
+/** All time lists former players by default (the greats are mostly retired); a season does not. */
+export function includesFormer(filters: Pick<DirectoryFilters, "season" | "status">): boolean {
+  return filters.status === "all" || (filters.season === ALL_TIME && filters.status !== "active");
+}
 
 export function parseDirectory(params: SearchParams): DirectoryState {
   const team = param(params, "team");
@@ -45,10 +51,10 @@ export function parseDirectory(params: SearchParams): DirectoryState {
   const sortKey = oneOf(rawSort.replace(/^-/, ""), SORTS, "pts");
   const sort = `${descending ? "-" : ""}${sortKey}`;
   return {
-    season: season && SEASON_LABEL.test(season) ? season : undefined,
+    season: season && (season === ALL_TIME || SEASON_LABEL.test(season)) ? season : undefined,
     team: team && /^\d+$/.test(team) ? team : undefined,
     position: oneOf(param(params, "position"), ["G", "F", "C", ""] as const, "") || undefined,
-    status: param(params, "status") === "all" ? "all" : undefined,
+    status: oneOf(param(params, "status"), ["all", "active", ""] as const, "") || undefined,
     sort: sort === DEFAULT_SORT ? undefined : sort,
     page: positiveInt(param(params, "page")),
     sortKey,

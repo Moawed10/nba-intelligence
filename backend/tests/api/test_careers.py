@@ -99,6 +99,29 @@ def test_career_totals_count_a_traded_season_once_and_skip_unrecorded_seasons(cl
                                   "tov": "1985-86"}  # fmt: skip
 
 
+def test_all_time_directory_ranks_career_totals_and_counts_trades_once(client, career):
+    params = {"season": "all", "sort": "-pts", "active": "false"}
+    body = client.get("/api/v1/players", params=params).json()
+    assert [p["id"] for p in body["items"]] == [RETIRED]
+    totals = body["items"][0]["totals"]
+    # 1970-71 plus both 1985-86 team rows; the combined TOT row is not counted again.
+    assert totals["games_played"] == 150 and totals["pts"] == 3200
+    assert totals["stl"] == 80  # sums the seasons that recorded steals
+    assert body["meta"]["data_freshness"]["dataset"] == "career_history"
+
+
+def test_all_time_with_a_team_counts_only_that_franchise(client, career):
+    params = {"season": "all", "team_id": 2, "active": "false"}
+    totals = client.get("/api/v1/players", params=params).json()["items"][0]["totals"]
+    assert totals["games_played"] == 40 and totals["pts"] == 1000
+
+
+def test_all_time_has_no_plus_minus(client, career):
+    response = client.get("/api/v1/players", params={"season": "all", "sort": "-plus_minus"})
+    assert response.status_code == 400
+    assert response.json()["error"]["details"][0]["issue"] == "unavailable_sort"
+
+
 def test_playoffs_are_listed_separately(client, career):
     playoffs = client.get(f"/api/v1/players/{RETIRED}/career").json()["playoffs"]
     assert [s["season"] for s in playoffs["seasons"]] == ["1985-86"]

@@ -8,7 +8,7 @@ import type { Team } from "@/lib/api/types";
 import { hrefWith } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
-import { type DirectoryFilters, POSITIONS } from "./filters";
+import { ALL_TIME, type DirectoryFilters, includesFormer, POSITIONS } from "./filters";
 
 const SELECT = "field w-full";
 
@@ -52,10 +52,14 @@ export function DirectoryFilterBar({
           id={`${id}-season`}
           value={shown.season ?? seasons[0]}
           onChange={(event) =>
-            update({ season: event.target.value === seasons[0] ? undefined : event.target.value })
+            update({
+              season: event.target.value === seasons[0] ? undefined : event.target.value,
+              status: undefined,
+            })
           }
           className={SELECT}
         >
+          <option value={ALL_TIME}>All time</option>
           {seasons.map((season) => (
             <option key={season} value={season}>
               {season}
@@ -99,8 +103,12 @@ export function DirectoryFilterBar({
       <label className="flex min-h-11 items-center gap-2 text-subhead lg:justify-self-end">
         <input
           type="checkbox"
-          checked={shown.status === "all"}
-          onChange={(event) => update({ status: event.target.checked ? "all" : undefined })}
+          checked={includesFormer(shown)}
+          onChange={(event) => {
+            const allTime = shown.season === ALL_TIME;
+            if (event.target.checked) update({ status: allTime ? undefined : "all" });
+            else update({ status: allTime ? "active" : undefined });
+          }}
           className="size-5 accent-primary pointer-coarse:size-6"
         />
         Include former players

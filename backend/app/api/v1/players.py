@@ -37,7 +37,7 @@ def list_players(
     team_id: int | None = None,
     position: Annotated[str | None, Query(max_length=16)] = None,
     active: bool | None = None,
-    season: SeasonLabel = None,
+    season: Annotated[str | None, Query(pattern=r"^(\d{4}-\d{2}|all)$")] = None,
     sort: players.PlayerSort = "full_name",
     limit: Limit = LIMIT_DEFAULT,
     offset: Offset = 0,

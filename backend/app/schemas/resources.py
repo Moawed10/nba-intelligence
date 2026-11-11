@@ -262,8 +262,26 @@ class SeasonAverages(BaseModel):
     ts_pct: float | None
 
 
+class CareerTotals(BaseModel):
+    """Regular-season totals as published by the source. None means the league recorded that
+    statistic in none of the seasons counted (steals and blocks begin 1973-74, threes 1979-80).
+    """
+
+    games_played: int
+    min: int | None
+    pts: int
+    reb: int | None
+    ast: int | None
+    fg3m: int | None
+    stl: int | None
+    blk: int | None
+    tov: int | None
+
+
 class DirectoryPlayer(PlayerSummary):
     season_averages: SeasonAverages | None
+    # Only for all-time listings: career totals, or with a team, totals for that franchise.
+    totals: CareerTotals | None = None
 
 
 class Leader(BaseModel):

@@ -17,7 +17,14 @@ import { hrefWith, type SearchParams } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
 import { DirectoryFilterBar } from "./directory-controls";
-import { type DirectoryState, parseDirectory, POSITIONS, SORT_COLUMNS } from "./filters";
+import {
+  ALL_TIME,
+  type DirectoryState,
+  includesFormer,
+  parseDirectory,
+  POSITIONS,
+  SORT_COLUMNS,
+} from "./filters";
 
 export const PAGE_SIZE = 25;
 const MOBILE_STATS = ["pts", "reb", "ast", "min"] as const;
@@ -32,12 +39,34 @@ const SHOOTING = [
   },
 ] as const;
 
+type Column = (typeof SORT_COLUMNS)[number];
+
+/** A season shows per-game averages; all time shows career totals, which is how all-time
+ * leaders are counted. */
+function statValue(player: DirectoryPlayer, key: Column["key"], allTime: boolean): string {
+  if (allTime) {
+    const t = player.totals;
+    const value = key === "games" ? t?.games_played : t?.[key];
+    return value == null ? "—" : value.toLocaleString("en-US");
+  }
+  const a = player.season_averages;
+  return key === "games" ? String(a?.games_played ?? "—") : formatStat(a?.[key] ?? null);
+}
+
+function describe(column: Column, allTime: boolean): string {
+  if (!allTime) return column.description;
+  return column.key === "games"
+    ? "Games played"
+    : `Total ${column.description.replace(/ per game$/, "").toLowerCase()}`;
+}
+
 function filtersOf(state: DirectoryState) {
   const { season, team, position, status, sort } = state;
   return { season, team, position, status, sort };
 }
 
-function SortHeader({ state, column }: { state: DirectoryState; column: (typeof SORT_COLUMNS)[number] }) {
+function SortHeader({ state, column }: { state: DirectoryState; column: Column }) {
+  const description = describe(column, state.season === ALL_TIME);
   const active = state.sortKey === column.key;
   const next = active && state.descending ? column.key : `-${column.key}`;
   const Icon = active ? (state.descending ? ArrowDown : ArrowUp) : null;
@@ -53,14 +82,14 @@ function SortHeader({ state, column }: { state: DirectoryState; column: (typeof 
           page: undefined,
         })}
         scroll={false}
-        title={column.description}
+        title={description}
         className={cn(
           "inline-flex min-h-8 items-center justify-end gap-1 rounded-md px-1 font-medium transition-colors hover:text-foreground",
           active ? "text-primary" : "text-muted-foreground",
         )}
       >
         {column.label}
-        <span className="sr-only">, {column.description}, sort</span>
+        <span className="sr-only">, {description}, sort</span>
         {Icon && <Icon aria-hidden className="size-3.5" />}
       </Link>
     </th>
@@ -138,6 +167,7 @@ function DirectoryTable({
           <tbody>
             {players.map((player) => {
               const a = player.season_averages;
+              const allTime = state.season === ALL_TIME;
               return (
                 <tr
                   key={player.id}
@@ -156,9 +186,7 @@ function DirectoryTable({
                           : "text-muted-foreground",
                       )}
                     >
-                      {column.key === "games"
-                        ? (a?.games_played ?? "—")
-                        : formatStat(a?.[column.key] ?? null)}
+                      {statValue(player, column.key, allTime)}
                     </td>
                   ))}
                   {SHOOTING.map((column) => (
@@ -184,7 +212,7 @@ function DirectoryTable({
                 <div key={key}>
                   <dt className="kicker">{key.toUpperCase()}</dt>
                   <dd className={cn("tabular-nums", state.sortKey === key && "font-semibold text-primary")}>
-                    {formatStat(player.season_averages?.[key] ?? null)}
+                    {statValue(player, key, state.season === ALL_TIME)}
                   </dd>
                 </div>
               ))}
@@ -202,13 +230,19 @@ function DirectoryTable({
   );
 }
 
-function Podium({ players, column }: { players: DirectoryPlayer[]; column: (typeof SORT_COLUMNS)[number] }) {
-  const value = (p: DirectoryPlayer) =>
-    column.key === "games" ? p.season_averages?.games_played : p.season_averages?.[column.key];
+function Podium({
+  players,
+  column,
+  allTime,
+}: {
+  players: DirectoryPlayer[];
+  column: Column;
+  allTime: boolean;
+}) {
   return (
     <section aria-labelledby="podium-title" className="border-b border-border py-5">
       <h3 id="podium-title" className="kicker mb-3">
-        Top 3 · {column.description}
+        Top 3 · {describe(column, allTime)}
       </h3>
       <ol className="stagger grid gap-3 sm:grid-cols-3">
         {players.map((p, i) => (
@@ -239,9 +273,7 @@ function Podium({ players, column }: { players: DirectoryPlayer[]; column: (type
                   </span>
                 </span>
                 <span className="text-right">
-                  <span className="numeral block text-[2.75rem]">
-                    {column.key === "games" ? (value(p) ?? "—") : formatStat(value(p) ?? null)}
-                  </span>
+                  <span className="numeral block text-[2.75rem]">{statValue(p, column.key, allTime)}</span>
                   <span className="kicker">{column.label}</span>
                 </span>
               </span>
@@ -260,13 +292,14 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
     serverTry<DataStatus>("/data-status"),
   ]);
   const seasons = (status.data?.seasons ?? []).filter((s) => s.final_games > 0).map((s) => s.season);
-  const season = state.season && seasons.includes(state.season) ? state.season : seasons[0];
+  const allTime = state.season === ALL_TIME;
+  const season = allTime || (state.season && seasons.includes(state.season)) ? state.season : seasons[0];
   const players = season
     ? await serverTry<PlayerPage>("/players", {
         season,
         team_id: state.team,
         position: state.position,
-        active: state.status === "all" ? undefined : true,
+        active: includesFormer(state) ? undefined : true,
         sort: `${state.descending ? "-" : ""}${state.sortKey}`,
         limit: PAGE_SIZE,
         offset: (state.page - 1) * PAGE_SIZE,
@@ -277,11 +310,12 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
   const positionLabel = POSITIONS.find((p) => p.value === state.position)?.label;
   const sortColumn = SORT_COLUMNS.find((c) => c.key === state.sortKey);
   const sortLabel = sortColumn?.description ?? "Name";
+  const scope = allTime ? "All-time regular season" : `${season} regular season`;
   const caption = [
-    `${season} regular season`,
-    team && `${team.city} ${team.name}`,
+    scope,
+    team && (allTime ? `with the ${team.city} ${team.name}` : `${team.city} ${team.name}`),
     positionLabel,
-    `sorted by ${sortLabel.toLowerCase()}`,
+    `sorted by ${(allTime && sortColumn ? describe(sortColumn, true) : sortLabel).toLowerCase()}`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -310,14 +344,16 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
           )
         }
       >
-        Only players with regular-season games in {season} are listed.
+        {allTime
+          ? "Only players whose careers are on record are listed."
+          : `Only players with regular-season games in ${season} are listed.`}
       </Unavailable>
     );
 
   return (
     <Panel
       id="directory"
-      kicker={season ? `${season} regular season` : "Directory"}
+      kicker={season ? scope : "Directory"}
       title="Player directory"
       actions={
         freshness && <FreshnessBadge status={freshness.status} lastSync={freshness.last_successful_sync} />
@@ -326,6 +362,14 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
       {teams.data && seasons.length > 0 && (
         <div className="border-b border-border pb-4">
           <DirectoryFilterBar teams={teams.data} seasons={seasons} filters={filtersOf(state)} />
+          {allTime && (
+            <p className="mt-3 max-w-prose text-footnote text-muted-foreground">
+              Career regular-season totals as the NBA publishes them, updated daily.
+              {team ? ` Only seasons played for the ${team.name} count.` : ""} Steals and blocks were first
+              counted in 1973-74 and 3-pointers in 1979-80. Many former players&rsquo; careers are still being
+              loaded, so some all-time greats are not listed yet.
+            </p>
+          )}
         </div>
       )}
       {body ? (
@@ -334,7 +378,7 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
         players?.data && (
           <>
             {state.page === 1 && state.descending && sortColumn && players.data.items.length >= 3 && (
-              <Podium players={players.data.items.slice(0, 3)} column={sortColumn} />
+              <Podium players={players.data.items.slice(0, 3)} column={sortColumn} allTime={allTime} />
             )}
             <div>
               <DirectoryTable players={players.data.items} state={{ ...state, season }} caption={caption} />

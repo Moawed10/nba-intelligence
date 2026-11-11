@@ -532,6 +532,109 @@
         "title": "CareerTable",
         "type": "object"
       },
+      "CareerTotals": {
+        "description": "Regular-season totals as published by the source. None means the league recorded that\nstatistic in none of the seasons counted (steals and blocks begin 1973-74, threes 1979-80).",
+        "properties": {
+          "ast": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ast"
+          },
+          "blk": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blk"
+          },
+          "fg3m": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fg3M"
+          },
+          "games_played": {
+            "title": "Games Played",
+            "type": "integer"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "pts": {
+            "title": "Pts",
+            "type": "integer"
+          },
+          "reb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reb"
+          },
+          "stl": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stl"
+          },
+          "tov": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tov"
+          }
+        },
+        "required": [
+          "games_played",
+          "min",
+          "pts",
+          "reb",
+          "ast",
+          "fg3m",
+          "stl",
+          "blk",
+          "tov"
+        ],
+        "title": "CareerTotals",
+        "type": "object"
+      },
       "CoverageBin": {
         "description": "Interval coverage for predictions in one predicted-minutes bin of the calibration.",
         "properties": {
@@ -837,6 +940,16 @@
               }
             ],
             "title": "To Year"
+          },
+          "totals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CareerTotals"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7143,7 +7256,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "pattern": "^\\d{4}-\\d{2}$",
+                  "pattern": "^(\\d{4}-\\d{2}|all)$",
                   "type": "string"
                 },
                 {

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from sqlalchemy import Select, and_, case, desc, func, select, text
+from sqlalchemy import Select, and_, case, desc, func, literal, select, text
 from sqlalchemy.orm import Session, aliased
 
 from app.api.deps import Context
@@ -26,6 +26,7 @@ from app.schemas.resources import (
     CareerSeason,
     CareerStint,
     CareerTable,
+    CareerTotals,
     DirectoryPlayer,
     InjuryReport,
     MatchupDefender,
@@ -107,14 +108,60 @@ def _player_or_404(session: Session, player_id: int) -> tuple[Player, Team | Non
     return tuple(row)
 
 
+ALL_TIME = "all"
+CAREER_TOTALS = ("min", "pts", "reb", "ast", "fg3m", "stl", "blk", "tov", "fgm", "fga", "fg3a",
+                "ftm", "fta")  # fmt: skip
+
+
+def career_totals(team_id: int | None) -> Select:
+    """Regular-season totals per player from the source's career rows. Team rows are summed and the
+    combined "TOT" rows skipped, so a team filter keeps only what was done for that franchise."""
+
+    def total(stat: str):
+        column = PlayerSeason.minutes if stat == "min" else getattr(PlayerSeason, stat)
+        return func.sum(column).label(stat)
+
+    stmt = (
+        select(
+            PlayerSeason.player_id.label("player_id"),
+            func.sum(PlayerSeason.games).label("games"),
+            *(total(s) for s in CAREER_TOTALS),
+            literal(None).label("plus_minus"),
+        )
+        .where(
+            PlayerSeason.season_type == SeasonType.regular,
+            PlayerSeason.team_abbreviation != "TOT",
+        )
+        .group_by(PlayerSeason.player_id)
+    )
+    if team_id is not None:
+        stmt = stmt.where(PlayerSeason.team_id == team_id)
+    return stmt
+
+
+def _career(row) -> CareerTotals:
+    def count(stat: str) -> int | None:
+        value = getattr(row, stat)
+        return None if value is None else int(value)
+
+    return CareerTotals(
+        games_played=int(row.games), pts=int(row.pts),
+        **{s: count(s) for s in ("min", "reb", "ast", "fg3m", "stl", "blk", "tov")},
+    )  # fmt: skip
+
+
 def list_players(
     ctx: Context, *, team_id: int | None, position: str | None, active: bool | None,
     season: str | None, sort: PlayerSort, limit: int, offset: int,
 ) -> Page[DirectoryPlayer]:  # fmt: skip
-    """With a season, lists players with regular-season games in it, with their averages."""
+    """With a season, lists players with regular-season games in it, with their averages. With
+    season "all", lists everyone with a career on record and ranks by totals, not averages; a team
+    then means that franchise's history rather than its current roster."""
     stat_sort = sort.lstrip("-") in STAT_SORTS
     if stat_sort and not season:
         raise invalid_parameter("sort", "Sorting by a statistic requires a season.", "needs_season")
+    if season == ALL_TIME:
+        return _all_time(ctx, team_id, position, active, sort, limit, offset)
     stmt = select(Player, Team).outerjoin(Team, Team.id == Player.current_team_id)
     totals = None
     if season:
@@ -147,6 +194,41 @@ def list_players(
         for row in rows
     ]
     return Page(items=items, total=total, limit=limit, offset=offset, meta=ctx.meta(DATASET))
+
+
+def _all_time(
+    ctx: Context, team_id: int | None, position: str | None, active: bool | None,
+    sort: PlayerSort, limit: int, offset: int,
+) -> Page[DirectoryPlayer]:  # fmt: skip
+    if sort.lstrip("-") == "plus_minus":
+        raise invalid_parameter("sort", "Career records have no plus-minus.", "unavailable_sort")
+    totals = career_totals(team_id).subquery()
+    stmt = (
+        select(Player, Team, *totals.c)
+        .join(totals, totals.c.player_id == Player.id)
+        .outerjoin(Team, Team.id == Player.current_team_id)
+        .where(totals.c.games > 0)
+    )
+    if position:
+        stmt = stmt.where(Player.position.ilike(f"%{_escape_like(position)}%", escape="\\"))
+    if active is not None:
+        stmt = stmt.where(Player.is_active.is_(active))
+    total = ctx.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    key = sort.lstrip("-")
+    column = getattr(totals.c, key) if key in STAT_SORTS else PLAYER_SORTS[key]
+    rows = ctx.session.execute(
+        stmt.order_by(_order(column, sort.startswith("-")), Player.id).limit(limit).offset(offset)
+    ).all()
+    items = [
+        DirectoryPlayer(
+            **_summary(row[0], row[1]).model_dump(),
+            season_averages=averages_from_row(row, ALL_TIME),
+            totals=_career(row),
+        )
+        for row in rows
+    ]
+    meta = ctx.meta("career_history")
+    return Page(items=items, total=total, limit=limit, offset=offset, meta=meta)
 
 
 def _escape_like(value: str) -> str:

@@ -60,6 +60,20 @@ test.describe("player directory", () => {
     await expect(page.getByText("Page 1 of 2 · 30 total")).toBeVisible();
   });
 
+  test("all time ranks career totals and includes former players", async ({ page }) => {
+    await page.goto("/players");
+    await page.getByLabel("Season", { exact: true }).selectOption({ label: "All time" });
+    await expect(page).toHaveURL(/season=all/);
+    await expect(page.getByText("All-time regular season").first()).toBeVisible();
+    await expect(page.getByText("Top 3 · Total points")).toBeVisible();
+    await expect(page.getByLabel("Include former players")).toBeChecked();
+    await expect(page.getByText(/careers are still being loaded/)).toBeVisible();
+
+    await page.getByLabel("Include former players").uncheck();
+    await expect(page).toHaveURL(/status=active/);
+    await expect(page.getByLabel("Include former players")).not.toBeChecked();
+  });
+
   test("shows an empty state with a way back", async ({ page, isMobile }) => {
     await page.goto("/players?team=99");
     await expect(page.getByText("No players match these filters")).toBeVisible();
@@ -92,7 +106,10 @@ test.describe("player profile", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Zed Fixture");
     await expect(page.getByText("Alpha Ants · G · 6′7″, 215 lb")).toBeVisible();
     const hero = page.getByRole("region", { name: "Zed Fixture" });
-    await expect(hero.getByRole("link", { name: "Predict next game" })).toHaveAttribute("href", `/predict?player=${STAR}`);
+    await expect(hero.getByRole("link", { name: "Predict next game" })).toHaveAttribute(
+      "href",
+      `/predict?player=${STAR}`,
+    );
     await expect(hero.getByRole("link", { name: "Compare" })).toHaveAttribute("href", `/compare?p1=${STAR}`);
     await expect(page.getByRole("heading", { name: `${season.season} regular season` })).toBeVisible();
     await expect(page.getByText(`${season.games_played} games played`)).toBeVisible();
@@ -155,7 +172,9 @@ test.describe("player profile", () => {
     await page.goto("/players/1990");
     const hero = page.getByRole("definition").filter({ hasText: "15.5" });
     await expect(hero).toBeVisible();
-    const career = page.getByRole("table", { name: "Former Fixture, career regular season averages by season" });
+    const career = page.getByRole("table", {
+      name: "Former Fixture, career regular season averages by season",
+    });
     await expect(career.locator("tbody tr")).toHaveCount(2);
     await expect(career.locator("tbody tr").first()).toContainText("2080-81");
     await expect(career.locator("tbody tr").nth(1)).toContainText("OLD");

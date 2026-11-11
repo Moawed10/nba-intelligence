@@ -838,6 +838,31 @@ export interface components {
             totals: components["schemas"]["CareerLine"] | null;
         };
         /**
+         * CareerTotals
+         * @description Regular-season totals as published by the source. None means the league recorded that
+         *     statistic in none of the seasons counted (steals and blocks begin 1973-74, threes 1979-80).
+         */
+        CareerTotals: {
+            /** Ast */
+            ast: number | null;
+            /** Blk */
+            blk: number | null;
+            /** Fg3M */
+            fg3m: number | null;
+            /** Games Played */
+            games_played: number;
+            /** Min */
+            min: number | null;
+            /** Pts */
+            pts: number;
+            /** Reb */
+            reb: number | null;
+            /** Stl */
+            stl: number | null;
+            /** Tov */
+            tov: number | null;
+        };
+        /**
          * CoverageBin
          * @description Interval coverage for predictions in one predicted-minutes bin of the calibration.
          */
@@ -915,6 +940,7 @@ export interface components {
             team: components["schemas"]["TeamRef"] | null;
             /** To Year */
             to_year: number | null;
+            totals?: components["schemas"]["CareerTotals"] | null;
         };
         /** ErrorBody */
         ErrorBody: {

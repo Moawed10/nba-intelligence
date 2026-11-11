@@ -547,7 +547,21 @@ createServer((req, res) => {
   if (path === "/players") {
     let items = PLAYERS;
     const season = q.get("season");
-    if (season) {
+    if (season === "all") {
+      // Career totals: two stub seasons' worth of the fixture lines, former players included.
+      items = items.map((p) => {
+        const s = summary(gameLines(p, "2099-00"));
+        const games = s.games_played * 2;
+        const total = (k) => Math.round((s.per_game[k] ?? 0) * games);
+        return {
+          ...p,
+          season_averages: { season, games_played: games, ...s.per_game, fg_pct: s.shooting.fg_pct, fg_pct_status: null,
+            fg3_pct: s.shooting.fg3_pct, ft_pct: s.shooting.ft_pct, ts_pct: 0.58, plus_minus: null },
+          totals: { games_played: games, min: total("min"), pts: total("pts"), reb: total("reb"), ast: total("ast"),
+            fg3m: total("fg3m"), stl: total("stl"), blk: total("blk"), tov: total("tov") },
+        };
+      });
+    } else if (season) {
       items = items
         .filter((p) => p.is_active && GAMES_PER_SEASON[season])
         .map((p) => {
@@ -567,7 +581,8 @@ createServer((req, res) => {
     if (q.get("active") === "true") items = items.filter((p) => p.is_active);
     const sort = q.get("sort") ?? "full_name";
     const key = sort.replace(/^-/, "");
-    const value = (p) => (key === "full_name" ? p.full_name : key === "games" ? p.season_averages.games_played : p.season_averages[key]);
+    const stats = (p) => p.totals ?? p.season_averages;
+    const value = (p) => (key === "full_name" ? p.full_name : key === "games" ? stats(p).games_played : stats(p)[key]);
     const sorted = [...items].sort((a, b) => {
       const order = key === "full_name" ? a.full_name.localeCompare(b.full_name) : value(a) - value(b);
       return (sort.startsWith("-") ? -order : order) || a.full_name.localeCompare(b.full_name);
