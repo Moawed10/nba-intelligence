@@ -36,6 +36,17 @@ class FakeResponse:
     status_code: int = 200
     text: str = BODY
     headers: dict = field(default_factory=dict)
+    encoding: str = "utf-8"
+    pieces: int = 1
+
+    def iter_content(self, chunk_size=None):
+        data = self.text.encode()
+        step = max(1, -(-len(data) // self.pieces))
+        for i in range(0, len(data), step):
+            yield data[i : i + step]
+
+    def close(self):
+        pass
 
 
 @dataclass
@@ -43,7 +54,7 @@ class FakeSession:
     responses: list
     calls: int = 0
 
-    def get(self, url, params=None, headers=None, timeout=None):
+    def get(self, url, params=None, headers=None, timeout=None, stream=False):
         response = self.responses[min(self.calls, len(self.responses) - 1)]
         self.calls += 1
         if isinstance(response, Exception):
@@ -56,7 +67,7 @@ def make_client(responses, tmp_path, **kwargs):
     ticks = iter(range(0, 10_000, 10))
     client = NBAStatsClient(
         interval=1.0,
-        timeout=5,
+        timeout=50,
         max_attempts=5,
         backoff_base=1.0,
         backoff_cap=60.0,
@@ -146,7 +157,7 @@ def test_cacheable_responses_are_reused(tmp_path):
 
 def test_throttle_spaces_requests(tmp_path):
     client, sleeps = make_client([FakeResponse()], tmp_path)
-    client.clock = iter([0.0, 0.0, 0.25, 0.25]).__next__
+    client.clock = iter([0.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25]).__next__
     fetch(client)
     fetch(client)
     assert sleeps == [0.75]
@@ -159,3 +170,15 @@ def test_backoff_and_retry_after_parsing():
     assert parse_retry_after("5") == 5.0
     assert parse_retry_after("soon") is None
     assert parse_retry_after(None) is None
+
+
+def test_a_reply_that_trickles_in_past_the_timeout_is_a_retryable_timeout(tmp_path):
+    client, _ = make_client([FakeResponse(pieces=20)], tmp_path)
+    client.max_attempts = 1
+    with pytest.raises(RetryableSourceError, match="Timeout"):
+        fetch(client)
+
+
+def test_a_reply_read_within_the_timeout_succeeds(tmp_path):
+    client, _ = make_client([FakeResponse(pieces=3)], tmp_path)
+    assert len(fetch(client).frames) == 1

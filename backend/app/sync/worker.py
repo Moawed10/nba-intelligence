@@ -363,12 +363,16 @@ def run_live_scores(engine: Engine, client: StatsSource) -> None:
     failures = 0
     while True:
         active = False
+        started = time.monotonic()
         try:
             active = poll_live_once(engine, client, datetime.now(UTC)) is not None
             failures = 0
         except Exception as error:
             failures += 1
-            log.warning("live score poll failed", extra={"error": type(error).__name__})
+            log.warning("live score poll failed", extra={
+                "error": type(error).__name__, "detail": str(error)[:200],
+                "seconds": round(time.monotonic() - started, 1), "failures": failures,
+            })  # fmt: skip
         time.sleep(next_live_wait(failures, active))
 
 

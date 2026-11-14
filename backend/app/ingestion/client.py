@@ -139,27 +139,47 @@ class NBAStatsClient:
 
     def _request_once(self, url: str, query: dict[str, Any]) -> str:
         self._throttle()
+        started = self.clock()
         try:
             response = self.session.get(
-                url, params=query, headers=NBAStatsHTTP.headers, timeout=self.timeout
-            )
+                url, params=query, headers=NBAStatsHTTP.headers, timeout=self.timeout,
+                stream=True,
+            )  # fmt: skip
         except (requests.Timeout, requests.ConnectionError) as exc:
             raise RetryableSourceError(type(exc).__name__) from exc
         except requests.RequestException as exc:
             raise NonRetryableSourceError(type(exc).__name__) from exc
 
         if response.status_code in RETRYABLE_STATUS:
+            response.close()
             raise RetryableSourceError(
                 f"HTTP {response.status_code}",
                 retry_after=parse_retry_after(response.headers.get("Retry-After")),
             )
         if response.status_code != 200:
+            response.close()
             raise NonRetryableSourceError(f"HTTP {response.status_code}")
+        text = self._read_within(response, started + self.timeout)
         try:
-            json.loads(response.text)
+            json.loads(text)
         except ValueError as exc:
             raise RetryableSourceError("Response body was not JSON") from exc
-        return response.text
+        return text
+
+    def _read_within(self, response: requests.Response, deadline: float) -> str:
+        """The body, read before the deadline. requests applies its timeout to each read, so a
+        server that sends a little at a time could otherwise hold one request open for minutes."""
+        chunks: list[bytes] = []
+        try:
+            for chunk in response.iter_content(chunk_size=65536):
+                chunks.append(chunk)
+                if self.clock() > deadline:
+                    raise RetryableSourceError(f"Timeout: reply not finished in {self.timeout:g}s")
+        except requests.RequestException as exc:
+            raise RetryableSourceError(type(exc).__name__) from exc
+        finally:
+            response.close()
+        return b"".join(chunks).decode(response.encoding or "utf-8")
 
     def _throttle(self) -> None:
         now = self.clock()
