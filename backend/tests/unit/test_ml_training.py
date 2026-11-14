@@ -111,6 +111,13 @@ def test_prediction_binned_intervals_widen_with_the_forecast():
     assert MondrianConformal.from_dict(conformal.to_dict()) == conformal
 
 
+def test_blocks_ranges_use_three_groups_and_the_rest_five(result):
+    for target, outcome in result.targets.items():
+        expected = 3 if target == "blk" else 5
+        assert len(outcome.conformal.quantiles) == expected, target
+        assert len(outcome.production_conformal.quantiles) == expected, target
+
+
 def test_vectorized_double_double_matches_the_scalar_definition(frame):
     sample = frame.head(500)
     for _, row in sample.iterrows():

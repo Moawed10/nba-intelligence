@@ -28,6 +28,61 @@ interface Calibration {
   edges: number[];
   quantiles: number[];
   counts: number[];
+  /** Releases before 2026.11.11 size ranges by predicted minutes; later ones by the forecast. */
+  binned_by?: "predicted_minutes" | "prediction";
+}
+
+function byForecast(calibration: Record<string, Calibration>): boolean {
+  return Object.values(calibration).some((c) => c.binned_by === "prediction");
+}
+
+/** Each stat's ranges by its own forecast, smallest forecasts first. */
+function ForecastRangesTable({ calibration }: { calibration: Record<string, Calibration> }) {
+  const targets = TARGET_ORDER.filter((t) => calibration[t]);
+  const group = (c: Calibration, i: number) => {
+    const edges = c.edges.map((e) => e.toFixed(1));
+    if (i === 0) return `under ${edges[0]}`;
+    if (i === edges.length) return `${edges[i - 1]}+`;
+    return `${edges[i - 1]}–${edges[i]}`;
+  };
+  return (
+    <div role="region" aria-label="Prediction range widths" tabIndex={0} className="overflow-x-auto">
+      <table className="w-full text-subhead tabular-nums">
+        <caption className="sr-only">
+          Half-width of the {Math.round((1 - calibration[targets[0]].alpha) * 100)}% prediction range for
+          each statistic, by the size of the forecast
+        </caption>
+        <thead className="text-footnote text-muted-foreground">
+          <tr className="border-b border-border">
+            <th scope="col" className="py-2 text-left font-medium">
+              Statistic
+            </th>
+            <th scope="col" className="py-2 pl-4 text-left font-medium">
+              Forecast → range, smallest forecasts first
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {targets.map((t) => (
+            <tr key={t} className="border-b border-border/50 last:border-0">
+              <th scope="row" className="py-2 text-left align-top font-normal">
+                {targetLabel(t)}
+              </th>
+              <td className="py-2 pl-4">
+                <ul className="flex flex-wrap gap-x-4 gap-y-1">
+                  {calibration[t].quantiles.map((q, i) => (
+                    <li key={i} className="whitespace-nowrap">
+                      <span className="text-muted-foreground">{group(calibration[t], i)}</span> ±{q.toFixed(1)}
+                    </li>
+                  ))}
+                </ul>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 const FEATURE_GROUPS: { label: string; test: (name: string) => boolean }[] = [
@@ -472,13 +527,21 @@ export async function ModelsView({ searchParams }: { searchParams: Promise<Searc
           {Object.keys(calibration).length ? (
             <div className="space-y-4">
               <p className="text-subhead">
-                Each prediction comes with a range meant to contain the actual result 4 times in 5. Ranges
-                widen for players expected to play more minutes.
+                Each prediction comes with a range meant to contain the actual result 4 times in 5.{" "}
+                {byForecast(calibration)
+                  ? "Bigger forecasts get wider ranges, since a 25-point forecast misses by more than a 5-point one."
+                  : "Ranges widen for players expected to play more minutes."}
               </p>
-              <RangesTable calibration={calibration} />
+              {byForecast(calibration) ? (
+                <ForecastRangesTable calibration={calibration} />
+              ) : (
+                <RangesTable calibration={calibration} />
+              )}
               <p className="text-footnote text-muted-foreground">
-                Ranges are sized by how many minutes a player is expected to play, using {testSeason} for the
-                models now serving. Ranges set on the tryout season and checked on {testSeason} held{" "}
+                {byForecast(calibration)
+                  ? "Ranges are sized by the forecast itself"
+                  : "Ranges are sized by how many minutes a player is expected to play"}
+                , using {testSeason} for the models now serving. Ranges set on the tryout season and checked on {testSeason} held{" "}
                 {formatPercent(Math.min(...regression.map((m) => m.interval_coverage ?? 1)))}–
                 {formatPercent(Math.max(...regression.map((m) => m.interval_coverage ?? 0)))} of results.
               </p>

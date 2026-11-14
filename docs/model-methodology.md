@@ -107,7 +107,7 @@ Every target is trained with each family on identical rows:
 **Method:** split conformal prediction with Mondrian bins.
 
 1. On the validation season, compute absolute residuals `|y − ŷ|` of the selected model.
-2. Bin observations by predicted minutes (tertiles), since variance grows with playing time.
+2. Bin observations by the forecast itself (quintiles of `ŷ`), since misses grow with the forecast. Blocks use tertiles: blocks forecasts move in 0.1 steps and actual blocks are whole numbers, so many residuals tie, and five bins split the ties unevenly: 83.1% coverage on the second half of 2024-25 and 85.6% on the test season (candidate 2026.11.11-1, outside the gate), against 81.7% with three bins on the same 2024-25 half. Three bins were chosen on 2024-25 alone, before the test season was checked again. Releases before 2026.11.11 binned by predicted minutes (tertiles), which gave every heavy-minutes player the same width: about ±9 points whether the forecast was 12 or 28, so ranges for high scorers were too narrow (72.8% coverage for 20+ ppg scorers on points). Stored releases keep the binning they were calibrated with.
 3. Per bin, take the conformal quantile `q = ⌈(n+1)(1−α)⌉ / n` of the residuals, with α = 0.20.
 4. Interval = `[max(0, ŷ − q), ŷ + q]`. Counts are clipped at zero.
 
