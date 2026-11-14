@@ -131,7 +131,7 @@ function DirectoryTable({
         role="region"
         aria-label={caption}
         tabIndex={0}
-        className="scroll-quiet hidden overflow-x-auto md:block"
+        className="scroll-quiet relative hidden overflow-x-auto md:block"
       >
         <table className="w-full border-collapse text-subhead">
           <caption className="sr-only">{caption}</caption>
