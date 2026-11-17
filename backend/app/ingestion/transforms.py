@@ -1,5 +1,6 @@
 """Pure transformations from nba_api DataFrames to validated table rows."""
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
@@ -300,6 +301,50 @@ def transform_scoreboard(games: pd.DataFrame, teams: pd.DataFrame) -> dict[str, 
         text = str(record.get("gameStatusText", "")).strip()
         live[game_id] = LiveGame(status, text, scores[game_id])
     return live
+
+
+LIVE_CLOCK = re.compile(r"PT(\d+)M(\d+)(?:\.\d+)?S")
+
+
+def _clock(value: Any) -> str | None:
+    match = LIVE_CLOCK.fullmatch(str(value or "").strip())
+    if not match:
+        return None
+    minutes, seconds = int(match[1]), int(match[2])
+    return f"{minutes}:{seconds:02d}" if minutes or seconds else None
+
+
+def _live_game(game: dict[str, Any]) -> tuple[str, LiveGame] | None:
+    status = SCHEDULE_STATUS.get(to_int(game.get("gameStatus")) or 0)
+    if status is None or not game.get("gameId"):
+        return None
+    scores = {}
+    for side in (game.get("homeTeam") or {}, game.get("awayTeam") or {}):
+        team, score = to_int(side.get("teamId")), to_int(side.get("score"))
+        if team and score is not None and score >= 0:
+            scores[team] = score
+    text = str(game.get("gameStatusText", "")).strip()
+    clock = _clock(game.get("gameClock")) if status == GameStatus.in_progress else None
+    if clock and ":" not in text:
+        text = f"{text} {clock}"
+    return str(game["gameId"]), LiveGame(status, text, scores)
+
+
+def transform_live_scoreboard(payload: dict[str, Any]) -> tuple[date | None, dict[str, LiveGame]]:
+    """The cdn.nba.com scoreboard lists one NBA day, but its scores can sit minutes behind."""
+    board = payload.get("scoreboard") or {}
+    try:
+        day = date.fromisoformat(str(board.get("gameDate", "")))
+    except ValueError:
+        day = None
+    games = (_live_game(game) for game in board.get("games") or [])
+    return day, dict(game for game in games if game)
+
+
+def transform_live_boxscore(payload: dict[str, Any]) -> dict[str, LiveGame]:
+    """One game's cdn.nba.com box score, which follows play within seconds."""
+    game = _live_game(payload.get("game") or {})
+    return dict([game]) if game else {}
 
 
 def _jersey(value: Any) -> str | None:

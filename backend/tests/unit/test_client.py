@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 import pytest
 import requests
+from nba_api.live.nba.endpoints.scoreboard import ScoreBoard
 from nba_api.stats.endpoints import BoxScoreMatchupsV3, LeagueGameLog
 
 from app.ingestion.client import (
@@ -182,3 +183,16 @@ def test_a_reply_that_trickles_in_past_the_timeout_is_a_retryable_timeout(tmp_pa
 def test_a_reply_read_within_the_timeout_succeeds(tmp_path):
     client, _ = make_client([FakeResponse(pieces=3)], tmp_path)
     assert len(fetch(client).frames) == 1
+
+
+def test_the_live_scoreboard_is_read_with_the_same_retries(tmp_path):
+    board = json.dumps({"scoreboard": {"gameDate": "2099-11-10", "games": []}})
+    client, sleeps = make_client([FakeResponse(503), FakeResponse(text=board)], tmp_path)
+    assert client.fetch_live(ScoreBoard)["scoreboard"]["gameDate"] == "2099-11-10"
+    assert client.session.calls == 2 and len(sleeps) == 1
+
+
+def test_a_live_scoreboard_that_is_not_an_object_is_a_source_error(tmp_path):
+    client, _ = make_client([FakeResponse(text="[]")], tmp_path)
+    with pytest.raises(UnexpectedResponseError):
+        client.fetch_live(ScoreBoard)

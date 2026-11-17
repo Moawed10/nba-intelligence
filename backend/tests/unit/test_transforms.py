@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pandas as pd
 import pytest
@@ -11,6 +11,8 @@ from app.ingestion.transforms import (
     season_from_game_id,
     season_label,
     transform_attendance,
+    transform_live_boxscore,
+    transform_live_scoreboard,
     transform_matchups,
     transform_player_logs,
     transform_schedule,
@@ -18,7 +20,7 @@ from app.ingestion.transforms import (
     validate_box,
 )
 from app.models import GameStatus, SeasonType
-from tests.fixtures import BOX, FixtureGame, player_log, schedule, team_log
+from tests.fixtures import BOX, FixtureGame, live_board, live_box, player_log, schedule, team_log
 
 GAMES = [FixtureGame(1, "2099-11-01", home=1, away=2), FixtureGame(2, "2099-11-02", home=3, away=1)]
 
@@ -189,3 +191,46 @@ def test_attendance_of_zero_or_missing_is_not_a_crowd():
 def test_a_missing_jersey_number_stays_missing():
     assert _jersey(float("nan")) is None and _jersey(None) is None and _jersey(" ") is None
     assert _jersey("00") == "00"
+
+
+def test_the_live_scoreboard_gives_its_day_scores_and_a_readable_clock():
+    games = [
+        FixtureGame(1, "2099-11-10", home=1, away=2),
+        FixtureGame(2, "2099-11-10", home=3, away=1),
+    ]
+    day, live = transform_live_scoreboard(live_board(games, 2, "1st Qtr   ", 12, 9, "PT02M005.00S"))
+    assert day == date(2099, 11, 10)
+    first = live[games[0].id]
+    assert (first.status, first.status_text, first.scores) == (
+        GameStatus.in_progress,
+        "1st Qtr 2:05",
+        {1: 12, 2: 9},
+    )
+
+
+@pytest.mark.parametrize(
+    ("status", "text", "clock", "expected"),
+    [
+        (2, "Half", "PT00M00.00S", "Half"),
+        (1, "7:30 pm ET", "", "7:30 pm ET"),
+        (3, "Final", "PT00M00.00S", "Final"),
+    ],
+)
+def test_the_live_clock_is_shown_only_while_it_is_running(status, text, clock, expected):
+    games = [FixtureGame(1, "2099-11-10", home=1, away=2)]
+    _, live = transform_live_scoreboard(live_board(games, status, text, 0, 0, clock))
+    assert live[games[0].id].status_text == expected
+
+
+def test_a_live_scoreboard_without_a_day_or_games_yields_nothing():
+    assert transform_live_scoreboard({}) == (None, {})
+    assert transform_live_scoreboard(
+        {"scoreboard": {"gameDate": "soon", "games": [{"gameStatus": 9}]}}
+    ) == (None, {})
+
+
+def test_a_live_box_score_keeps_a_status_that_already_shows_the_clock():
+    game = FixtureGame(1, "2099-11-10", home=1, away=2)
+    live = transform_live_boxscore(live_box(game, 2, "Q2 9:55", 21, 25, "PT09M55.00S"))
+    assert (live[game.id].status_text, live[game.id].scores) == ("Q2 9:55", {1: 21, 2: 25})
+    assert transform_live_boxscore({}) == {}

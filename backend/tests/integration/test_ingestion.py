@@ -24,7 +24,16 @@ from app.models import (
     Team,
     TeamGameStats,
 )
-from tests.fixtures import SEASON, TEAMS, FakeSource, FixtureGame, schedule, scoreboard
+from tests.fixtures import (
+    SEASON,
+    TEAMS,
+    FakeSource,
+    FixtureGame,
+    live_board,
+    live_box,
+    schedule,
+    scoreboard,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -197,6 +206,7 @@ def _with_scores(frame, home, away, text="Q3 5:12"):
 
 
 LIVE_NOW = datetime(2099, 11, 10, 2, tzinfo=UTC)
+ALL_DATES = [date.fromisoformat(g.date) for g in GAMES]
 
 
 def _poll(engine, source, status, text, home, away, now=LIVE_NOW):
@@ -233,6 +243,65 @@ def test_live_scores_follow_the_scoreboard_and_the_box_score_has_the_last_word(e
         game = s.get(Game, GAMES[0].id)
         assert (game.home_score, game.away_score) == (55, 55)
         assert s.scalar(select(func.count()).select_from(SourceCorrection)) == 0
+
+
+def test_live_scores_come_from_the_real_time_scoreboard_when_it_covers_the_day(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    source.live_board = live_board(GAMES, 2, "2nd Qtr", 40, 38, "PT05M12.00S")
+    source.live_frames = scoreboard(GAMES, 1, "7:30 pm ET", 0, 0)
+    source.calls.clear()
+    assert jobs.poll_live_scores(
+        engine, source, [date.fromisoformat(GAMES[0].date)], LIVE_NOW
+    ) == len(GAMES)
+    assert "ScoreboardV3" not in [c["endpoint"] for c in source.calls]
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.status, game.home_score, game.away_score) == (GameStatus.in_progress, 40, 38)
+        assert game.provider_status["gameStatusText"] == "2nd Qtr 5:12"
+
+
+def test_started_games_follow_their_own_box_scores_ahead_of_any_scoreboard(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    source.live_boxes = {g.id: live_box(g, 2, "Q2 9:55", 21, 25, "PT09M55.00S") for g in GAMES}
+    source.live_board = live_board(GAMES, 2, "2nd Qtr", 12, 12, "PT11M16.00S")
+    source.calls.clear()
+    assert jobs.poll_live_scores(engine, source, ALL_DATES, LIVE_NOW) == len(GAMES)
+    assert {c["endpoint"] for c in source.calls} == {"BoxScore"}, "no scoreboard is needed"
+    with Session(engine) as s:
+        game = s.get(Game, GAMES[0].id)
+        assert (game.home_score, game.away_score) == (21, 25)
+        assert game.provider_status["gameStatusText"] == "Q2 9:55"
+
+
+def test_a_game_without_a_box_score_yet_is_read_from_the_scoreboard(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    source.live_boxes = {GAMES[0].id: live_box(GAMES[0], 2, "Q1 10:16", 4, 6)}
+    source.live_board = live_board(GAMES, 2, "1st Qtr", 2, 0, "PT11M40.00S")
+    source.live_frames = scoreboard(GAMES, 2, "Q1 11:20", 3, 0)
+    jobs.poll_live_scores(engine, source, ALL_DATES, LIVE_NOW)
+    with Session(engine) as s:
+        assert (s.get(Game, GAMES[0].id).home_score, s.get(Game, GAMES[1].id).home_score) == (4, 3)
+
+
+def test_days_the_real_time_scoreboard_has_moved_past_come_from_the_stats_scoreboard(
+    engine, source
+):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    source.live_board = {"scoreboard": {"gameDate": "2099-11-11", "games": []}}
+    assert _poll(engine, source, 2, "Q4 0:40", 99, 97) == len(GAMES)
+    assert [c["endpoint"] for c in source.calls][-2:] == ["ScoreBoard", "ScoreboardV3"]
+
+
+def test_a_failing_real_time_scoreboard_falls_back_to_the_stats_scoreboard(engine, source):
+    class LiveDown(FakeSource):
+        def fetch_live(self, endpoint_cls, **params):
+            raise RetryableSourceError("ConnectionError")
+
+    down = LiveDown(frames=source.frames)
+    run_schedule(engine, down, schedule(GAMES, status=1))
+    assert _poll(engine, down, 2, "Q1 9:00", 4, 2) == len(GAMES)
+    with Session(engine) as s:
+        assert s.get(Game, GAMES[0].id).home_score == 4
 
 
 def test_live_scoring_does_not_advance_the_data_version(engine, source):

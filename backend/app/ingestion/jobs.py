@@ -3,9 +3,11 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from nba_api.live.nba.endpoints.boxscore import BoxScore
+from nba_api.live.nba.endpoints.scoreboard import ScoreBoard
 from nba_api.stats.endpoints import (
     BoxScoreMatchupsV3,
     BoxScoreSummaryV3,
@@ -28,6 +30,7 @@ from app.config import get_settings
 from app.ingestion import fan_posts, injuries
 from app.ingestion.client import (
     FetchResult,
+    NonRetryableSourceError,
     StatsSource,
     StatsSourceError,
     UnexpectedResponseError,
@@ -42,6 +45,8 @@ from app.ingestion.transforms import (
     current_season_start_year,
     season_label,
     transform_attendance,
+    transform_live_boxscore,
+    transform_live_scoreboard,
     transform_matchups,
     transform_player_career,
     transform_player_logs,
@@ -79,6 +84,8 @@ log = logging.getLogger(__name__)
 
 
 LIVE_OR_FINAL = (GameStatus.in_progress, GameStatus.final)
+LIVE_LEAD = timedelta(minutes=15)
+LIVE_POLLED = (GameStatus.scheduled, GameStatus.delayed, GameStatus.in_progress)
 
 
 class PartialResponseError(Exception):
@@ -228,13 +235,41 @@ def _apply_live_game(session: Session, game: Game, seen: LiveGame, now: datetime
 
 
 def poll_live_scores(engine: Engine, client: StatsSource, dates: list[date], now: datetime) -> int:
+    with Session(engine) as session:
+        started = session.scalars(select(Game.id).where(
+            Game.game_date.in_(dates), Game.status.in_(LIVE_POLLED),
+            Game.tipoff_at <= now + LIVE_LEAD,
+        )).all()  # fmt: skip
     seen: dict[str, LiveGame] = {}
-    for day in dates:
-        frames = client.fetch(ScoreboardV3, game_date=day.isoformat(), league_id="00").frames
-        seen.update(transform_scoreboard(frames[1], frames[2]))
+    for game_id in started:
+        try:
+            seen.update(transform_live_boxscore(client.fetch_live(BoxScore, game_id=game_id)))
+        except NonRetryableSourceError:
+            continue
+        except StatsSourceError as error:
+            log.warning("live box score unavailable", extra={
+                "game_id": game_id, "error": type(error).__name__, "detail": str(error)[:200],
+            })  # fmt: skip
+    if not started or any(game_id not in seen for game_id in started):
+        seen = {**_scoreboard_games(client, dates), **seen}
     with Session(engine) as session, session.begin():
         games = session.scalars(select(Game).where(Game.id.in_(seen))).all()
         return sum(_apply_live_game(session, g, seen[g.id], now) for g in games)
+
+
+def _scoreboard_games(client: StatsSource, dates: list[date]) -> dict[str, LiveGame]:
+    try:
+        covered, seen = transform_live_scoreboard(client.fetch_live(ScoreBoard))
+    except StatsSourceError as error:
+        log.warning("live scoreboard unavailable, using the stats scoreboard",
+                    extra={"error": type(error).__name__, "detail": str(error)[:200]})  # fmt: skip
+        covered, seen = None, {}
+    for day in dates:
+        if day == covered:
+            continue
+        frames = client.fetch(ScoreboardV3, game_date=day.isoformat(), league_id="00").frames
+        seen.update(transform_scoreboard(frames[1], frames[2]))
+    return seen
 
 
 def ingest_teams(client: StatsSource, season: int) -> Callable[[RunContext], None]:

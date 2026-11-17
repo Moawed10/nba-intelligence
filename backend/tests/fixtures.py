@@ -9,7 +9,7 @@ from typing import Any
 
 import pandas as pd
 
-from app.ingestion.client import FetchResult
+from app.ingestion.client import FetchResult, NonRetryableSourceError
 
 SEASON = 2099
 TEAMS = [
@@ -138,6 +138,23 @@ def scoreboard(games: list[FixtureGame], status: int, text: str, home: int, away
     return [pd.DataFrame(), game_rows, team_rows]
 
 
+def live_board(
+    games: list[FixtureGame], status: int, text: str, home: int, away: int, clock: str = ""
+) -> dict[str, Any]:
+    return {"scoreboard": {"gameDate": games[0].date, "games": [
+        {"gameId": g.id, "gameStatus": status, "gameStatusText": text, "gameClock": clock,
+         "homeTeam": {"teamId": g.home, "score": home},
+         "awayTeam": {"teamId": g.away, "score": away}}
+        for g in games
+    ]}}  # fmt: skip
+
+
+def live_box(
+    game: FixtureGame, status: int, text: str, home: int, away: int, clock: str = ""
+) -> dict[str, Any]:
+    return {"game": live_board([game], status, text, home, away, clock)["scoreboard"]["games"][0]}
+
+
 @dataclass
 class FakeSource:
     """Stands in for NBAStatsClient. Frames are keyed by (endpoint class name, P/T or None)."""
@@ -146,6 +163,18 @@ class FakeSource:
     calls: list[dict[str, Any]] = field(default_factory=list)
     error: Exception | None = None
     live_frames: list[pd.DataFrame] = field(default_factory=list)
+    live_board: dict[str, Any] = field(default_factory=dict)
+    live_boxes: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+    def fetch_live(self, endpoint_cls: type, **params: Any) -> dict[str, Any]:
+        self.calls.append({"endpoint": endpoint_cls.__name__, **params})
+        if self.error:
+            raise self.error
+        if endpoint_cls.__name__ == "BoxScore":
+            if params["game_id"] not in self.live_boxes:
+                raise NonRetryableSourceError("HTTP 403")
+            return self.live_boxes[params["game_id"]]
+        return self.live_board
 
     def fetch(self, endpoint_cls: type, *, cacheable: bool = False, **params: Any) -> FetchResult:
         self.calls.append({"endpoint": endpoint_cls.__name__, **params})

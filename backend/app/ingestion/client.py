@@ -1,4 +1,4 @@
-"""The only module that talks to stats.nba.com.
+"""The only module that talks to stats.nba.com and the cdn.nba.com live feeds.
 
 nba_api builds request parameters and parses responses; this client owns the HTTP call itself so it
 can classify failures, honor Retry-After, throttle, and cache completed-season responses on disk.
@@ -17,6 +17,7 @@ from typing import Any, Protocol
 
 import pandas as pd
 import requests
+from nba_api.live.nba.library.http import NBALiveHTTP
 from nba_api.stats.library.http import NBAStatsHTTP, NBAStatsResponse
 
 from app.config import get_settings
@@ -57,6 +58,8 @@ class StatsSource(Protocol):
     def fetch(
         self, endpoint_cls: type, *, cacheable: bool = False, **params: Any
     ) -> FetchResult: ...
+
+    def fetch_live(self, endpoint_cls: type, **params: Any) -> dict[str, Any]: ...
 
 
 def parse_retry_after(value: str | None) -> float | None:
@@ -119,10 +122,20 @@ class NBAStatsClient:
             cache_path.write_text(body)
         return FetchResult(frames=frames, attempts=attempts, from_cache=from_cache)
 
-    def _request_with_retries(self, url: str, query: dict[str, Any]) -> tuple[str, int]:
+    def fetch_live(self, endpoint_cls: type, **params: Any) -> dict[str, Any]:
+        url = NBALiveHTTP.base_url.format(endpoint=endpoint_cls.endpoint_url.format(**params))
+        body, _ = self._request_with_retries(url, {}, NBALiveHTTP.headers)
+        payload = json.loads(body)
+        if not isinstance(payload, dict):
+            raise UnexpectedResponseError(f"{endpoint_cls.endpoint_url}: reply was not an object")
+        return payload
+
+    def _request_with_retries(
+        self, url: str, query: dict[str, Any], headers: dict[str, str] = NBAStatsHTTP.headers
+    ) -> tuple[str, int]:
         for attempt in range(1, self.max_attempts + 1):
             try:
-                return self._request_once(url, query), attempt
+                return self._request_once(url, query, headers), attempt
             except RetryableSourceError as exc:
                 if attempt == self.max_attempts:
                     raise
@@ -137,12 +150,12 @@ class NBAStatsClient:
                 self.sleep(delay)
         raise AssertionError("unreachable")
 
-    def _request_once(self, url: str, query: dict[str, Any]) -> str:
+    def _request_once(self, url: str, query: dict[str, Any], headers: dict[str, str]) -> str:
         self._throttle()
         started = self.clock()
         try:
             response = self.session.get(
-                url, params=query, headers=NBAStatsHTTP.headers, timeout=self.timeout,
+                url, params=query, headers=headers, timeout=self.timeout,
                 stream=True,
             )  # fmt: skip
         except (requests.Timeout, requests.ConnectionError) as exc:
