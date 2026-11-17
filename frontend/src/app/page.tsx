@@ -10,6 +10,7 @@ import { TeamMark } from "@/components/brand/team-mark";
 import { ApiErrorView } from "@/components/data/api-error";
 import { FreshnessBadge } from "@/components/data/freshness-badge";
 import { GameTicker } from "@/components/data/game-ticker";
+import { LiveLabel } from "@/components/data/live-label";
 import { LiveRefresh } from "@/components/data/live-refresh";
 import { InfoHint } from "@/components/data/info-hint";
 import { PageHeader } from "@/components/data/page-header";
@@ -21,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { serverTry } from "@/lib/api/server";
 import type { DatasetStatus, GameSummary, ModelSnapshot, Overview, Performance, Standouts } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatPercent, formatStat, milestoneLabel } from "@/lib/format";
-import { isLive, liveLabel } from "@/lib/live";
+import { isLive } from "@/lib/live";
 import { TARGET_ORDER, targetLabel } from "@/lib/models";
 import { cn } from "@/lib/utils";
 
@@ -285,7 +286,7 @@ function MatchupFeature({ game }: { game: GameSummary }) {
     game.status === "final"
       ? "Final"
       : isLive(game)
-        ? liveLabel(game)
+        ? <LiveLabel game={game} />
         : game.tipoff_at
           ? formatGameTime(game.tipoff_at)
           : formatGameDate(game.game_date, true);

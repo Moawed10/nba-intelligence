@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { teamBandStyle } from "@/components/brand/team-band";
 import { PlayerAvatar } from "@/components/brand/player-avatar";
@@ -12,6 +12,7 @@ import { TeamLink } from "@/components/brand/team-link";
 import { TeamMark } from "@/components/brand/team-mark";
 import { CompareBar } from "@/components/data/compare-bar";
 import { SegmentedControl } from "@/components/data/segmented-control";
+import { LiveLabel } from "@/components/data/live-label";
 import { Unavailable } from "@/components/data/unavailable";
 import { clientGet, clientPost } from "@/lib/api/client";
 import { describeError } from "@/lib/api/errors";
@@ -27,7 +28,7 @@ import type {
   TeamSeasonStats,
 } from "@/lib/api/types";
 import { formatGameDate, formatGameTime, formatStat } from "@/lib/format";
-import { IDLE_POLL_MS, isLive, liveLabel, LIVE_POLL_MS, shouldFollow } from "@/lib/live";
+import { IDLE_POLL_MS, isLive, LIVE_POLL_MS, shouldFollow } from "@/lib/live";
 import { SPRING } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -41,9 +42,9 @@ function LiveDot() {
   return <span aria-hidden className="mr-1.5 inline-block size-2 rounded-full bg-primary motion-safe:animate-pulse" />;
 }
 
-function statusLabel(game: GameSummary): string {
+function statusLabel(game: GameSummary): ReactNode {
   if (game.status === "final") return "Final";
-  if (game.status === "in_progress") return liveLabel(game);
+  if (game.status === "in_progress") return <LiveLabel game={game} />;
   if (game.status === "postponed") return "Postponed";
   if (game.status === "cancelled") return "Cancelled";
   return game.tipoff_at ? formatGameTime(game.tipoff_at) : "Time to be announced";

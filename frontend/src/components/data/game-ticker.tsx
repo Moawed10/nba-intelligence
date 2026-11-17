@@ -1,9 +1,10 @@
 import Link from "next/link";
 
 import { TeamMark } from "@/components/brand/team-mark";
+import { LiveLabel } from "@/components/data/live-label";
 import type { GameSummary } from "@/lib/api/types";
 import { formatGameDate, formatGameTime } from "@/lib/format";
-import { isLive, liveLabel } from "@/lib/live";
+import { isLive } from "@/lib/live";
 import { cn } from "@/lib/utils";
 
 function Item({ game }: { game: GameSummary }) {
@@ -40,7 +41,7 @@ function Item({ game }: { game: GameSummary }) {
         {final
           ? "Final"
           : game.status === "in_progress"
-            ? liveLabel(game)
+            ? <LiveLabel game={game} />
             : game.tipoff_at
               ? formatGameTime(game.tipoff_at)
               : formatGameDate(game.game_date)}
