@@ -33,7 +33,9 @@ export function FreshnessBadge({
     <p className={cn("inline-flex items-center gap-2 text-footnote text-muted-foreground", className)}>
       <span aria-hidden className={cn("size-1.5 rounded-full", DOT[status])} />
       {lastSync ? (
-        <time dateTime={lastSync}>{freshnessLabel(status, lastSync)}</time>
+        <time dateTime={lastSync} suppressHydrationWarning>
+          {freshnessLabel(status, lastSync)}
+        </time>
       ) : (
         freshnessLabel(status, lastSync)
       )}

@@ -251,7 +251,9 @@ function ForecastView({
         )}
         <p className="text-footnote text-muted-foreground">
           Model <span className="font-mono">{prediction.release_version}</span> · Data through{" "}
-          {formatGameTime(prediction.data_cutoff_at)} · Updated {formatRelativeTime(prediction.created_at)} ·{" "}
+          {formatGameTime(prediction.data_cutoff_at)} · Updated{" "}
+          {/* "4 minutes ago" can turn into "5" between the server render and the browser's. */}
+          <span suppressHydrationWarning>{formatRelativeTime(prediction.created_at)}</span> ·{" "}
           <Link href="/models" className="text-primary underline underline-offset-2">
             How accurate are these forecasts?
           </Link>
