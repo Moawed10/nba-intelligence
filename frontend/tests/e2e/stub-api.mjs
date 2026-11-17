@@ -523,9 +523,11 @@ createServer((req, res) => {
       }
       const player = PLAYERS.find((p) => p.id === player_id);
       const games = GAMES.filter((g) => g.status === "scheduled" && [g.home.team.id, g.away.team.id].includes(player?.team?.id));
-      send(res, 200, games.map((g) => player_id === 1001
+      // The first game carries a note; the second has none, as an older API would send.
+      send(res, 200, games.map((g, i) => player_id === 1001
         ? { game: g, prediction: null, unavailable: tooFew }
-        : { game: g, prediction: stubForecast(player_id, g.id), unavailable: null }));
+        : { game: g, prediction: stubForecast(player_id, g.id), unavailable: null,
+            ...(i === 0 ? { notes: ["Second night of a back-to-back"] } : {}) }));
     });
     return;
   }

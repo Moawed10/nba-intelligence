@@ -18,7 +18,9 @@ from app.models import (
     PredictionEvaluation,
     PredictionKind,
     PredictionValue,
+    Season,
     Team,
+    TeamSeason,
 )
 from app.models.predictions import PredictedStat
 from app.schemas.predictions import (
@@ -127,12 +129,71 @@ def history(ctx: Context, player_id: int, game_id: str | None) -> list[Predictio
     return [_out(ctx, r) for r in rows]
 
 
+NOTABLE_RANK = 5  # league top or bottom five
+NOTABLE_ABSENCE_PTS = 8.0
+NOTES_PER_GAME = 2
+
+
+def _ordinal(n: int) -> str:
+    suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _extreme(rank: int, teams: int, best: str, worst: str) -> str | None:
+    if rank <= NOTABLE_RANK:
+        return f"{best}" if rank == 1 else f"{_ordinal(rank)}-{best}"
+    if rank > teams - NOTABLE_RANK:
+        bottom = teams - rank + 1
+        return f"{worst}" if bottom == 1 else f"{_ordinal(bottom)}-{worst}"
+    return None
+
+
+def _league_ranks(ctx: Context, season: str) -> dict[int, tuple[int, int, int]]:
+    """Per team: defensive rating rank (1 = fewest points allowed per 100 possessions), pace rank
+    (1 = fastest) and the number of teams ranked, from the source's season team stats."""
+    rows = ctx.session.execute(
+        select(TeamSeason.team_id, TeamSeason.def_rating, TeamSeason.pace)
+        .join(Season, Season.id == TeamSeason.season_id)
+        .where(Season.label == season, TeamSeason.def_rating.is_not(None))
+    ).all()
+    defense = sorted(rows, key=lambda r: r.def_rating)
+    pace = sorted((r for r in rows if r.pace is not None), key=lambda r: -r.pace)
+    n = len(rows)
+    pace_rank = {r.team_id: i + 1 for i, r in enumerate(pace)}
+    return {r.team_id: (i + 1, pace_rank.get(r.team_id, 0), n) for i, r in enumerate(defense)}
+
+
+def _notes(snapshot: dict, opponent: str, ranks: tuple[int, int, int] | None) -> list[str]:
+    """Plain-language reasons this game's forecast differs, most telling first. Only inputs the
+    forecast read are used, so a note never claims something the model did not see."""
+    notes: list[str] = []
+    if snapshot.get("is_back_to_back") == 1:
+        notes.append("Second night of a back-to-back")
+    own_out, opp_out = snapshot.get("absent_pts") or 0, snapshot.get("opp_absent_pts") or 0
+    if own_out >= NOTABLE_ABSENCE_PTS:
+        notes.append(f"Teammates out who score about {round(own_out)} points a game")
+    if opp_out >= NOTABLE_ABSENCE_PTS:
+        notes.append(f"{opponent} missing about {round(opp_out)} points a game")
+    if ranks is not None:
+        defense, pace, teams = ranks
+        if label := _extreme(defense, teams, "best defense", "worst defense"):
+            notes.append(f"{opponent}: {label}")
+        if pace and (label := _extreme(pace, teams, "fastest pace", "slowest pace")):
+            notes.append(f"{opponent}: {label}")
+    rest = snapshot.get("team_rest_days")
+    if rest is not None and rest >= 3 and snapshot.get("is_back_to_back") != 1:
+        notes.append(f"{round(rest)} days of rest")
+    return notes[:NOTES_PER_GAME]
+
+
 def upcoming(ctx: Context, player_id: int, days: int) -> list[UpcomingForecast]:
     """Forecasts for every game the player has in the next `days` days. Each stored forecast is
     reused while its inputs are unchanged, so repeating the call never duplicates rows."""
-    if ctx.session.get(Player, player_id) is None:
+    player = ctx.session.get(Player, player_id)
+    if player is None:
         raise not_found("player", player_id)
     out: list[UpcomingForecast] = []
+    ranks: dict[str, dict[int, tuple[int, int, int]]] = {}
     for game in games_service.upcoming(ctx, days, player_id):
         try:
             row, _ = forecast(ctx.session, ctx.state.artifacts_dir, ctx.now, player_id, game.id)
@@ -144,8 +205,15 @@ def upcoming(ctx: Context, player_id: int, days: int) -> list[UpcomingForecast]:
             out.append(UpcomingForecast(game=game, prediction=None, unavailable=reason))
             continue
         current = FreshnessState(Freshness.current)
+        home = game.home.team.id == player.current_team_id
+        opponent = (game.away if home else game.home).team
+        if game.season not in ranks:
+            ranks[game.season] = _league_ranks(ctx, game.season)
+        notes = _notes(row.feature_snapshot, opponent.name, ranks[game.season].get(opponent.id))
         out.append(
-            UpcomingForecast(game=game, prediction=_out(ctx, row, current), unavailable=None)
+            UpcomingForecast(
+                game=game, prediction=_out(ctx, row, current), unavailable=None, notes=notes
+            )
         )
     return out
 

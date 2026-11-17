@@ -446,7 +446,7 @@ export async function PredictView({ searchParams }: { searchParams: Promise<Sear
               forecasts={Object.fromEntries(
                 [...byGame].map(([id, f]) => [
                   id,
-                  f.prediction ? f.prediction.values.slice(0, 3).map((v) => v.point) : null,
+                  f.prediction ? { values: f.prediction.values.slice(0, 3), notes: f.notes ?? [] } : null,
                 ]),
               )}
             />

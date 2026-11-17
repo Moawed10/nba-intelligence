@@ -5727,6 +5727,14 @@
           "game": {
             "$ref": "#/components/schemas/GameSummary"
           },
+          "notes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
           "prediction": {
             "anyOf": [
               {

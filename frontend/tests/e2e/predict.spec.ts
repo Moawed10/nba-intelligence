@@ -51,6 +51,9 @@ test.describe("predictions", () => {
       "true",
     );
     await expect(list.getByRole("option", { name: /@ Bravo Bears.*26/ })).toBeVisible();
+    const first = list.getByRole("option", { name: /vs Bravo Bears/ });
+    await expect(first).toContainText("Second night of a back-to-back");
+    await expect(first).toContainText(/likely \d+–\d+/);
 
     const forecast = page.getByRole("region", { name: "Forecast vs BBB" });
     await expect(forecast.getByText(/expected to score about 24 points/)).toBeVisible();

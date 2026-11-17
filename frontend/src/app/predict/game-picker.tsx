@@ -24,6 +24,11 @@ const TOKENS = {
   "--al-active": "none",
 } as CSSProperties;
 
+export interface PickerForecast {
+  values: { point: number; lower: number; upper: number }[];
+  notes: string[];
+}
+
 /** Upcoming games as a keyboard-navigable list (arrow keys, Home, End, Enter); choosing one loads its forecast. */
 export function GamePicker({
   games,
@@ -36,8 +41,9 @@ export function GamePicker({
   playerId: number;
   teamId: number;
   selectedId: string | null;
-  /** Expected points, rebounds and assists per game id; null when the game can't be forecast. */
-  forecasts: Record<string, number[] | null>;
+  /** Per game id: points, rebounds and assists with their likely ranges, and what sets the game
+   * apart; null when the game can't be forecast. */
+  forecasts: Record<string, PickerForecast | null>;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -51,7 +57,7 @@ export function GamePicker({
     <div aria-busy={pending} className={cn("space-y-3 transition-opacity", pending && "opacity-70")}>
       {anyForecast && (
         <p className="flex items-center justify-between gap-3 text-footnote text-muted-foreground">
-          <span>Predicted stat line for each game</span>
+          <span>Predicted stat line for each game, with its likely range</span>
           <span aria-hidden className="kicker shrink-0 text-primary">
             Predicted
           </span>
@@ -81,6 +87,7 @@ export function GamePicker({
           const game = games[index];
           const home = game.home.team.id === teamId;
           const opponent = home ? game.away.team : game.home.team;
+          const forecast = forecasts[game.id];
           return (
             <span className="flex w-full items-center gap-3">
               <TeamMark team={opponent} size="sm" />
@@ -91,14 +98,21 @@ export function GamePicker({
                 <span className="block text-footnote text-muted-foreground">
                   {game.tipoff_at ? formatGameTime(game.tipoff_at) : formatGameDate(game.game_date, true)}
                 </span>
+                {forecast && forecast.notes.length > 0 && (
+                  <span className="mt-0.5 block text-footnote text-primary">{forecast.notes.join(" · ")}</span>
+                )}
               </span>
-              {forecasts[game.id] ? (
-                <span className="flex gap-3 text-right">
+              {forecast ? (
+                <span className="flex shrink-0 gap-3 text-right">
                   <span className="sr-only">Predicted:</span>
-                  {forecasts[game.id]!.map((v, i) => (
-                    <span key={i}>
-                      <span className="numeral block text-title3">{Math.round(v)}</span>
-                      <span className="kicker">{["PTS", "REB", "AST"][i]}</span>
+                  {forecast.values.map((v, i) => (
+                    <span key={i} className="min-w-9">
+                      <span className="numeral block text-title3">{Math.round(v.point)}</span>
+                      <span className="kicker block">{["PTS", "REB", "AST"][i]}</span>
+                      <span className="block text-kicker text-muted-foreground tabular-nums">
+                        <span className="sr-only">likely </span>
+                        {Math.round(v.lower)}–{Math.round(v.upper)}
+                      </span>
                     </span>
                   ))}
                 </span>

@@ -2409,6 +2409,11 @@ export interface components {
          */
         UpcomingForecast: {
             game: components["schemas"]["GameSummary"];
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
             prediction: components["schemas"]["Prediction"] | null;
             unavailable: components["schemas"]["Unavailable"] | null;
         };

@@ -539,3 +539,36 @@ def test_upcoming_explains_games_it_cannot_forecast(serving):
     body = serving.post("/api/v1/predictions/upcoming", json={"player_id": TEAM_TWO}).json()
     assert body and all(entry["prediction"] is None for entry in body)
     assert {entry["unavailable"]["code"] for entry in body} == {"insufficient_data"}
+
+
+def test_rest_counts_from_the_previous_scheduled_game(loaded):
+    """Team 2's last final game is Nov 7 and it plays Nov 11 and 12. The Nov 12 forecast is the
+    second night of a back-to-back, not five days after Nov 7. Team 1's Nov 11 game is its next
+    one, so its inputs are left exactly as built."""
+    built = pd.Series({"rest_days": 4.0, "team_rest_days": 4.0, "is_back_to_back": 0.0})
+    with Session(loaded) as s:
+        later = inference._rest_from_schedule(s, built, 2, date(2099, 11, 12))
+        nxt = inference._rest_from_schedule(s, built, 1, date(2099, 11, 11))
+    assert (later["rest_days"], later["team_rest_days"], later["is_back_to_back"]) == (
+        0.0,
+        0.0,
+        1.0,
+    )
+    assert nxt.equals(built)
+
+
+def test_game_notes_name_what_sets_the_game_apart():
+    from app.services.predictions import _notes
+
+    tired = {"is_back_to_back": 1.0, "team_rest_days": 0.0, "absent_pts": 21.6}
+    assert _notes(tired, "Knicks", (3, 15, 30)) == [
+        "Second night of a back-to-back",
+        "Teammates out who score about 22 points a game",
+    ]
+    rested = {"is_back_to_back": 0.0, "team_rest_days": 3.0, "absent_pts": 0.0}
+    assert _notes(rested, "Knicks", (1, 29, 30)) == [
+        "Knicks: best defense",
+        "Knicks: 2nd-slowest pace",
+    ]
+    assert _notes(rested, "Bulls", (12, 15, 30)) == ["3 days of rest"]
+    assert _notes({"team_rest_days": 1.0}, "Bulls", None) == []

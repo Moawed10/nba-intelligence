@@ -66,6 +66,8 @@ class UpcomingForecast(BaseModel):
     game: GameSummary
     prediction: Prediction | None
     unavailable: Unavailable | None
+    # What sets this game apart, in plain words, read from the inputs this forecast used.
+    notes: list[str] = []
 
 
 class GameForecastRequest(BaseModel):

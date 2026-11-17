@@ -16,7 +16,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import or_, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from app.ml.artifacts import load_artifact
@@ -25,7 +25,16 @@ from app.ml.conformal import MondrianConformal
 from app.ml.dataset import LINES_SQL, MATCHUPS_SQL, TEAM_SQL
 from app.ml.features import FEATURES, TARGETS, build_features
 from app.ml.matchups import MATCHUP_FEATURES, POSITION_GAMES, ROSTER_DAYS
-from app.models import ModelRelease, ModelVersion, Player, PlayerInjury, ReleaseStatus
+from app.models import (
+    Game,
+    GameStatus,
+    ModelRelease,
+    ModelVersion,
+    Player,
+    PlayerInjury,
+    ReleaseStatus,
+)
+from app.stats import rest_days_from_gap
 
 PLAYER_LINES_SQL = LINES_SQL + " AND s.player_id = :player_id AND g.game_date < :before"
 # Both teams' recent games for rest, pace and defense, plus every team game the player appeared in
@@ -295,7 +304,39 @@ def pregame_features(
         season_id=season_id,
         playing=player_id,
     )
-    return build_features(target, lines, teams, matchups, tonight).iloc[0]
+    row = build_features(target, lines, teams, matchups, tonight).iloc[0]
+    return _rest_from_schedule(session, row, team_id, game_date)
+
+
+def _rest_from_schedule(
+    session: Session, row: pd.Series, team_id: int, game_date: date
+) -> pd.Series:
+    """Rest counted from the team's previous game on the schedule. The features count from its last
+    final game, which for a game further out skips the unplayed games before it and grows with the
+    distance (Nov 3 data: 4, 6, then the 7-day cap for later games). The player is assumed to play
+    those games, as the missing-player inputs assume. Training rows are unaffected: every earlier
+    game there is final."""
+
+    def latest(statuses: tuple[GameStatus, ...]) -> date | None:
+        return session.scalar(
+            select(func.max(Game.game_date)).where(
+                or_(Game.home_team_id == team_id, Game.away_team_id == team_id),
+                Game.game_date < game_date,
+                Game.status.in_(statuses),
+            )
+        )
+
+    previous = latest((GameStatus.scheduled, GameStatus.in_progress, GameStatus.final))
+    finished = latest((GameStatus.final,))
+    if previous is None or previous == finished:
+        return row  # the next game: nothing unplayed in between, the features already hold
+    gap = (game_date - previous).days
+    rest = float(rest_days_from_gap(pd.Series([gap])).iloc[0])
+    row = row.copy()
+    row["team_rest_days"] = rest
+    row["rest_days"] = rest
+    row["is_back_to_back"] = float(gap == 1)
+    return row
 
 
 def predict(release: ActiveRelease, features: pd.Series) -> Forecast:
