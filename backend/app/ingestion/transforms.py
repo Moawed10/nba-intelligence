@@ -304,6 +304,7 @@ def transform_scoreboard(games: pd.DataFrame, teams: pd.DataFrame) -> dict[str, 
 
 
 LIVE_CLOCK = re.compile(r"PT(\d+)M(\d+)(?:\.\d+)?S")
+FEED_CLOCK = re.compile(r"\s*\d*:\d+(?:\.\d+)?$")
 
 
 def _clock(value: Any) -> str | None:
@@ -325,8 +326,8 @@ def _live_game(game: dict[str, Any]) -> tuple[str, LiveGame] | None:
             scores[team] = score
     text = str(game.get("gameStatusText", "")).strip()
     clock = _clock(game.get("gameClock")) if status == GameStatus.in_progress else None
-    if clock and ":" not in text:
-        text = f"{text} {clock}"
+    if clock:
+        text = f"{FEED_CLOCK.sub('', text)} {clock}"
     return str(game["gameId"]), LiveGame(status, text, scores)
 
 

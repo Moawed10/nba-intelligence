@@ -234,3 +234,9 @@ def test_a_live_box_score_keeps_a_status_that_already_shows_the_clock():
     live = transform_live_boxscore(live_box(game, 2, "Q2 9:55", 21, 25, "PT09M55.00S"))
     assert (live[game.id].status_text, live[game.id].scores) == ("Q2 9:55", {1: 21, 2: 25})
     assert transform_live_boxscore({}) == {}
+
+
+def test_the_last_minute_shows_whole_seconds_like_the_rest_of_the_quarter():
+    game = FixtureGame(1, "2099-11-10", home=1, away=2)
+    live = transform_live_boxscore(live_box(game, 2, "Q2 :24.2", 50, 48, "PT00M24.20S"))
+    assert live[game.id].status_text == "Q2 0:24"
