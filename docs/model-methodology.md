@@ -37,6 +37,8 @@ All features for game *g* are computed from games with `game_date < g.game_date`
 | Team | Own team pace, last 10 | Same |
 | History vs. opponent | Player's mean of each target vs. this opponent over prior meetings, shrunk toward the season mean by `n / (n + 3)`; meeting count | Prior meetings only |
 
+**Rest for games further out.** A forecast for a game after the team's next one counts `rest_days`, `team_rest_days` and `is_back_to_back` from the team's previous *scheduled* game and assumes the player plays it, as the missing-player inputs do. Before 2026-11-16 these counted from the last final game, so later games looked rested (4, 6, then the 7-day cap) and were never a back-to-back. Training rows are unaffected, since every earlier game there is final, and stored forecasts keep the inputs they were made with.
+
 `feature_schema_version` is a hash of the ordered feature names, dtypes and the feature module version constant. An artifact refuses to load if its schema version does not match the running code.
 
 ### Leakage tests (Phase 6 gates)
