@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from types import SimpleNamespace
 
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, aliased
@@ -8,6 +9,7 @@ from app.api.errors import ApiError, invalid_parameter, not_found
 from app.models import (
     Game,
     GameStatus,
+    LiveBoxScore,
     Player,
     PlayerGameStats,
     Season,
@@ -23,6 +25,7 @@ from app.schemas.resources import (
     GameDetail,
     GameSummary,
     GameTeam,
+    LiveBoxInfo,
 )
 from app.services.common import box, nba_today, shooting, stat_line, team_ref
 from app.stats import is_double_double
@@ -143,7 +146,63 @@ def game_detail(ctx: Context, game_id: str) -> GameDetail:
     )
 
 
+def _live_boxscore(ctx: Context, row: tuple[Game, str, Team, Team]) -> BoxScore:
+    """The live feed's latest snapshot of a game in progress. Read fresh on every request: live
+    polls don't change data_version, so the cache would hold a stale snapshot."""
+    game = row[0]
+    live = ctx.session.get(LiveBoxScore, game.id)
+    if live is None:
+        raise ApiError(
+            409, "game_not_final", f"Game {game.id} is {game.status.value}; no box score yet."
+        )
+    teams = {t.id: t for t in (row[2], row[3])}
+
+    def line(stats: dict) -> SimpleNamespace:
+        return SimpleNamespace(**{"plus_minus": None, "minutes": 0.0, **stats})
+
+    sides = []
+    for side in live.data["teams"]:
+        team = teams.get(side["team_id"])
+        if team is None:
+            continue
+        players = [
+            BoxScorePlayer(
+                player_id=p["player_id"],
+                full_name=p["name"],
+                minutes=p["minutes"],
+                box=box(line(p)),
+                shooting=shooting(line(p)),
+                double_double=is_double_double(stat_line(game.game_date, line(p))),
+            )  # fmt: skip
+            for p in side["players"]
+        ]
+        totals = line(side["totals"])
+        sides.append(
+            BoxScoreTeam(
+                team=team_ref(team),
+                is_home=side["is_home"],
+                minutes=side["minutes"],
+                totals=box(totals),
+                shooting=shooting(totals),
+                players=players,
+            )  # fmt: skip
+        )
+    sides.sort(key=lambda t: not t.is_home)
+    ctx.always_revalidate()
+    return BoxScore(
+        game=_summary(*row),
+        stats_finalized=False,
+        teams=sides,
+        meta=ctx.meta(BOX_DATASET),
+        live=LiveBoxInfo(observed_at=live.observed_at, period=live.period, clock=live.clock),
+    )
+
+
 def boxscore(ctx: Context, game_id: str) -> BoxScore:
+    current = _game_or_404(ctx.session, game_id)
+    if current[0].status == GameStatus.in_progress:
+        return _live_boxscore(ctx, current)
+
     def compute() -> BoxScore:
         row = _game_or_404(ctx.session, game_id)
         game = row[0]

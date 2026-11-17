@@ -17,6 +17,8 @@ test.describe("games", () => {
     await page.goto("/games/0099000100");
     await expect(page.getByText("Live · Q3 5:12")).toBeVisible();
     await expect(page.locator("main").getByText("61", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Live box score · Q3 5:12 · as of/)).toBeVisible();
+    await expect(page.getByRole("region", { name: /box score$/ })).toHaveCount(2);
   });
 
   test("the schedule picks up a new live score without a reload", async ({ page }) => {

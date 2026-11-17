@@ -347,3 +347,20 @@ class FanPost(Provenance, Base):
     reposts: Mapped[int] = mapped_column(Integer)
     replies: Mapped[int] = mapped_column(Integer)
     score: Mapped[float] = mapped_column(Float)
+
+
+class LiveBoxScore(Provenance, Base):
+    """The latest box score the live feed published for a game in progress, replaced on every poll.
+    Kept apart from player_game_stats, which hold only the official final box score; once a game is
+    final the official one is shown and this row is no longer read."""
+
+    __tablename__ = "live_box_scores"
+
+    game_id: Mapped[str] = mapped_column(
+        ForeignKey("games.id", ondelete="CASCADE"), primary_key=True
+    )
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    period: Mapped[int] = mapped_column(SmallInteger)
+    clock: Mapped[str | None] = mapped_column(String(16))
+    # {"teams": [{"team_id", "is_home", "totals": {...}, "players": [{...}]}]}, see live_boxscore.py
+    data: Mapped[dict[str, Any]] = mapped_column(JSONB)

@@ -697,6 +697,7 @@ export interface components {
         /** BoxScore */
         BoxScore: {
             game: components["schemas"]["GameSummary"];
+            live?: components["schemas"]["LiveBoxInfo"] | null;
             meta: components["schemas"]["Meta"];
             /** Stats Finalized */
             stats_finalized: boolean;
@@ -1350,6 +1351,21 @@ export interface components {
             status: string;
             /** Version */
             version: string;
+        };
+        /**
+         * LiveBoxInfo
+         * @description Set while a game is in progress: the box score is the live feed's latest snapshot.
+         */
+        LiveBoxInfo: {
+            /** Clock */
+            clock: string | null;
+            /**
+             * Observed At
+             * Format: date-time
+             */
+            observed_at: string;
+            /** Period */
+            period: number;
         };
         /** LiveDoubleDouble */
         LiveDoubleDouble: {

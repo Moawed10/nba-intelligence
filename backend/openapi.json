@@ -77,6 +77,16 @@
           "game": {
             "$ref": "#/components/schemas/GameSummary"
           },
+          "live": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveBoxInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "meta": {
             "$ref": "#/components/schemas/Meta"
           },
@@ -2241,6 +2251,38 @@
           "game_scores"
         ],
         "title": "LiveAccuracy",
+        "type": "object"
+      },
+      "LiveBoxInfo": {
+        "description": "Set while a game is in progress: the box score is the live feed's latest snapshot.",
+        "properties": {
+          "clock": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clock"
+          },
+          "observed_at": {
+            "format": "date-time",
+            "title": "Observed At",
+            "type": "string"
+          },
+          "period": {
+            "title": "Period",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "observed_at",
+          "period",
+          "clock"
+        ],
+        "title": "LiveBoxInfo",
         "type": "object"
       },
       "LiveDoubleDouble": {

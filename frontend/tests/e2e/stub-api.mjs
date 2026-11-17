@@ -237,7 +237,9 @@ function boxScore(g) {
       });
     return { team: side.team, is_home: i === 1, minutes: 240, players, totals: box(i), shooting: shooting(box(i)) };
   });
-  return { game: g, stats_finalized: true, teams, meta: META };
+  // A game in progress gets the live feed's latest snapshot, as the API serves it.
+  const live = g.status === "in_progress" ? { observed_at: new Date().toISOString(), period: 3, clock: "5:12" } : null;
+  return { game: g, stats_finalized: !live, teams, meta: META, live };
 }
 
 function leaders(stat, limit, teamId) {

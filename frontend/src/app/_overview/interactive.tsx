@@ -147,9 +147,12 @@ function Matchup({
   forecast,
   pageLink = true,
   headingLevel = 3,
+  liveBox = false,
 }: {
   game: GameSummary;
   fullBox?: boolean;
+  /** Both teams' live box score while the game is on (the game's own page only). */
+  liveBox?: boolean;
   forecast?: { result: GameForecastResult | undefined; pending: boolean; error: unknown };
   /** Show a link to the game's own page (off on that page). */
   pageLink?: boolean;
@@ -168,7 +171,9 @@ function Matchup({
   const box = useQuery({
     queryKey: ["boxscore", game.id],
     queryFn: ({ signal }) => clientGet<BoxScore>(`/games/${game.id}/boxscore`, undefined, signal),
-    enabled: game.status === "final",
+    enabled: game.status === "final" || (liveBox && game.status === "in_progress"),
+    // During a game the worker stores a fresh live snapshot about every 30 seconds.
+    refetchInterval: liveBox && game.status === "in_progress" ? LIVE_BOX_POLL_MS : false,
   });
   const [away, home] = stats.data ?? [];
   const names: [string, string] = [game.away.team.name, game.home.team.name];
@@ -258,7 +263,12 @@ function Matchup({
           {describeError(box.error).message}
         </Unavailable>
       )}
-      {fullBox && game.status === "final" && box.data && (
+      {liveBox && game.status === "in_progress" && box.error && (
+        <p className="text-footnote text-muted-foreground">
+          The live box score appears once the first stats of the game come in.
+        </p>
+      )}
+      {((fullBox && game.status === "final") || (liveBox && game.status === "in_progress")) && box.data && (
         <BoxScoreTables box={box.data} />
       )}
       {!fullBox && game.status === "final" && box.data && (
@@ -548,6 +558,7 @@ export function GameMatchup({ game }: { game: GameSummary }) {
     <Matchup
       game={game}
       fullBox
+      liveBox
       pageLink={false}
       headingLevel={2}
       forecast={
@@ -590,10 +601,24 @@ const BOX_COLUMNS = [
   },
 ];
 
+const LIVE_BOX_POLL_MS = 30_000;
+
+function periodLabel(period: number): string {
+  if (period <= 4) return `Q${period}`;
+  return period === 5 ? "OT" : `${period - 4}OT`;
+}
+
 function BoxScoreTables({ box }: { box: BoxScore }) {
   return (
     <div className="space-y-10 pt-4">
-      {!box.stats_finalized && (
+      {box.live && (
+        <p className="kicker flex items-center text-primary">
+          <LiveDot />
+          Live box score · {periodLabel(box.live.period)}
+          {box.live.clock ? ` ${box.live.clock}` : ""} · as of {formatGameTime(box.live.observed_at)}
+        </p>
+      )}
+      {!box.live && !box.stats_finalized && (
         <p className="text-footnote text-muted-foreground">
           Box score not finalized by the source yet; numbers may still change.
         </p>

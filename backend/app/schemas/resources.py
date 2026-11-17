@@ -201,11 +201,20 @@ class BoxScoreTeam(BaseModel):
     players: list[BoxScorePlayer]
 
 
+class LiveBoxInfo(BaseModel):
+    """Set while a game is in progress: the box score is the live feed's latest snapshot."""
+
+    observed_at: datetime
+    period: int
+    clock: str | None
+
+
 class BoxScore(BaseModel):
     game: GameSummary
     stats_finalized: bool
     teams: list[BoxScoreTeam]
     meta: Meta
+    live: LiveBoxInfo | None = None
 
 
 class Health(BaseModel):
