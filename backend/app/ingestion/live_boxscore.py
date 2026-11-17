@@ -53,7 +53,7 @@ def _line(statistics: dict[str, Any]) -> dict[str, int]:
     return {ours: int(statistics.get(theirs) or 0) for ours, theirs in STATS.items()}
 
 
-def transform_live_boxscore(payload: dict[str, Any]) -> dict[str, Any]:
+def box_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     """The feed's game object to {"status", "period", "clock", "teams": [...]}. Only players who
     have been on the floor are kept; plus-minus is the feed's own."""
     game = payload["game"]
@@ -109,6 +109,16 @@ def store(engine: Engine, game_id: str, snapshot: dict[str, Any], now: datetime)
         session.execute(stmt)
 
 
+def record(engine: Engine, game_id: str, payload: dict[str, Any], now: datetime) -> bool:
+    """Stores the snapshot from a live box score already fetched (the live score poll reads the
+    same reply). A feed that no longer says live keeps the last snapshot until the official one."""
+    snapshot = box_snapshot(payload)
+    if snapshot["status"] != LIVE_STATUS or not any(t["players"] for t in snapshot["teams"]):
+        return False
+    store(engine, game_id, snapshot, now)
+    return True
+
+
 def poll_live_box_scores(
     engine: Engine, fetch: Callable[[str], dict[str, Any]], now: datetime
 ) -> int:
@@ -116,11 +126,4 @@ def poll_live_box_scores(
     game the feed no longer reports as live keeps its last snapshot until the official one lands."""
     with Session(engine) as session:
         live = session.scalars(select(Game.id).where(Game.status == GameStatus.in_progress)).all()
-    stored = 0
-    for game_id in live:
-        snapshot = transform_live_boxscore(fetch(game_id))
-        if snapshot["status"] != LIVE_STATUS or not any(t["players"] for t in snapshot["teams"]):
-            continue
-        store(engine, game_id, snapshot, now)
-        stored += 1
-    return stored
+    return sum(record(engine, game_id, fetch(game_id), now) for game_id in live)

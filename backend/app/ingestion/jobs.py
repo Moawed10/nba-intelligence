@@ -27,7 +27,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.ingestion import fan_posts, injuries
+from app.ingestion import fan_posts, injuries, live_boxscore
 from app.ingestion.client import (
     FetchResult,
     NonRetryableSourceError,
@@ -243,7 +243,9 @@ def poll_live_scores(engine: Engine, client: StatsSource, dates: list[date], now
     seen: dict[str, LiveGame] = {}
     for game_id in started:
         try:
-            seen.update(transform_live_boxscore(client.fetch_live(BoxScore, game_id=game_id)))
+            payload = client.fetch_live(BoxScore, game_id=game_id)
+            seen.update(transform_live_boxscore(payload))
+            live_boxscore.record(engine, game_id, payload, now)  # the game page's live box score
         except NonRetryableSourceError:
             continue
         except StatsSourceError as error:

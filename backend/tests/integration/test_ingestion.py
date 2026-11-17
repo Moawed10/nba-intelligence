@@ -14,6 +14,7 @@ from app.models import (
     Game,
     GameStatus,
     IngestionRun,
+    LiveBoxScore,
     Player,
     PlayerGameStats,
     RunStatus,
@@ -271,6 +272,22 @@ def test_started_games_follow_their_own_box_scores_ahead_of_any_scoreboard(engin
         game = s.get(Game, GAMES[0].id)
         assert (game.home_score, game.away_score) == (21, 25)
         assert game.provider_status["gameStatusText"] == "Q2 9:55"
+
+
+def test_the_live_poll_stores_each_games_box_score_for_its_page(engine, source):
+    run_schedule(engine, source, schedule(GAMES, status=1))
+    boxes = {g.id: live_box(g, 2, "Q2 9:55", 21, 25, "PT09M55.00S") for g in GAMES}
+    star = {"personId": 101, "name": "Star Player", "starter": "1", "oncourt": "1", "played": "1",
+            "statistics": {"minutes": "PT14M30.00S", "points": 12, "reboundsTotal": 4}}  # fmt: skip
+    boxes[GAMES[0].id]["game"]["homeTeam"]["players"] = [star]
+    source.live_boxes = boxes
+    jobs.poll_live_scores(engine, source, ALL_DATES, LIVE_NOW)
+    with Session(engine) as s:
+        stored = s.get(LiveBoxScore, GAMES[0].id)
+        assert (stored.period, stored.clock) == (0, "9:55")
+        home = next(t for t in stored.data["teams"] if t["is_home"])
+        assert [(p["player_id"], p["pts"]) for p in home["players"]] == [(101, 12)]
+        assert s.get(LiveBoxScore, GAMES[1].id) is None  # no players on the floor yet
 
 
 def test_a_game_without_a_box_score_yet_is_read_from_the_scoreboard(engine, source):

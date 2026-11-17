@@ -7,10 +7,10 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.ingestion.live_boxscore import (
+    box_snapshot,
     clock,
     minutes,
     poll_live_box_scores,
-    transform_live_boxscore,
 )
 from app.models import Game, GameStatus
 from tests.api.conftest import SCHEDULED
@@ -53,7 +53,7 @@ def test_feed_durations_and_clock_read_like_a_scoreboard():
 
 
 def test_only_players_who_played_are_kept():
-    snapshot = transform_live_boxscore(feed())
+    snapshot = box_snapshot(feed())
     assert (snapshot["status"], snapshot["period"], snapshot["clock"]) == (2, 3, "5:12")
     home = next(t for t in snapshot["teams"] if t["is_home"])
     assert [p["player_id"] for p in home["players"]] == [player_id(1, 0)]
