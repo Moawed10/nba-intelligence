@@ -176,7 +176,7 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 
 ## Score forecast lifecycle
 
-Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
+Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. Since 2026-11-27 it also stores a player forecast for every active player on both rosters of those games who has played this season or last, so live accuracy covers whole games rather than only the players someone looked up (before then, 5 players had forecasts from release 2026.11.14-1 in its first 13 days). Players short of the minimum games are skipped. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
 
 ## Who guarded whom
 

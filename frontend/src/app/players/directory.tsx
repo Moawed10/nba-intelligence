@@ -343,8 +343,8 @@ export async function Directory({ searchParams }: { searchParams: Promise<Search
             <p className="mt-3 max-w-prose text-footnote text-muted-foreground">
               Career regular-season totals as the NBA publishes them, updated daily.
               {team ? ` Only seasons played for the ${team.name} count.` : ""} Steals and blocks were first
-              counted in 1973-74 and 3-pointers in 1979-80. Many former players&rsquo; careers are still being
-              loaded, so some all-time greats are not listed yet.
+              counted in 1973-74 and 3-pointers in 1979-80. A few players the NBA has no career record for,
+              mostly with only a handful of games, aren&rsquo;t listed.
             </p>
           )}
         </div>

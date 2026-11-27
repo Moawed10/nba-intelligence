@@ -219,8 +219,8 @@ def freshness(
 
 
 def refresh_due(session: Session, artifacts_dir: Path, now: datetime) -> dict[str, int]:
-    """Re-forecast stale predictions for games in the next 48 hours, only for players someone
-    already asked about. A model change marks forecasts stale but does not regenerate them."""
+    """Re-forecast stale predictions of the serving release for games in the next 48 hours. After
+    a model change, store_slate makes the new release's first forecasts for these games."""
     counts = {"checked": 0, "refreshed": 0, "skipped": 0}
     try:
         release = serving_release(session, artifacts_dir)
@@ -250,6 +250,47 @@ def refresh_due(session: Session, artifacts_dir: Path, now: datetime) -> dict[st
             counts["skipped"] += 1
             continue
         counts["refreshed"] += created
+    return counts
+
+
+def store_slate(session: Session, artifacts_dir: Path, now: datetime) -> dict[str, int]:
+    """Store a pregame forecast for every active player on both rosters of each game tipping off in
+    the refresh window, so live accuracy covers whole games instead of only the players someone
+    looked up. Players with no game this season or last are skipped without running the model;
+    the rest still need MIN_PRIOR_GAMES, which forecast() checks. Same inputs store nothing."""
+    counts = {"slate_forecasts": 0, "slate_skipped": 0}
+    try:
+        serving_release(session, artifacts_dir)
+    except ApiError:
+        return counts
+    games = session.scalars(
+        select(Game).where(
+            Game.status == GameStatus.scheduled,
+            Game.tipoff_at > now,
+            Game.tipoff_at <= now + REFRESH_WINDOW,
+        )
+    ).all()
+    for game in games:
+        played = (
+            select(PlayerGameStats.player_id)
+            .join(Game, Game.id == PlayerGameStats.game_id)
+            .where(Game.season_id >= game.season_id - 1, PlayerGameStats.minutes > 0)
+        )
+        roster = session.scalars(
+            select(Player.id).where(
+                Player.is_active,
+                Player.current_team_id.in_((game.home_team_id, game.away_team_id)),
+                Player.id.in_(played),
+            )
+        ).all()
+        for player_id in roster:
+            try:
+                _, created = forecast(session, artifacts_dir, now, player_id, game.id)
+            except ApiError:
+                session.rollback()
+                counts["slate_skipped"] += 1
+                continue
+            counts["slate_forecasts"] += created
     return counts
 
 
