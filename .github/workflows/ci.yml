@@ -32,8 +32,8 @@ jobs:
       NBA_TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/nba_intelligence_test
       NBA_LOG_LEVEL: WARNING
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -60,8 +60,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
@@ -76,7 +76,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: End-to-end and accessibility tests
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -99,13 +99,13 @@ jobs:
       NBA_FULLSTACK_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/nba_intelligence_fullstack
       FULLSTACK_PYTHON: python
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements-dev.lock
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
@@ -123,7 +123,7 @@ jobs:
       - name: Real-backend prediction workflow
         working-directory: frontend
         run: npm run test:fullstack
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: fullstack-failure
@@ -135,13 +135,13 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "24"
       - name: Python dependencies have no known vulnerabilities
@@ -161,7 +161,7 @@ jobs:
       POSTGRES_PASSWORD: ci-only
       WEB_PORT: "3000"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker compose config --quiet
       - name: Build the API, worker and web images
         run: docker compose build
