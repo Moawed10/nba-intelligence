@@ -257,11 +257,12 @@ def refresh_due(session: Session, artifacts_dir: Path, now: datetime) -> dict[st
 def store_slate(session: Session, artifacts_dir: Path, now: datetime) -> dict[str, int]:
     """Store a pregame forecast for every active player on both rosters of each game tipping off in
     the refresh window, so live accuracy covers whole games instead of only the players someone
-    looked up. Players with no game this season or last are skipped without running the model;
-    the rest still need MIN_PRIOR_GAMES, which forecast() checks. Same inputs store nothing."""
+    looked up. Players who already have one are left to refresh_due, and players with no game this
+    season or last are skipped without running the model; the rest still need MIN_PRIOR_GAMES,
+    which forecast() checks."""
     counts = {"slate_forecasts": 0, "slate_skipped": 0}
     try:
-        serving_release(session, artifacts_dir)
+        release = serving_release(session, artifacts_dir)
     except ApiError:
         return counts
     games = session.scalars(
@@ -282,6 +283,14 @@ def store_slate(session: Session, artifacts_dir: Path, now: datetime) -> dict[st
                 Player.is_active,
                 Player.current_team_id.in_((game.home_team_id, game.away_team_id)),
                 Player.id.in_(played),
+                # refresh_due keeps these current; checking them again would rebuild their inputs.
+                ~Player.id.in_(
+                    select(Prediction.player_id).where(
+                        Prediction.game_id == game.id,
+                        Prediction.release_id == release.id,
+                        Prediction.kind == PredictionKind.pregame,
+                    )
+                ),
             )
         ).all()
         for player_id in roster:

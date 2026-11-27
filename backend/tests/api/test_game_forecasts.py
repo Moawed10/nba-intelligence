@@ -370,7 +370,12 @@ def test_a_corrected_player_line_rescores_player_forecasts(league, scoring):  # 
     assert actual == 12
 
 
-def test_worker_forecasts_both_rosters_for_the_next_48_hours(league, tmp_path, scoring):  # noqa: F811
+def test_worker_forecasts_both_rosters_for_the_next_48_hours(
+    league,  # noqa: F811
+    tmp_path,
+    scoring,  # noqa: F811
+    monkeypatch,
+):
     first = maintain_predictions(league, NOW, tmp_path)
     assert first["slate_forecasts"] > 0
     with Session(league) as s:
@@ -384,5 +389,15 @@ def test_worker_forecasts_both_rosters_for_the_next_48_hours(league, tmp_path, s
     # Both rosters are tried; team 2's fixture players have too few games, so they are skipped.
     teams = {team for g, team in rows if g == NEXT_GAME.id}
     assert teams == {NEXT_GAME.home} and first["slate_skipped"] > 0
+    tried = []
+    real = prediction_lifecycle.forecast
+    monkeypatch.setattr(
+        prediction_lifecycle,
+        "forecast",
+        lambda s, a, n, p, g: tried.append(p) or real(s, a, n, p, g),
+    )
     again = maintain_predictions(league, NOW, tmp_path)
     assert again["slate_forecasts"] == 0  # same inputs, nothing new stored
+    # Players already forecast are only checked by the refresh, not built a second time.
+    assert again["checked"] >= first["slate_forecasts"]
+    assert len(tried) == again["slate_skipped"] == first["slate_skipped"]
