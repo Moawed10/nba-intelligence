@@ -78,7 +78,7 @@ test.describe("player directory", () => {
     await expect(page.getByText("All-time regular season").first()).toBeVisible();
     await expect(page.getByText("Top 3 · Total points")).toBeVisible();
     await expect(page.getByLabel("Include former players")).toBeChecked();
-    await expect(page.getByText(/careers are still being loaded/)).toBeVisible();
+    await expect(page.getByText(/no career record for/)).toBeVisible();
 
     await page.getByLabel("Include former players").uncheck();
     await expect(page).toHaveURL(/status=active/);

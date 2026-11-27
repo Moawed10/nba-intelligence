@@ -40,7 +40,7 @@ Implemented jobs (`app/sync/worker.py` `JOBS`):
 | Job key | Idle interval | Active interval | Active when | Source |
 |---|---|---|---|---|
 | `schedule` | 30 min | 60 s | Some game is within 15 min of tip-off or later and not final (30 h cap) | `ScheduleLeagueV2`: game status (scheduled, in progress, final, postponed), and the score at the moment a game starts or ends |
-| Live scores (own thread in the worker, not a scheduled job) | 30 s check | 5 s, doubling up to 60 s after failures | From 15 min before tip-off until final (6 h cap) | `ScoreboardV3`: score, status and clock for the day's games. Writes only games that changed, outside ingestion runs, so it does not advance `data_version` |
+| Live scores (own thread in the worker, not a scheduled job) | 30 s check | 5 s, doubling up to 60 s after failures | From 15 min before tip-off until final (6 h cap) | Each game's live box score from `cdn.nba.com` (nba_api's live `BoxScore`): score, status, clock and a snapshot of both teams' player lines. Games without one yet fall back to the `cdn.nba.com` scoreboard, then `ScoreboardV3`. Writes only games that changed, outside ingestion runs, so it does not advance `data_version` ([live scores](#live-scores)) |
 | `game_logs` | 6 h | 10 min | A game is live, or a game from the last 36 h is final but its box score isn't confirmed stable | `LeagueGameLog` (team + player) for the current season's types |
 | `metadata` | 24 h | — | Always | `LeagueStandingsV3`, `CommonAllPlayers`, `PlayerIndex` |
 | `corrections` | 7 days | — | Always | Re-fetches the current season's game logs and logs any changed values |
@@ -53,13 +53,21 @@ Implemented jobs (`app/sync/worker.py` `JOBS`):
 
 Training stays a manual CLI step per [ADR 0002](decisions/0002-no-http-admin-operations.md); no job checks whether a retrain is due.
 
-Scores during a game come from the live scores thread above; player stats enter the database from the final box score. The live `cdn.nba.com` scoreboard is a separate service and isn't used. A box score counts as stable once a `game_logs` run leaves all of a game's player lines unchanged, which sets `stats_finalized_at` and emits `GAME_STATS_FINALIZED`. Games older than 36 hours are marked stable silently, so a historical backfill emits no events.
+Scores during a game come from the live scores thread above; player stats enter `player_game_stats` only from the final box score. A box score counts as stable once a `game_logs` run leaves all of a game's player lines unchanged, which sets `stats_finalized_at` and emits `GAME_STATS_FINALIZED`. Games older than 36 hours are marked stable silently, so a historical backfill emits no events.
 
 The worker sleeps when nothing is due. There is no off-season switch: every enabled job keeps its interval all year. These cadences are polling intervals, not provider freshness guarantees. The UI never says "real time."
 
 **Injuries** sync every 30 minutes from ESPN's public, unofficial injury feed, because the NBA's official report has no expected return date. Each sync replaces the stored report, so a player no longer listed counts as recovered. A name is matched only when exactly one active player has it; anything else is rejected and counted. An empty report never wipes stored rows. Return dates are the source's rough estimates. The feed has no published contract and could change without notice, in which case the dataset goes stale and the site shows its last sync time.
 
 **Attendance** comes from the league box-score summary, one request per game, every 6 hours for this season's final games that have none. Zero or missing is stored as unknown.
+
+### Live scores
+
+Both scoreboards fell behind play on 2026-11-16: `ScoreboardV3` and the `cdn.nba.com` scoreboard each held a game's score and clock for up to 8 minutes, and still listed games as not started after tip-off. Each game's own `cdn.nba.com` box score followed play within 15 to 20 seconds. So every 5 seconds the poll requests the box score of each game that has tipped off or is due within 15 minutes. Before tip-off the box score doesn't exist yet (HTTP 403); such games, and any whose request fails, are read from the `cdn.nba.com` scoreboard, or from `ScoreboardV3` for a day that scoreboard no longer covers. That is one request per game per poll.
+
+The stored status reads like `Q2 6:25`, with the feed's last-minute form (`Q2 :24.2`) rewritten as `Q2 0:24`. The feed stamps the clock at each play, so between stamps the page counts it down itself, but only after it has seen the clock move and for at most 20 seconds; timeouts and free throws freeze it instead, and each new stamp resets it.
+
+The same box score reply is stored in `live_box_scores`, one snapshot per game replaced on every poll, for the game page's live box score. It never touches `player_game_stats`, which holds only the official box score once a game is final.
 
 ## Game lifecycle
 
@@ -176,7 +184,7 @@ All use recorded provider fixtures and simulated failures; CI never calls the li
 
 ## Score forecast lifecycle
 
-Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
+Score forecasts follow the same rules as player forecasts. Freshness is derived, not stored: `superseded`, `invalid` (postponed or cancelled), `final_pregame` (past tip-off), `stale` (inputs or serving release changed) or `current`. The `predictions` job refreshes stale forecasts for games in the next 48 hours and closes them at tip-off. Since 2026-11-27 it also stores a player forecast for every active player on both rosters of those games who has played this season or last, so live accuracy covers whole games rather than only the players someone looked up (before then, 5 players had forecasts from release 2026.11.14-1 in its first 13 days). Players short of the minimum games are skipped. `GAME_STATS_FINALIZED` scores both player and score forecasts. `HISTORICAL_DATA_CORRECTED` rescores player forecasts, and the `predictions` job rescores score forecasts when a game's final score no longer matches its evaluation.
 
 ## Who guarded whom
 

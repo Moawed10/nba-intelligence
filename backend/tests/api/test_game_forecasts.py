@@ -21,6 +21,9 @@ from app.models import (
     ModelRelease,
     ModelTarget,
     ModelVersion,
+    Player,
+    Prediction,
+    PredictionKind,
     SyncEventType,
 )
 from app.services import game_forecasts, prediction_lifecycle
@@ -365,3 +368,21 @@ def test_a_corrected_player_line_rescores_player_forecasts(league, scoring):  # 
     with league.connect() as conn:
         actual = conn.scalar(text("SELECT actual FROM prediction_evaluations WHERE stat = 'pts'"))
     assert actual == 12
+
+
+def test_worker_forecasts_both_rosters_for_the_next_48_hours(league, tmp_path, scoring):  # noqa: F811
+    first = maintain_predictions(league, NOW, tmp_path)
+    assert first["slate_forecasts"] > 0
+    with Session(league) as s:
+        rows = s.execute(
+            select(Prediction.game_id, Player.current_team_id)
+            .join(Player, Player.id == Prediction.player_id)
+            .where(Prediction.kind == PredictionKind.pregame)
+        ).all()
+    by_game = {g for g, _ in rows}
+    assert NEXT_GAME.id in by_game and LATER_GAME.id not in by_game
+    # Both rosters are tried; team 2's fixture players have too few games, so they are skipped.
+    teams = {team for g, team in rows if g == NEXT_GAME.id}
+    assert teams == {NEXT_GAME.home} and first["slate_skipped"] > 0
+    again = maintain_predictions(league, NOW, tmp_path)
+    assert again["slate_forecasts"] == 0  # same inputs, nothing new stored

@@ -263,7 +263,7 @@ Deferred non-critical decisions: (1) production hosting provider, decided in Pha
 | Neutral-site games list both teams as away | High (fixed) | 5 games per season were rejected | Resolve home team from the schedule; regression test |
 | Filling an empty score was logged as a correction | Medium (fixed) | 2,640 false corrections in dev | Ignore stored nulls; dev rows removed; regression test |
 | First sync pass emitted events for 10,284 historical games | Medium (fixed) | Would trigger evaluation of old games | Events only for games ≤ 36 h old; drain loops to empty; regression tests |
-| Live in-game scores are not ingested | Low | Live status comes from the schedule; scores land when the game is final | Documented in data-synchronization.md |
+| Live in-game scores lagged or were missing | Low (fixed) | Both scoreboards held scores up to 8 min behind play | Each game's live box score, polled every 5 s ([data-synchronization.md § Live scores](data-synchronization.md#live-scores)) |
 | Cloud-IP blocking of stats.nba.com is untested | Medium | Hosted ingestion may fail | Verify in Phase 15 |
 
 #### Next actions

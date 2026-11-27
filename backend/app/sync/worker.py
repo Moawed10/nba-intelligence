@@ -245,8 +245,9 @@ HANDLERS: dict[SyncEventType, EventHandler] = {
 def maintain_predictions(
     engine: Engine, now: datetime, artifacts_dir: Path
 ) -> dict[str, int] | None:
-    """Score pending finals, refresh stale player forecasts and store score forecasts for the
-    next 48 hours of games. None when another worker holds it."""
+    """Score pending finals, refresh stale player forecasts, store player forecasts for both
+    rosters and score forecasts for the next 48 hours of games. None when another worker holds
+    it."""
     key = func.hashtextextended("predictions", 0)
     # The lock belongs to one database connection, so the session is pinned to it: commits and
     # rollbacks inside the job must not hand it back to the pool before the unlock.
@@ -262,9 +263,11 @@ def maintain_predictions(
                 s.commit()
                 counts = prediction_lifecycle.refresh_due(s, artifacts_dir, now)
                 s.commit()
+                slate = prediction_lifecycle.store_slate(s, artifacts_dir, now)
+                s.commit()
                 games = game_forecasts.store_upcoming(s, artifacts_dir, now)
                 s.commit()
-                return {"scored": scored, "games_scored": game_scored, **counts, **games}
+                return {"scored": scored, "games_scored": game_scored, **counts, **slate, **games}
         finally:
             conn.rollback()
             conn.execute(select(func.pg_advisory_unlock(key)))
