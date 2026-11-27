@@ -66,16 +66,20 @@ const FIRST_POINT = mean(starPoints(scenario.finals).slice(-10));
 const REFRESHED_POINT = mean(starPoints([...scenario.finals, scenario.added_final]).slice(-10));
 const STAR_ACTUAL: Line = scenario.target.lines[String(STAR)];
 const OTHER_POINT: number = scenario.default_line.pts;
-const OTHER_ACTUAL: Line = scenario.target.lines[String(OTHER)];
 const STAR_MISS = Math.abs(REFRESHED_POINT - STAR_ACTUAL.pts);
-const OTHER_MISS = Math.abs(OTHER_POINT - OTHER_ACTUAL.pts);
-const LIVE_MAE = mean([STAR_MISS, OTHER_MISS]);
-const LIVE_RMSE = Math.sqrt(mean([STAR_MISS ** 2, OTHER_MISS ** 2]));
-const LIVE_COVERAGE = mean([STAR_MISS <= HALF_WIDTH ? 1 : 0, OTHER_MISS <= HALF_WIDTH ? 1 : 0]);
+const ROSTER: number[] = [scenario.target.home, scenario.target.away].flatMap((team: number) =>
+  [0, 1, 2, 3, 4].map((slot) => team * 100 + slot),
+);
+const actualFor = (player: number): Line => scenario.target.lines[String(player)] ?? scenario.default_line;
+const MISSES = ROSTER.map((player) =>
+  Math.abs((player === STAR ? REFRESHED_POINT : OTHER_POINT) - actualFor(player).pts),
+);
+const LIVE_MAE = mean(MISSES);
+const LIVE_RMSE = Math.sqrt(mean(MISSES.map((miss) => miss ** 2)));
+const LIVE_COVERAGE = mean(MISSES.map((miss) => (miss <= HALF_WIDTH ? 1 : 0)));
 const PRIOR: number = scenario.double_double_prior;
-const STAR_DOUBLE = STAR_ACTUAL.pts >= 10 && STAR_ACTUAL.reb >= 10 ? 1 : 0;
-const OTHER_DOUBLE = OTHER_ACTUAL.pts >= 10 && OTHER_ACTUAL.reb >= 10 ? 1 : 0;
-const LIVE_BRIER = mean([(PRIOR - STAR_DOUBLE) ** 2, (PRIOR - OTHER_DOUBLE) ** 2]);
+const isDouble = (line: Line) => (line.pts >= 10 && line.reb >= 10 ? 1 : 0);
+const LIVE_BRIER = mean(ROSTER.map((player) => (PRIOR - isDouble(actualFor(player))) ** 2));
 
 const BACKTEST_ROWS = 10;
 const STAR_GAMES = starPoints(scenario.finals);
@@ -285,16 +289,16 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
     const live = await (await request.get(`${API}/models/${VERSION}/live`)).json();
     expect(live.games).toBe(1);
     const pts = live.stats.find((s: { stat: string }) => s.stat === "pts");
-    expect(pts.n).toBe(2);
+    expect(pts.n).toBe(ROSTER.length);
     expect(pts.mae).toBeCloseTo(LIVE_MAE, 9);
     expect(pts.interval_coverage).toBeCloseTo(LIVE_COVERAGE, 9);
-    expect(live.double_double.n).toBe(2);
+    expect(live.double_double.n).toBe(ROSTER.length);
     expect(live.double_double.brier).toBeCloseTo(LIVE_BRIER, 9);
 
     const pregame = await (
       await request.get(`${API}/models/${VERSION}/analytics`, { params: { stat: "pts", kind: "pregame" } })
     ).json();
-    expect(pregame.n).toBe(2);
+    expect(pregame.n).toBe(ROSTER.length);
     expect(pregame.mae).toBeCloseTo(LIVE_MAE, 9);
     expect(pregame.rmse).toBeCloseTo(LIVE_RMSE, 9);
     expect(pregame.coverage).toBeCloseTo(LIVE_COVERAGE, 9);
@@ -314,7 +318,7 @@ test("a forecast goes from creation through refresh, tip-off, the final box scor
       "across 1 game",
     );
     await expect(page.getByRole("region", { name: "Live accuracy", exact: true })).toContainText(
-      `error score ${LIVE_BRIER.toFixed(3)} over 2 forecasts`,
+      `error score ${LIVE_BRIER.toFixed(3)} over ${ROSTER.length} forecasts`,
     );
 
     const check = page.getByRole("region", { name: "Check the predictions", exact: true });
