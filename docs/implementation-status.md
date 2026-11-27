@@ -2,7 +2,7 @@
 
 The authoritative ledger of development progress. A status here is only as good as its evidence. When this document and executable evidence disagree, the evidence wins and this document is corrected (see [data-ownership.md](data-ownership.md#evidence-hierarchy-for-progress-claims)).
 
-**Last updated:** 2026-11-10
+**Last updated:** 2026-11-27
 
 ## Evidence audit (2026-11-02)
 
@@ -40,11 +40,11 @@ Release gates and blockers are tracked in [release-readiness.md](release-readine
 | 10 | Player Comparison | Complete | 100% (9/9) | None |
 | 11 | Overview & Games | Complete | 100% (9/9) | None |
 | 12 | Accessibility Audit | Verification Pending | 90% (9/10) | VoiceOver pass needs a person |
-| 13 | Performance & Security | In Progress | 58% (7/12) | Query profiling, forecast speed, cache tuning, rendering, CORS test, Web Vitals |
+| 13 | Performance & Security | In Progress | 67% (8/12) | Query profiling, cache tuning, rendering, CORS test, Web Vitals |
 | 14 | Testing & Integration | In Progress | 100% (10/10) | Frontend coverage 71%, threshold 80% |
 | 15 | Deployment & Portfolio | Not Started | 0% (0/14) | Release gates |
 
-**Overall:** 162 / 182 verified deliverables = **89%**.
+**Overall:** 163 / 182 verified deliverables = **90%**.
 
 Progress = verified completed deliverables ÷ required deliverables, rounded. Allowed statuses: Not Started, In Progress, Blocked, Verification Pending, Complete. Criterion results: Pass, Fail, Not Verified.
 
@@ -701,13 +701,13 @@ The "recent games" block from the original design was folded into the game log, 
 
 ### Phase 13 — Performance, Security & Reliability
 
-**Status:** In Progress · **Progress:** 58% (7/12) · **Dependencies:** Core functionality
+**Status:** In Progress · **Progress:** 67% (8/12) · **Dependencies:** Core functionality
 
 #### Deliverables
 
 - [ ] Query profiling (`EXPLAIN ANALYZE` on primary endpoints): no query plans recorded; endpoint latencies were measured in Phase 4 ([test-report.md](test-report.md))
 - [x] N+1 fixes: `tests/api/test_queries.py` checks that query counts don't grow with page size and that a box score takes at most 4 queries
-- [ ] Response-time optimization: read endpoints meet their gates locally, but player forecasts take p95 4.6 s at 20 concurrent clients
+- [x] Response-time optimization: player forecasts profiled and the unused defender query removed from serving; p95 at 20 clients went from 23.0 s to 2.8 s with 0 errors ([test-report.md](test-report.md#player-forecast-speed-2026-11-27)). Read endpoints meet their gates locally
 - [ ] Cache tuning: the in-process cache exists ([ADR 0004](decisions/0004-in-process-cache.md)); its sizes and lifetimes haven't been tuned against measurements
 - [ ] Image and chart rendering optimization
 - [x] Rate limiting: per-client and global token buckets (`app/services/rate_limit.py`) instead of `slowapi`; `tests/api/test_rate_limit.py`
@@ -733,7 +733,7 @@ The "recent games" block from the original design was folded into the game log, 
 | Pool within configured limits | Yes | Pool timeout returns 503 `database_busy` (`test_failure_paths.py`) | Pass |
 | Failed ingestion corrupts data | Never | Never in tests: partial responses write nothing and failures roll back (`test_ingestion.py`) | Pass |
 
-**Evidence:** [test-report.md](test-report.md), [release-readiness.md](release-readiness.md), CI `backend` and `security` jobs. · **Decision:** In Progress (5 deliverables and Core Web Vitals open)
+**Evidence:** [test-report.md](test-report.md), [release-readiness.md](release-readiness.md), CI `backend` and `security` jobs. · **Decision:** In Progress (4 deliverables and Core Web Vitals open)
 
 ---
 

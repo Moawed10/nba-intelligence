@@ -104,6 +104,10 @@ class ActiveRelease:
     # The inputs this release's models were trained on, in order; older releases have fewer.
     features: tuple[str, ...] = FEATURES
 
+    @property
+    def reads_matchups(self) -> bool:
+        return not set(MATCHUP_FEATURES).isdisjoint(self.features)
+
 
 @dataclass(frozen=True)
 class Forecast:
@@ -255,6 +259,7 @@ def pregame_features(
     game_id: str,
     game_date: date,
     season_id: int,
+    with_matchups: bool = True,
 ) -> pd.Series:
     connection = session.connection()
     params = {"player_id": player_id, "before": game_date}
@@ -284,17 +289,19 @@ def pregame_features(
             }
         ]
     )
-    matchups = pd.read_sql(
-        text(PLAYER_MATCHUPS_SQL),
-        connection,
-        params={
-            **params,
-            "opponent_id": opponent_id,
-            "roster_days": ROSTER_DAYS,
-            "position_games": POSITION_GAMES,
-        },
-        parse_dates=["game_date"],
-    )
+    matchups = None
+    if with_matchups:
+        matchups = pd.read_sql(
+            text(PLAYER_MATCHUPS_SQL),
+            connection,
+            params={
+                **params,
+                "opponent_id": opponent_id,
+                "roster_days": ROSTER_DAYS,
+                "position_games": POSITION_GAMES,
+            },
+            parse_dates=["game_date"],
+        )
     tonight = team_lines_tonight(
         session,
         team_id=team_id,

@@ -417,6 +417,21 @@ cd backend && .venv/bin/python scripts/load_test.py --base-url http://127.0.0.1:
 
 A 422 is a player with too few games, which is the correct answer. There were no 5xx responses. Forecasts handled about 10 requests per second, which is why the default global limit is 600 per minute. Under this concurrency a forecast takes seconds, far above the 69 ms p95 of the sequential run in [Phase 7](#phase-7-inference); four run at once and the rest queue. No performance gate is claimed from these numbers.
 
+#### Player forecast speed (2026-11-27)
+
+Profiling 40 forecasts on a restored copy of the real data showed that building features took 95% of each forecast, and most of that was the defender query: 280,825 `player_matchups` rows per forecast, then about 1 s of pandas work. No model in release `2026.11.14-1` reads a defender feature ([result](model-methodology.md#result-not-used)), so forecasts now skip that query unless the serving release uses those inputs. On the same 40 forecasts, building features and predicting went from 1,397 ms to 136 ms, with identical snapshots, values and explanations.
+
+The faster run exposed a race: two identical forecasts at once could both insert, and the loser returned a 500. The duplicate is now caught where the insert happens and the stored row is returned. Both changes have tests (`tests/api/test_predictions.py`).
+
+Same load test, same command and limits as above, each version on its own fresh copy of the 2026-11-27 data (55 upcoming games, 300 player-games):
+
+| `forecast_player` | Statuses | Unexpected | p50 ms | p95 ms | p99 ms | Max ms | Requests/s |
+|---|---|---|---|---|---|---|---|
+| Before | 200: 368, 201: 252, 422: 24, 503: 350, 500: 3, no response: 3 | 356 | 11957 | 23042 | 27535 | 35088 | 1.4 |
+| After | 200: 689, 201: 277, 422: 34 | 0 | 2020 | 2817 | 3571 | 4193 | 9.8 |
+
+The 503s were `inference_busy`: requests waited over 10 s for one of the four forecast slots. Read endpoints and game forecasts were unchanged within noise. Forecasts still queue for those four slots at 20 clients, so they take seconds under this load.
+
 ### Accessibility
 
 `frontend/tests/e2e/a11y-audit.spec.ts` runs in CI on every viewport; see [accessibility-report.md](accessibility-report.md). The manual screen-reader checklist in that report has **not** been performed. A local full run on 2026-11-02 gave 434 passed and 28 failed, while another session ran Playwright on the same machine and ports and a database rehearsal ran alongside it. Those failures were not investigated one by one, so that run proves nothing either way. CI's `frontend` job, which runs the full suite without that interference, passed at `e90f099`.

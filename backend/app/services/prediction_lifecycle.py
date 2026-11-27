@@ -86,7 +86,7 @@ def serving_release(session: Session, artifacts_dir: Path) -> ActiveRelease:
     return release
 
 
-def _features(session: Session, player: Player, game: Game):
+def _features(session: Session, player: Player, game: Game, release: ActiveRelease):
     is_home = player.current_team_id == game.home_team_id
     return pregame_features(
         session,
@@ -97,6 +97,7 @@ def _features(session: Session, player: Player, game: Game):
         game_id=game.id,
         game_date=game.game_date,
         season_id=game.season_id,
+        with_matchups=release.reads_matchups,
     )
 
 
@@ -127,7 +128,7 @@ def forecast(
         raise ApiError(422, "invalid_matchup", "This player's current team is not in this game.")
 
     with inference_slot():
-        result = predict(release, _features(session, player, game))
+        result = predict(release, _features(session, player, game, release))
     if not result.eligible:
         raise ApiError(
             422,
@@ -171,20 +172,20 @@ def forecast(
         supersedes_prediction_id=previous,
     )
     session.add(row)
-    session.flush()
     level = Decimal(str(round(result.interval_level, 2)))
-    session.add_all(
-        PredictionValue(
-            prediction_id=row.id,
-            stat=PredictedStat(stat),
-            point=point,
-            lower=lower,
-            upper=upper,
-            interval_level=level,
-        )  # fmt: skip
-        for stat, (point, lower, upper) in result.values.items()
-    )
     try:
+        session.flush()
+        session.add_all(
+            PredictionValue(
+                prediction_id=row.id,
+                stat=PredictedStat(stat),
+                point=point,
+                lower=lower,
+                upper=upper,
+                interval_level=level,
+            )  # fmt: skip
+            for stat, (point, lower, upper) in result.values.items()
+        )
         session.commit()
     except IntegrityError:
         session.rollback()
@@ -212,7 +213,7 @@ def freshness(
         return FreshnessState(Freshness.invalid, "The player's team is no longer in this game.")
     if release is None or release.id != row.release_id:
         return FreshnessState(Freshness.stale, "A different model release is now serving.")
-    snapshot = predict(release, _features(session, player, game)).snapshot
+    snapshot = predict(release, _features(session, player, game, release)).snapshot
     if hash_snapshot(snapshot) != row.feature_snapshot_sha256:
         return FreshnessState(Freshness.stale, "New games or injury news since this forecast.")
     return FreshnessState(Freshness.current)

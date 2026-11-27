@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from sklearn.dummy import DummyClassifier
-from sqlalchemy import Engine, select, text
+from sqlalchemy import Engine, event, select, text
 from sqlalchemy.orm import Session
 
 from app.ingestion import jobs
@@ -23,7 +23,7 @@ from app.ml import inference
 from app.ml.artifacts import ArtifactMismatch, save_artifact
 from app.ml.conformal import MondrianConformal
 from app.ml.dataset import load_dataset
-from app.ml.features import FEATURES, TARGETS, feature_schema_version
+from app.ml.features import FEATURES, TARGETS, TRAINING_FEATURES, feature_schema_version
 from app.ml.matchups import MATCHUP_FEATURES
 from app.ml.models import RollingBaseline
 from app.models import (
@@ -85,7 +85,13 @@ def league(engine: Engine) -> Engine:
     return engine
 
 
-def _release(engine: Engine, directory, version: str, status: ReleaseStatus) -> None:
+def _release(
+    engine: Engine,
+    directory,
+    version: str,
+    status: ReleaseStatus,
+    features: tuple[str, ...] = FEATURES,
+) -> None:
     with Session(engine) as s, s.begin():
         release = ModelRelease(
             version=version, feature_schema_version=feature_schema_version(),
@@ -96,7 +102,7 @@ def _release(engine: Engine, directory, version: str, status: ReleaseStatus) -> 
         s.add(release)
         s.flush()
         classifier = DummyClassifier(strategy="prior").fit(
-            pd.DataFrame([[0.0] * len(FEATURES)] * 4, columns=list(FEATURES)), [0, 1, 1, 1]
+            pd.DataFrame([[0.0] * len(features)] * 4, columns=list(features)), [0, 1, 1, 1]
         )
         for target in (*TARGETS, "double_double"):
             regression = target != "double_double"
@@ -111,7 +117,7 @@ def _release(engine: Engine, directory, version: str, status: ReleaseStatus) -> 
                     algorithm=Algorithm.rolling_baseline if regression else Algorithm.logistic,
                     is_selected=True,
                     hyperparameters={"fit": "production"},
-                    features=list(FEATURES),
+                    features=list(features),
                     interval_calibration=calibration,
                     artifact_path=path,
                     artifact_sha256=digest,
@@ -230,6 +236,46 @@ def test_invalid_requests_are_refused_without_storing(league, serving, player, g
 def test_games_at_or_after_tipoff_are_closed(league, serving):
     serving.app.state.api.clock = lambda: datetime(2099, 11, 11, 1, tzinfo=UTC)
     assert _post(serving).json()["error"]["code"] == "game_already_started"
+
+
+def test_a_release_without_defender_inputs_never_reads_matchups(league, tmp_path, client):
+    _release(league, tmp_path, "2099.11.10-1", ReleaseStatus.active, TRAINING_FEATURES)
+    with Session(league) as s:
+        release = prediction_lifecycle.serving_release(s, tmp_path)
+    assert not release.reads_matchups
+    assert inference.ActiveRelease(release.id, "x", "y", {}, None).reads_matchups
+    statements: list[str] = []
+
+    def record(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    event.listen(league, "before_cursor_execute", record)
+    try:
+        assert _post(client).status_code == 201
+        assert client.get("/api/v1/predictions", params={"player_id": STAR}).status_code == 200
+    finally:
+        event.remove(league, "before_cursor_execute", record)
+    assert statements
+    assert not [s for s in statements if "player_matchups" in s]
+
+
+def test_identical_forecasts_arriving_together_return_one_stored_row(serving, monkeypatch):
+    first = _post(serving)
+    assert first.status_code == 201
+    real = Session.scalar
+    missed: list[str] = []
+
+    def lookup_misses_once(self, statement, *args, **kwargs):
+        if not missed and "feature_snapshot_sha256" in str(statement):
+            missed.append(str(statement))
+            return None
+        return real(self, statement, *args, **kwargs)
+
+    monkeypatch.setattr(Session, "scalar", lookup_misses_once)
+    second = _post(serving)
+    assert missed
+    assert second.status_code == 200
+    assert second.json()["id"] == first.json()["id"]
 
 
 def test_tampered_artifact_stops_serving(league, tmp_path, serving):
